@@ -23,7 +23,10 @@ public interface IScenario
     // from each strat's IScenarioAi.Group.
     IReadOnlyList<IScenarioAi> AiStrats { get; }
 
-    // How far into the phase's track the real fight is when this scenario starts.
+    // The track playing when this scenario starts, when it isn't the phase's (0 = the phase's).
+    ushort Bgm => 0;
+
+    // How far into that track the real fight is when this scenario starts.
     float BgmSecondsAtStart => 0f;
 
     void Run(SimWorld world, int? selectedAi);

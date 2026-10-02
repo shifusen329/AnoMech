@@ -56,6 +56,8 @@ namespace AnoMech.Multiplayer;
 [JsonDerivedType(typeof(TopP5DeltaAiReplayStateMessage), "topP5DeltaAiReplayState")]
 [JsonDerivedType(typeof(UmadP3LimitCutAiReplayStateMessage), "umadP3LimitCutAiReplayState")]
 [JsonDerivedType(typeof(UmadP1TeleTrouncingAiReplayStateMessage), "umadP1TeleTrouncingAiReplayState")]
+[JsonDerivedType(typeof(UmadP1GravenImage1AiReplayStateMessage), "umadP1GravenImage1AiReplayState")]
+[JsonDerivedType(typeof(UmadP1GravenImage2AiReplayStateMessage), "umadP1GravenImage2AiReplayState")]
 [JsonDerivedType(typeof(UmadP5FloodAiReplayStateMessage), "umadP5FloodAiReplayState")]
 [JsonDerivedType(typeof(UcobP5ExaflaresAiReplayStateMessage), "ucobP5ExaflaresAiReplayState")]
 [JsonDerivedType(typeof(UmadP5CelestriadAiReplayStateMessage), "umadP5CelestriadAiReplayState")]
@@ -313,6 +315,18 @@ public sealed record UmadP1TeleTrouncingAiReplayStateMessage(
     PartyRole ConfettiStackSupport, PartyRole ConfettiStackDps,
     bool GazeInverted, bool FireIsStack, bool FireIsLie, PartyRole FireStackSupport, PartyRole FireStackDps,
     int ThunderRealOffset, bool ThunderOrientationFlipped, bool ThunderIsLie) : MpMessage, IScenarioReplayStateMessage;
+
+// The whole UmadP1GravenImage1State roll; the rolls' records travel as their fields.
+public sealed record UmadP1GravenImage1AiReplayStateMessage(
+    bool TetherDps, int Ice1RealOffset, bool Ice1IsLie,
+    bool FireIsStack, bool FireIsLie, PartyRole FireStackSupport, PartyRole FireStackDps,
+    PartyRole[] WaveTargets, PartyRole TrapSupport, PartyRole TrapDps, int TrapJumpSupport, int TrapJumpDps,
+    int Ice2RealOffset, bool Ice2IsLie, int ThunderRealOffset, bool ThunderFlipped, bool ThunderIsLie) : MpMessage, IScenarioReplayStateMessage;
+
+// The whole UmadP1GravenImage2State roll; PurpleDps and CleaveWest hold one entry per tether set.
+public sealed record UmadP1GravenImage2AiReplayStateMessage(
+    bool[] PurpleDps, int IceRealOffset, bool IceIsLie, bool[] CleaveWest,
+    PartyRole TrapSupport, PartyRole TrapDps) : MpMessage, IScenarioReplayStateMessage;
 
 // The whole UmadP5FloodState roll; the stack target is rolled per tick on the host and never
 // read by the Ai.

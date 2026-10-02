@@ -14,6 +14,8 @@ using AnoMech.Scenarios.Top.P5Omega;
 using AnoMech.Scenarios.Top.P5Sigma;
 using AnoMech.Scenarios.Top.P6WaveCannon2;
 using AnoMech.Scenarios.Umad;
+using AnoMech.Scenarios.Umad.P1GravenImage1;
+using AnoMech.Scenarios.Umad.P1GravenImage2;
 using AnoMech.Scenarios.Umad.P1TeleTrouncing;
 using AnoMech.Scenarios.Umad.P2Forsaken;
 using AnoMech.Scenarios.Umad.P3BlackHole;
@@ -144,6 +146,8 @@ public sealed class Game : IDisposable
         World = new SimWorld(Events);
         Scenarios = new IScenario[]
         {
+            new UmadP1GravenImage1Scenario(),
+            new UmadP1GravenImage2Scenario(),
             new UmadP1TeleTrouncingScenario(),
             new UmadP2ForsakenScenario(),
             new UmadP3LimitCutScenario(),
@@ -393,10 +397,11 @@ public sealed class Game : IDisposable
         // between same-track scenarios (e.g. the P5 phases) keeps playing without
         // restarting the song; a different track swaps; suppressed/no-track reverts.
         AnoMech.Core.DiagnosticLog.Info($"[Bgm] Suppress scenario BGM: {(Plugin.Config.SuppressBgm ? "on" : "off")}.");
-        if (Plugin.Config.SuppressBgm || phase.Bgm == 0)
+        var bgm = scenario.Bgm != 0 ? scenario.Bgm : phase.Bgm;
+        if (Plugin.Config.SuppressBgm || bgm == 0)
             Natives.Bgm.Reset();
         else
-            Natives.Bgm.Play(phase.Bgm, scenario.BgmSecondsAtStart);
+            Natives.Bgm.Play(bgm, scenario.BgmSecondsAtStart);
 
         // networkRoles null, not solo: a peer passes selectedAi null too.
         Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[AnoMech] Starting: {FullName(scenario)}{(networkRoles is null ? " (Solo)" : "")}" });
