@@ -72,11 +72,14 @@ public sealed class Game : IDisposable
     // gameplay side effect (HP=0, KO timeline, stun hooks, freeze timer).
     public bool GodMode { get; set; }
 
-    // When true, a successful run (see UpdateMechanicResult) immediately starts the same
-    // scenario again with the same parameters, for hands-free repetition. A real death
-    // cancels it (set false directly in Kill) rather than restarting past a failure the
-    // freeze/overlay exists to let the user actually see.
+    // When true, the same scenario starts again with the same parameters, for hands-free
+    // repetition, on the runs AutoRestartOn picks: a successful run restarts as soon as it
+    // settles (see UpdateMechanicResult); a run with a real death restarts once the 5s
+    // freeze after the first death would have begun (see Kill), so the failure is still seen.
     public bool AutoRestart { get; set; }
+    public AutoRestartTrigger AutoRestartOn { get; set; } = AutoRestartTrigger.AfterSuccess;
+    private bool RestartsAfterSuccess => AutoRestart && AutoRestartOn != AutoRestartTrigger.AfterDeath;
+    private bool RestartsAfterDeath => AutoRestart && AutoRestartOn != AutoRestartTrigger.AfterSuccess;
     private RunScenarioParams? lastRun;
 
     // Consecutive successful completions of whatever scenario is currently active. Reset by
@@ -456,7 +459,7 @@ public sealed class Game : IDisposable
             if (Plugin.Config.EnableMechanicResultMarks)
                 World.Party.Player?.AddVfx(MechanicSuccessVfx, persistent: false);
         }
-        if (AutoRestart && lastRun is { } p)
+        if (RestartsAfterSuccess && lastRun is { } p)
             RunScenario(p);
     }
 
@@ -517,14 +520,16 @@ public sealed class Game : IDisposable
         PartyMemberKilled?.Invoke(target.Role, cause);
         MechanicStreak = 0;
         deathOccurredThisRun = true;
-        AutoRestart = false;
         if (!firstFreezeScheduled)
         {
             firstFreezeScheduled = true;
 #if DEBUG
             AnoMech.Windows.DamageDebugWindow.Instance?.Freeze();
 #endif
-            Events.Add(5f, () => Paused = true);
+            if (RestartsAfterDeath && lastRun is { } p)
+                Events.Add(5f, () => RunScenario(p));
+            else
+                Events.Add(5f, () => Paused = true);
         }
         return true;
     }
@@ -633,3 +638,11 @@ public sealed class Game : IDisposable
 // AutoRestart) without tracking each argument as its own field. A null Seed draws a fresh one on
 // every start, AutoRestart included; a set one replays the same rolls each time.
 public sealed record RunScenarioParams(IScenario Scenario, PartyRole? RoleOverride, int? SelectedAi, int SelectedWaymark, int? Seed = null);
+
+// Which finished runs Game.AutoRestart restarts.
+public enum AutoRestartTrigger
+{
+    AfterSuccess,
+    AfterDeath,
+    Both,
+}

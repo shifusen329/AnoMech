@@ -893,10 +893,22 @@ public unsafe class MainWindow : Window, IDisposable
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             ImGui.SetTooltip(mpActive
                 ? MpDisabledReason
-                : "Restart the same scenario immediately after a successful run. A death turns this back off.");
+                : "Restart the same scenario automatically. A run that ends in a death restarts once the 5s death freeze would have begun.");
+        if (game.AutoRestart && !mpActive)
+        {
+            ImGui.SameLine();
+            var trigger = (int)game.AutoRestartOn;
+            ImGui.SetNextItemWidth(AutoRestartDropdownWidth * ImGuiHelpers.GlobalScale);
+            if (ImGui.Combo("##autoRestartOn", ref trigger, AutoRestartLabels, AutoRestartLabels.Length))
+                game.AutoRestartOn = (AnoMech.Core.Game.AutoRestartTrigger)trigger;
+        }
         ImGui.SameLine();
         ImGui.TextDisabled($"Streak: {game.MechanicStreak}");
     }
+
+    // Indexed by AutoRestartTrigger.
+    private static readonly string[] AutoRestartLabels = ["After a successful run", "After dying", "Both"];
+    private const float AutoRestartDropdownWidth = 170f;
 
     // Drawn below the strat picker for scenarios that declare WaymarkPresets. _selectedWaymark
     // is the index passed to RunScenario on Start; changing it while a scenario is loaded

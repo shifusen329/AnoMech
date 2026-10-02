@@ -43,6 +43,9 @@ public sealed class UmadP2ForsakenRinonAiHelper
         this.reorderActive = reorderActive;
     }
 
+    // Bots take their spots halfway between going at once and arriving at the last moment.
+    private const float SettleFraction = 0.5f;
+
     public void Run(UmadP2ForsakenState s, SimWorld world)
     {
         state = s;
@@ -50,36 +53,36 @@ public sealed class UmadP2ForsakenRinonAiHelper
         Init();
 
         ai.Move(1f, InitialLineup);
-        ai.Move(10.16f, TowerPositions(0), jitter: .0f, arrivalTime: 22.16f);
-        ai.Move(25.17f, TowerPositions(1), jitter: .0f, arrivalTime: 32.16f);
-        ai.Move(33f, AllThingsEndsBait(0, 2), arrivalTime: 37f);
-        ai.Move(39.21f, TowerPositions(2), jitter: .0f, arrivalTime: 43.21f);
-        ai.Move(47.22f, TowerPositions(3), jitter: .0f, arrivalTime: 53.22f);
-        ai.Move(54f, AllThingsEndsBait(1, 4), arrivalTime: 57f);
-        ai.Move(59.26f, TowerPositions(4), jitter: .0f, arrivalTime: 63.86f);
-        ai.Move(65.27f, TowerPositions(5), jitter: .0f, arrivalTime: 73.27f);
-        ai.Move(75f, AllThingsEndsBait(2, 6), arrivalTime: 78f);
-        ai.Move(81.31f, TowerPositions(6), jitter: .0f, arrivalTime: 85.8f);
-        ai.Move(90.32f, TowerPositions(7), jitter: .0f, arrivalTime: 94.32f);
+        ai.Move(10.16f, TowerPositions(0), jitter: .0f, arrivalTime: 22.16f, settleFraction: SettleFraction);
+        ai.Move(25.17f, TowerPositions(1), jitter: .0f, arrivalTime: 32.16f, settleFraction: SettleFraction);
+        ai.Move(33f, AllThingsEndsBait(0, 2), arrivalTime: 37f, settleFraction: SettleFraction);
+        ai.Move(39.21f, TowerPositions(2), jitter: .0f, arrivalTime: 43.21f, settleFraction: SettleFraction);
+        ai.Move(47.22f, TowerPositions(3), jitter: .0f, arrivalTime: 53.22f, settleFraction: SettleFraction);
+        ai.Move(54f, AllThingsEndsBait(1, 4), arrivalTime: 57f, settleFraction: SettleFraction);
+        ai.Move(59.6f, TowerPositions(4), jitter: .0f, arrivalTime: 63.86f, settleFraction: SettleFraction);
+        ai.Move(65.27f, TowerPositions(5), jitter: .0f, arrivalTime: 73.27f, settleFraction: SettleFraction);
+        ai.Move(75f, AllThingsEndsBait(2, 6), arrivalTime: 78f, settleFraction: SettleFraction);
+        ai.Move(81.31f, TowerPositions(6), jitter: .0f, arrivalTime: 85.0f, settleFraction: SettleFraction);
+        ai.Move(90.32f, TowerPositions(7), jitter: .0f, arrivalTime: 94.32f, settleFraction: SettleFraction);
         // Occurrence 3 has no upcoming tower to bisect against and nothing moves the party after
         // it, so it gets the real two-step: gather between the last towers, then relocate once the
         // castbar starts. The boss's facing locks at its Face() call, so moving during the cast is
         // what makes Future's End safe; Past's End's second move is a same-spot no-op.
-        ai.Move(95.83f, BetweenLastTowers(), arrivalTime: 98f);
-        ai.Move(101.16f, AllThingsEndsBait(3, 7), arrivalTime: 105f);
+        ai.Move(95.83f, BetweenLastTowers(), arrivalTime: 98f, settleFraction: SettleFraction);
+        ai.Move(101.16f, AllThingsEndsBait(3, 7), arrivalTime: 105f, settleFraction: SettleFraction);
     }
 
     // Future's End sits opposite the upcoming towers, Past's End between them, both on the
-    // NewNorthAt(2*i+2) bisector the tower pair straddles. Future's following tower transition
-    // is infeasible at any distance, so its spot is pushed out for range as well as angle (the
-    // cone tracks party.Player, who is in this stack); Past keeps the tighter margin to help its
-    // own tight transition. Both casters sit at the origin.
-    private const float PastMeleeFromCenter = 9.7f;
-    private const float FutureMeleeFromCenter = 11f;
+    // NewNorthAt(2*i+2) bisector the tower pair straddles, well outside the hitbox: the farther
+    // from the clones, the shallower their cleaves. These are about as far out as the sprint to
+    // the next towers still beats All Things Ending (the cone tracks party.Player, who is in this
+    // stack). Both casters sit at the origin.
+    private const float PastBaitFromCenter = 13f;
+    private const float FutureBaitFromCenter = 15f;
 
     private Func<IAiMove> AllThingsEndsBait(int i, int northIndex)
     {
-        var distance = state.EndAttacks[i] == EndAttack.PastsEnd ? -PastMeleeFromCenter : FutureMeleeFromCenter;
+        var distance = state.EndAttacks[i] == EndAttack.PastsEnd ? -PastBaitFromCenter : FutureBaitFromCenter;
         return () => AiMove.All(new(0, distance))
                            .ApplyPositions(state.NewNorthAt(northIndex).Apply);
     }
@@ -87,7 +90,7 @@ public sealed class UmadP2ForsakenRinonAiHelper
     // Occurrence 3's first leg: both variants start between the towers.
     private Func<IAiMove> BetweenLastTowers()
     {
-        return () => AiMove.All(new(0, -PastMeleeFromCenter))
+        return () => AiMove.All(new(0, -PastBaitFromCenter))
                            .ApplyPositions(state.NewNorthAt(7).Apply);
     }
 

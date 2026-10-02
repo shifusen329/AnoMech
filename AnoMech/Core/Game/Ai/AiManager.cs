@@ -37,13 +37,16 @@ public sealed class AiManager
     // `arrivalTime` set: freeze until the last safe moment, then walk/sprint to
     // land exactly on it. Unset: go now, no sprint consideration. `sprint`
     // (only meaningful without `arrivalTime`) forces SprintSpeed and sizes the
-    // Sprint status off distance instead of a deadline.
+    // Sprint status off distance instead of a deadline. `settleFraction` (only
+    // with `arrivalTime`) is the share of a walker's spare time spent waiting at the
+    // destination instead of the start: 0 leaves at the last moment, 1 leaves now.
     //
     // Every prompt MoveTo fires via PromptMoveDelay: a 0-delay entry added during
     // EventScheduler.Tick runs in that same pass.
     private const float PromptMoveDelay = 0.3f;
 
-    public void Move(float time, Func<IAiMove> positions, float jitter = DefaultJitter, float? arrivalTime = null, bool sprint = false)
+    public void Move(float time, Func<IAiMove> positions, float jitter = DefaultJitter, float? arrivalTime = null, bool sprint = false,
+                     float settleFraction = 0f)
     {
         world.Events.Add(time, () =>
         {
@@ -97,7 +100,8 @@ public sealed class AiManager
                 var delay = available - dist / RunSpeed;
                 if (delay > 0f)
                 {
-                    AnoMech.Core.DiagnosticLog.Info($"[AiManager] Move@{time:F1}: {role} from ({member.Position.X:F1},{member.Position.Z:F1}) -> ({target.X:F1},{target.Z:F1}) deferred {delay:F2}s (arrive {deadline:F1}).");
+                    delay *= 1f - Math.Clamp(settleFraction, 0f, 1f);
+                    AnoMech.Core.DiagnosticLog.Info($"[AiManager] Move@{time:F1}: {role} from ({member.Position.X:F1},{member.Position.Z:F1}) -> ({target.X:F1},{target.Z:F1}) deferred {delay:F2}s (arrive {time + delay + dist / RunSpeed:F1}, deadline {deadline:F1}).");
                     world.Events.Add(delay, () => member.MoveTo(target, speed: RunSpeed));
                     continue;
                 }
