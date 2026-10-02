@@ -227,11 +227,13 @@ public sealed class UmadP1GravenImage2Scenario : IMultiplayerReplayable
     }
 
     // Each puddle drops under its target. Whoever stands in it as it lands may walk out; walking
-    // back in before the soak wipes the party.
+    // back in before the soak wipes the party. Every Gravitas has to land on the whole party:
+    // anyone left out of any of them wipes everyone.
     private void ResolveGravitas(int set)
     {
         if (kit == null) return;
         var i = 0;
+        var landed = new List<Vector3>();
         foreach (var role in state.PurpleRoles(set))
         {
             var statue = statues[i++];
@@ -240,8 +242,15 @@ public sealed class UmadP1GravenImage2Scenario : IMultiplayerReplayable
             var puddle = new Puddle(target.Position, set);
             foreach (var member in kit.Party.Find.InsideCircle(puddle.Position, PuddleRadius)) puddle.Exempt.Add(member);
             puddles.Add(puddle);
+            landed.Add(puddle.Position);
             kit.World.SpawnOmen(Constants.VfxPath.PuddleOmen, new Placement(puddle.Position, 0f), new Vector3(PuddleRadius, 1f, PuddleRadius), 46.00f - (set == 0 ? 12.20f : 30.66f));
         }
+
+        var outside = UmadP1Roles.All
+            .Where(r => kit.Party.Get(r) is { } m && m.IsAlive() && landed.Any(p => DistanceXZ(p, m.Position) > PuddleRadius))
+            .ToList();
+        if (outside.Count > 0)
+            kit.Party.WipeAllPlayers($"Gravitas: {string.Join(", ", outside)} not in the stack during Graven Image 2");
     }
 
     // Anyone else in a spread is thrown away from its target; a spread touching a puddle sets it

@@ -47,10 +47,12 @@ public sealed class UmadP1GravenImage2Ai : IScenarioAi<UmadP1GravenImage2State>
     internal static Vector2 FirstPuddleStack(UmadP1GravenImage2State state)
         => new(state.Ice.HitsNorthEast ? -NorthStack.X : NorthStack.X, NorthStack.Y);
 
+    internal static Vector2 PuddleStackSpot(Vector2 stack, PartyRole role) => stack + UmadP1Spots.Offset(role, 0.3f);
+
     private static IAiMove StackForPuddles(Vector2 stack)
     {
         var coords = new Vector2?[8];
-        foreach (var role in UmadP1Roles.All) coords[(int)role] = stack + UmadP1Spots.Offset(role, 0.3f);
+        foreach (var role in UmadP1Roles.All) coords[(int)role] = PuddleStackSpot(stack, role);
         return AiMove.Create(coords).NaturalOrder();
     }
 

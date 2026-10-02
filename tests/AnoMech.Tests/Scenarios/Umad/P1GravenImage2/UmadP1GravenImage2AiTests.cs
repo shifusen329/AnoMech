@@ -31,6 +31,21 @@ public class UmadP1GravenImage2AiTests
         }
     }
 
+    // Every Gravitas must land on all eight, whichever role gets the puddles.
+    [Test]
+    public void PuddleStacksPutEveryoneInEveryGravitas()
+    {
+        foreach (var ice in new[] { 0, 1 })
+        {
+            var state = State(ice: ice);
+            foreach (var stack in new[] { UmadP1GravenImage2Ai.FirstPuddleStack(state), SouthStack })
+            {
+                var spots = UmadP1Roles.All.Select(r => UmadP1GravenImage2Ai.PuddleStackSpot(stack, r)).ToList();
+                Assert.That(spots.All(a => spots.All(b => Vector2.Distance(a, b) < Puddle - 2 * Jitter)), Is.True, $"stack {stack}, ice {ice}");
+            }
+        }
+    }
+
     [Test]
     public void TetherExitsKeepSpreadsOffPuddlesAndEachOther()
     {
