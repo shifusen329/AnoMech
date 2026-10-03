@@ -324,3 +324,6 @@ public readonly struct AoeQuery(uint actionId, Placement source,
         find.InsideActionAoe(ActionId, Source, OmenRotate, Size);
 }
 
+// An AoE a character was caught in, timed on the world.Events clock (see SimCharacter.LastAoe).
+public readonly record struct AoeHit(AoeQuery Query, float At);
+

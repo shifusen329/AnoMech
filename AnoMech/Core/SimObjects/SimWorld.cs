@@ -37,6 +37,9 @@ public sealed class SimWorld : ISimObject, IDisposable
     // Root container — Game owns its lifetime; no parent reaps it.
     public bool IsActive => true;
     public EventScheduler Events { get; }
+
+    // Every strat spot handed out this run (the death recap's "where you should have been").
+    public AnoMech.Core.Game.Ai.StratTrail Strat { get; }
     public Vector3 ScenarioOrigin { get; set; }
 
     // The run's mechanic randomness; engine noise draws from a named Stream instead, so it
@@ -67,6 +70,7 @@ public sealed class SimWorld : ISimObject, IDisposable
     public SimWorld(EventScheduler events)
     {
         Events = events;
+        Strat = new AnoMech.Core.Game.Ai.StratTrail(events);
         Coordinates = new Coordinates(() => ScenarioOrigin);
     }
 
@@ -223,6 +227,7 @@ public sealed class SimWorld : ISimObject, IDisposable
         Natives.Markings.ClearAll();
         Natives.Waymarks.ClearAll();
         Obstacles.Clear();
+        Strat.Clear();
         ScenarioOrigin = default;
     }
 

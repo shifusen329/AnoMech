@@ -31,17 +31,17 @@ public sealed class UmadP1TeleTrouncingAi : IScenarioAi<UmadP1TeleTrouncingState
     {
         var ai = new AiManager(world);
 
-        ai.Move(7.5f, () => Spots(state, first: true), jitter: 0.5f, arrivalTime: 14.3f);
-        ai.Move(14.4f, () => Spots(state, first: false), jitter: 0.5f, arrivalTime: 17.3f);
+        ai.Move(7.5f, () => Spots(state, first: true), jitter: 0.5f, arrivalTime: 14.3f, cue: UmadP1TeleTrouncingPlaybook.Arrow(state, first: true));
+        ai.Move(14.4f, () => Spots(state, first: false), jitter: 0.5f, arrivalTime: 17.3f, cue: UmadP1TeleTrouncingPlaybook.Arrow(state, first: false));
         // No arrivalTime: this move starts on the arrow the role just placed, and deferring the
         // walk kept it parked there past the arrow's 3.0s grace.
-        ai.Move(17.5f, () => ConfettiSpots(state), jitter: 0.5f);
+        ai.Move(17.5f, () => ConfettiSpots(state), jitter: 0.5f, cue: UmadP1TeleTrouncingPlaybook.Confetti(state));
         // After the 22.78s Confetti knockback finishes sliding (0.7s); an earlier MoveTo cancels it.
-        ai.Move(23.6f, () => TetherSpots(state), jitter: 0.5f, arrivalTime: 27.5f);
+        ai.Move(23.6f, () => TetherSpots(state), jitter: 0.5f, arrivalTime: 27.5f, cue: UmadP1TeleTrouncingPlaybook.Tethers);
 
         // Mystery Magic: lines 41.26s, gaze 41.36s, Flagrant Fire 42.06s. One move, then an
         // in-place turn.
-        ai.Move(34.6f, () => MysteryFormation(state), jitter: 0.4f, arrivalTime: 39.5f);
+        ai.Move(34.6f, () => MysteryFormation(state), jitter: 0.4f, arrivalTime: 39.5f, cue: UmadP1TeleTrouncingPlaybook.MysteryMagic3(state));
         world.Events.Add(40.9f, () => FaceGaze(state, world));
     }
 

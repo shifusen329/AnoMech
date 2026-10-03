@@ -135,6 +135,12 @@ public sealed class Game : IDisposable
     private bool firstDeathScheduled;
     private bool firstFreezeScheduled;
 
+    // The local player's last death this run: where they were, the strat's spot, and why.
+    public DeathRecap? Recap { get; private set; }
+    // An auto-restart held back until the recap is closed.
+    private RunScenarioParams? restartAfterRecap;
+    public bool RestartWaitingOnRecap => restartAfterRecap != null;
+
 #if DEBUG
     // A run where nobody dies but something went wrong needs the same trace as the auto-freeze.
     private const float PeriodicDumpInterval = 3f;
@@ -482,7 +488,8 @@ public sealed class Game : IDisposable
     // false when it was already dead, invulnerable (UseInvuln), or godmode
     // swallowed it. Callers that run extra on-death logic should gate on this
     // so an invuln'd/godmode'd "death" doesn't trigger gameplay consequences.
-    public bool Kill(ISimPartyMember target, string cause)
+    // hostStrat / hostAoe: a peer's own spot and killing AoE, which only the host worked out.
+    public bool Kill(ISimPartyMember target, string cause, AnoMech.Core.Game.Ai.StratTarget? hostStrat = null, AoeQuery? hostAoe = null)
     {
         if (target == null) return false;
         if (target.Dead) return false;
@@ -497,6 +504,8 @@ public sealed class Game : IDisposable
         AnoMech.Core.DiagnosticLog.Warn(
             $"[Game] Kill: {target.Role} died at ({(target as IPositioned)?.Position.X:F1},{(target as IPositioned)?.Position.Z:F1}) -- {cause}");
         PrintDeath(target, cause);
+        if (target is SimPlayer && Plugin.Config.ShowDeathRecap)
+            Recap = BuildRecap(target, cause, hostStrat, hostAoe);
         if (!firstDeathScheduled)
         {
             firstDeathScheduled = true;
@@ -531,12 +540,48 @@ public sealed class Game : IDisposable
 #if DEBUG
             AnoMech.Windows.DamageDebugWindow.Instance?.Freeze();
 #endif
-            if (RestartsAfterDeath && lastRun is { } p)
+            if (RestartsAfterDeath && lastRun is { } p && Recap == null)
                 Events.Add(5f, () => RunScenario(p));
+            else if (RestartsAfterDeath && lastRun is { } held)
+                Events.Add(5f, () =>
+                {
+                    Paused = true;
+                    restartAfterRecap = held;
+                });
             else
                 Events.Add(5f, () => Paused = true);
         }
         return true;
+    }
+
+    private DeathRecap BuildRecap(ISimPartyMember target, string cause, AnoMech.Core.Game.Ai.StratTarget? hostStrat, AoeQuery? hostAoe)
+    {
+        var now = Events.Elapsed;
+        var aoe = hostAoe;
+        if (aoe == null && target is SimCharacter { LastAoe: { } hit } && MathF.Abs(hit.At - now) < SameMomentSeconds)
+            aoe = hit.Query;
+        var strat = hostStrat ?? World.Strat.LatestFor(target.Role, now);
+        return DeathRecap.Build(target.Role, cause, (target as IPositioned)?.Position ?? Vector3.Zero, now, strat, aoe, World.Coordinates);
+    }
+
+    // A DamageSolver hit stamped this long before the death is the one that caused it.
+    private const float SameMomentSeconds = 0.1f;
+
+    // What the host sends a peer about its own death: the strat's spot and the AoE it stood in.
+    public (AnoMech.Core.Game.Ai.StratTarget? Strat, AoeQuery? Aoe) RecapFor(PartyRole role)
+    {
+        var now = Events.Elapsed;
+        var aoe = World.Party.Get(role) is { LastAoe: { } hit } && MathF.Abs(hit.At - now) < SameMomentSeconds ? hit.Query : (AoeQuery?)null;
+        return (World.Strat.LatestFor(role, now), aoe);
+    }
+
+    // Closing the recap releases an auto-restart it was holding.
+    public void CloseRecap()
+    {
+        Recap = null;
+        if (restartAfterRecap is not { } p) return;
+        restartAfterRecap = null;
+        RunScenario(p);
     }
 
     private static void PrintDeath(ISimPartyMember target, string cause)
@@ -616,6 +661,8 @@ public sealed class Game : IDisposable
         // BGM is the callers': resetting here would restart a same-track scenario switch.
 
         Paused = false;
+        Recap = null;
+        restartAfterRecap = null;
         firstDeathScheduled = false;
         firstFreezeScheduled = false;
         scenarioFinishedElapsed = null;

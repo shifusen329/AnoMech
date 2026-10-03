@@ -29,17 +29,17 @@ public sealed class UmadP1GravenImage2Ai : IScenarioAi<UmadP1GravenImage2State>
     public void Run(UmadP1GravenImage2State state, SimWorld world)
     {
         var ai = new AiManager(world);
-        ai.Move(0.3f, Uptime);
-        ai.Move(7.2f, () => StackForPuddles(FirstPuddleStack(state)), arrivalTime: 11.8f, settleFraction: 0.5f);
-        ai.Move(12.4f, () => TetherExits(state, 0), jitter: 0.2f, arrivalTime: 15.9f);
-        ai.Move(16.5f, Hold, arrivalTime: 20.6f, settleFraction: 0.5f);
-        ai.Move(21.0f, () => FirstCleaveSpots(state), jitter: 0.2f, arrivalTime: 25.6f);
-        ai.Move(26.2f, () => StackForPuddles(SouthStack), arrivalTime: 30.4f, settleFraction: 0.5f);
-        ai.Move(30.9f, () => TetherExits(state, 1), jitter: 0.2f, arrivalTime: 34.4f);
-        ai.Move(34.9f, () => SecondCleaveSpots(state), jitter: 0.2f, arrivalTime: 38.9f);
-        ai.Move(39.5f, () => TrapStacks(state), jitter: 0.1f, arrivalTime: 42.7f, settleFraction: 0.5f);
-        ai.Move(43.8f, () => PuddleSoaks(state), jitter: 0.1f);
-        ai.Move(46.5f, Uptime, arrivalTime: 51f, settleFraction: 0.5f);
+        ai.Move(0.3f, Uptime, cue: UmadP1GravenImage2Playbook.Uptime);
+        ai.Move(7.2f, () => StackForPuddles(FirstPuddleStack(state)), arrivalTime: 11.8f, settleFraction: 0.5f, cue: UmadP1GravenImage2Playbook.FirstStack(state));
+        ai.Move(12.4f, () => TetherExits(state, 0), jitter: 0.2f, arrivalTime: 15.9f, cue: UmadP1GravenImage2Playbook.Spreads(state, 0));
+        ai.Move(16.5f, Hold, arrivalTime: 20.6f, settleFraction: 0.5f, cue: UmadP1GravenImage2Playbook.Buster);
+        ai.Move(21.0f, () => FirstCleaveSpots(state), jitter: 0.2f, arrivalTime: 25.6f, cue: UmadP1GravenImage2Playbook.FirstCleave(state));
+        ai.Move(26.2f, () => StackForPuddles(SouthStack), arrivalTime: 30.4f, settleFraction: 0.5f, cue: UmadP1GravenImage2Playbook.SecondStack);
+        ai.Move(30.9f, () => TetherExits(state, 1), jitter: 0.2f, arrivalTime: 34.4f, cue: UmadP1GravenImage2Playbook.Spreads(state, 1));
+        ai.Move(34.9f, () => SecondCleaveSpots(state), jitter: 0.2f, arrivalTime: 38.9f, cue: UmadP1GravenImage2Playbook.SecondCleave(state));
+        ai.Move(39.5f, () => TrapStacks(state), jitter: 0.1f, arrivalTime: 42.7f, settleFraction: 0.5f, cue: UmadP1GravenImage2Playbook.Confetti(state));
+        ai.Move(43.8f, () => PuddleSoaks(state), jitter: 0.1f, cue: UmadP1GravenImage2Playbook.Soak(state));
+        ai.Move(46.5f, Uptime, arrivalTime: 51f, settleFraction: 0.5f, cue: UmadP1GravenImage2Playbook.LightOfJudgment);
     }
 
     private static IAiMove Uptime() => AiMove.Create(UmadP1Spots.Uptime.Select(p => (Vector2?)p).ToArray()).NaturalOrder();

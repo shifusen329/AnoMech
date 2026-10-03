@@ -36,6 +36,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IGameInteropProvider GameInterop { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] internal static IToastGui ToastGui { get; private set; } = null!;
+    [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
     [PluginService] internal static IFlyTextGui FlyText { get; private set; } = null!;
     [PluginService] internal static IPartyList PartyList { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
@@ -63,6 +64,8 @@ public sealed class Plugin : IDalamudPlugin
     internal static UserActions UserActions { get; private set; } = null!;
     internal static LogManager LogManager { get; private set; } = null!;
     private ConfigWindow ConfigWindow { get; init; }
+    private DeathRecapOverlay DeathRecapOverlay { get; init; }
+    private DeathRecapWindow DeathRecapWindow { get; init; }
     // Static so MultiplayerManager can read the host's current selection.
     internal static MainWindow MainWindow { get; private set; } = null!;
 #if DEBUG
@@ -103,6 +106,10 @@ public sealed class Plugin : IDalamudPlugin
             WindowSystem.AddWindow(MainWindow);
             WindowSystem.AddWindow(MainWindow.ScenarioPanel);
             WindowSystem.AddWindow(MainWindow.PartyPanel);
+            DeathRecapOverlay = new DeathRecapOverlay(Game);
+            DeathRecapWindow = new DeathRecapWindow(Game);
+            WindowSystem.AddWindow(DeathRecapOverlay);
+            WindowSystem.AddWindow(DeathRecapWindow);
 #if DEBUG
             DamageDebugWindow = new DamageDebugWindow(this);
             WindowSystem.AddWindow(DamageDebugWindow);

@@ -214,8 +214,13 @@ public sealed record WorldSnapshotMessage(
 // positions are small and urgent, enemy data can be large.
 public sealed record RolesSnapshotMessage(List<RoleState> Roles) : MpMessage, IHostOnlyMessage;
 
-// One per Game.PartyMemberKilled; the recipient kills whatever holds that role locally.
-public sealed record RoleKilledMessage(PartyRole Role, string Cause) : MpMessage, IHostOnlyMessage;
+// One per Game.PartyMemberKilled; the recipient kills whatever holds that role locally. Recap is
+// the dead role's strat spot and killing AoE (scenario-local), which only the host worked out.
+public sealed record RoleKilledMessage(PartyRole Role, string Cause, DeathRecapState? Recap = null) : MpMessage, IHostOnlyMessage;
+
+public sealed record DeathRecapState(
+    bool HasSpot, float SpotX, float SpotZ, float IssuedAt, float? Deadline, string? Mechanic, string? Why, string? Source,
+    uint AoeActionId, float AoeX, float AoeZ, float AoeRotation, float AoeOmenRotate, float? AoeSize);
 
 // One per SimNetworkPuppet.Knockback, applied to whoever holds that role locally.
 public sealed record KnockbackMessage(PartyRole Role, float SourceX, float SourceY, float SourceZ, float Distance, float Speed) : MpMessage, IHostOnlyMessage;

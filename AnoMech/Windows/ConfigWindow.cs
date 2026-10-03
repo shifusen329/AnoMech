@@ -15,7 +15,7 @@ public class ConfigWindow : Window, IDisposable
         Flags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
                 ImGuiWindowFlags.NoScrollWithMouse;
 
-        Size = new Vector2(380, 310) * ImGuiHelpers.GlobalScale;
+        Size = new Vector2(380, 335) * ImGuiHelpers.GlobalScale;
         SizeCondition = ImGuiCond.Always;
 
         configuration = plugin.Configuration;
@@ -45,6 +45,15 @@ public class ConfigWindow : Window, IDisposable
             configuration.EnableMechanicResultMarks = resultMarks;
             configuration.Save();
         }
+
+        var deathRecap = configuration.ShowDeathRecap;
+        if (ImGui.Checkbox("Show a recap when you die", ref deathRecap))
+        {
+            configuration.ShowDeathRecap = deathRecap;
+            configuration.Save();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Where you died, where the strat had you and why. Holds an auto-restart until you close it.");
 
         var userActions = configuration.EnableUserActions;
         if (ImGui.Checkbox("Resolve your own actions", ref userActions))

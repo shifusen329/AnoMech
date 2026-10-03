@@ -39,14 +39,15 @@ public sealed class AiManager
     // (only meaningful without `arrivalTime`) forces SprintSpeed and sizes the
     // Sprint status off distance instead of a deadline. `settleFraction` (only
     // with `arrivalTime`) is the share of a walker's spare time spent waiting at the
-    // destination instead of the start: 0 leaves at the last moment, 1 leaves now.
+    // destination instead of the start: 0 leaves at the last moment, 1 leaves now. Every live
+    // slot's spot goes on world.Strat with `cue`, the human's included.
     //
     // Every prompt MoveTo fires via PromptMoveDelay: a 0-delay entry added during
     // EventScheduler.Tick runs in that same pass.
     private const float PromptMoveDelay = 0.3f;
 
     public void Move(float time, Func<IAiMove> positions, float jitter = DefaultJitter, float? arrivalTime = null, bool sprint = false,
-                     float settleFraction = 0f)
+                     float settleFraction = 0f, StratCue? cue = null)
     {
         world.Events.Add(time, () =>
         {
@@ -58,14 +59,17 @@ public sealed class AiManager
                 if (move[i] is not { } local) continue;
                 var member = world.Party.Get(i);
                 if (member == null || !member.IsAlive()) continue;
+                var role = (PartyRole)i;
+                world.Strat.Record(new StratTarget(role, new Vector3(local.X, 0f, local.Y), world.Events.Elapsed, arrivalTime,
+                    cue?.Mechanic, cue?.Why(role), cue?.Source));
                 var target = Jitter(new Vector3(local.X, 0f, local.Y), jitter);
-                var role = (member as ISimPartyMember)?.Role.ToString() ?? $"slot{i}";
+                var roleName = (member as ISimPartyMember)?.Role.ToString() ?? $"slot{i}";
                 foreach (var (seenRole, seenTarget) in seenTargets)
                 {
                     if (Vector3.Distance(target, seenTarget) < 1f)
-                        AnoMech.Core.DiagnosticLog.Warn($"[AiManager] Move@{time:F1}: {role} and {seenRole} both targeting ({target.X:F1},{target.Z:F1}) -- collision.");
+                        AnoMech.Core.DiagnosticLog.Warn($"[AiManager] Move@{time:F1}: {roleName} and {seenRole} both targeting ({target.X:F1},{target.Z:F1}) -- collision.");
                 }
-                seenTargets.Add((role, target));
+                seenTargets.Add((roleName, target));
                 var dx = target.X - member.Position.X;
                 var dz = target.Z - member.Position.Z;
                 var dist = MathF.Sqrt(dx * dx + dz * dz);

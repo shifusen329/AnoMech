@@ -75,8 +75,11 @@ public class DamageSolver
         if (wildChargeDamageType != null) Array.ForEach(wildChargeDamageType, d => damageTypeWildCharge.Add(d));
         
         var i = 0;
+        var now = Plugin.GameInstance?.Events.Elapsed ?? 0f;
         foreach (var target in targets)
         {
+            // Before any kill below, so the death recap can outline what hit them.
+            target.LastAoe = new AoeHit(query, now);
             bool wildCharge = i++ < wildChargeTargets;
             var understacked = targets.Count < stackMinTargets;
             // A stack taken short kills everyone in it, unless a tank is allowed to eat it on cooldowns.

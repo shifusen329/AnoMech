@@ -15,6 +15,8 @@ public class Configuration : IPluginConfiguration
     public bool EnableEventLogging { get; set; } = false;
     public bool SuppressBgm { get; set; } = true;
     public bool EnableMechanicResultMarks { get; set; } = false;
+    // On your death: where you were, where the strat had you, and why.
+    public bool ShowDeathRecap { get; set; } = true;
     public bool AutoCollapseWhileRunning { get; set; } = false;
     public string LastSelectedScenario { get; set; } = "";
 

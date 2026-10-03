@@ -9,6 +9,8 @@ namespace AnoMech.Multiplayer;
 internal static class NetGuard
 {
     public const int MaxStringLength = 192;
+    // A death recap's strat explanation runs to a few sentences.
+    public const int MaxRecapTextLength = 1024;
     public const int MaxEnemiesPerSnapshot = 256;
     public const int MaxTethersPerSnapshot = 128;
     public const int MaxEventObjectsPerSnapshot = 256;
@@ -30,10 +32,10 @@ internal static class NetGuard
 
     // Control characters would corrupt the diagnostic log's line format, and an unbounded
     // string is a per-frame ImGui hang.
-    public static string Clean(string? value)
+    public static string Clean(string? value, int maxLength = MaxStringLength)
     {
         if (string.IsNullOrEmpty(value)) return "";
-        var span = value.Length > MaxStringLength ? value.AsSpan(0, MaxStringLength) : value.AsSpan();
+        var span = value.Length > maxLength ? value.AsSpan(0, maxLength) : value.AsSpan();
         Span<char> buffer = stackalloc char[span.Length];
         var length = 0;
         foreach (var c in span)
