@@ -12,5 +12,6 @@ public sealed class UmadP2ForsakenKroxyRinonOldAi : IScenarioAi<UmadP2ForsakenSt
         => new UmadP2ForsakenRinonAiHelper(
                UmadP2ForsakenRinonAiHelper.StandardOdd,
                UmadP2ForsakenRinonAiHelper.OldEven,
-               UmadP2ForsakenRinonAiHelper.KroxyReorder).Run(state, world);
+               UmadP2ForsakenRinonAiHelper.KroxyReorder,
+               UmadP2ForsakenPlaybook.KroxyRinonOld).Run(state, world);
 }

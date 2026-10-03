@@ -15,5 +15,6 @@ public sealed class UmadP2ForsakenP3ZBuddyMeowAi : IScenarioAi<UmadP2ForsakenSta
         => new UmadP2ForsakenP3ZBuddyMeowAiHelper(
                UmadP2ForsakenP3ZBuddyMeowAiHelper.StandardOdd,
                UmadP2ForsakenP3ZBuddyMeowAiHelper.DiamonMarkersEven,
-               UmadP2ForsakenP3ZBuddyMeowAiHelper.KroxyReorder).Run(state, world);
+               UmadP2ForsakenP3ZBuddyMeowAiHelper.KroxyReorder,
+               UmadP2ForsakenPlaybook.P3ZBuddyMeow).Run(state, world);
 }

@@ -18,6 +18,7 @@ public sealed class UmadP2ForsakenLpduBuddiesAiHelper
     private readonly Vector2?[] oddCoords;
     private readonly Vector2?[] evenCoords;
     private readonly Action<UmadP2ForsakenLpduBuddiesAiHelper, int, IList<PartyRole>> reorderActive;
+    private readonly UmadP2ForsakenPlaybook playbook;
 
     private UmadP2ForsakenState state = null!;
 
@@ -29,11 +30,13 @@ public sealed class UmadP2ForsakenLpduBuddiesAiHelper
     public UmadP2ForsakenLpduBuddiesAiHelper(
         Vector2?[] oddCoords,
         Vector2?[] evenCoords,
-        Action<UmadP2ForsakenLpduBuddiesAiHelper, int, IList<PartyRole>> reorderActive)
+        Action<UmadP2ForsakenLpduBuddiesAiHelper, int, IList<PartyRole>> reorderActive,
+        UmadP2ForsakenPlaybook playbook)
     {
         this.oddCoords = oddCoords;
         this.evenCoords = evenCoords;
         this.reorderActive = reorderActive;
+        this.playbook = playbook;
     }
 
     // Bots take their spots halfway between going at once and arriving at the last moment.
@@ -45,24 +48,24 @@ public sealed class UmadP2ForsakenLpduBuddiesAiHelper
         var ai = new AiManager(world);
         Init();
 
-        ai.Move(1f, InitialLineup);
-        ai.Move(10.16f, TowerPositions(0), jitter: .0f, arrivalTime: 22.16f, settleFraction: SettleFraction);
-        ai.Move(25.17f, TowerPositions(1), jitter: .0f, arrivalTime: 32.16f, settleFraction: SettleFraction);
-        ai.Move(33f, AllThingsEndsBait(0, 2), arrivalTime: 37f, settleFraction: SettleFraction);
-        ai.Move(39.21f, TowerPositions(2), jitter: .0f, arrivalTime: 43.21f, settleFraction: SettleFraction);
-        ai.Move(47.22f, TowerPositions(3), jitter: .0f, arrivalTime: 53.22f, settleFraction: SettleFraction);
-        ai.Move(54f, AllThingsEndsBait(1, 4), arrivalTime: 57f, settleFraction: SettleFraction);
-        ai.Move(59.6f, TowerPositions(4), jitter: .0f, arrivalTime: 63.86f, settleFraction: SettleFraction);
-        ai.Move(65.27f, TowerPositions(5), jitter: .0f, arrivalTime: 73.27f, settleFraction: SettleFraction);
-        ai.Move(75f, AllThingsEndsBait(2, 6), arrivalTime: 78f, settleFraction: SettleFraction);
-        ai.Move(81.31f, TowerPositions(6), jitter: .0f, arrivalTime: 85.0f, settleFraction: SettleFraction);
-        ai.Move(90.32f, TowerPositions(7), jitter: .0f, arrivalTime: 94.32f, settleFraction: SettleFraction);
+        ai.Move(1f, InitialLineup, cue: playbook.Lineup);
+        ai.Move(10.16f, TowerPositions(0), jitter: .0f, arrivalTime: 22.16f, settleFraction: SettleFraction, cue: playbook.Towers(state, 0, alpha));
+        ai.Move(25.17f, TowerPositions(1), jitter: .0f, arrivalTime: 32.16f, settleFraction: SettleFraction, cue: playbook.Towers(state, 1, alpha));
+        ai.Move(33f, AllThingsEndsBait(0, 2), arrivalTime: 37f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 0));
+        ai.Move(39.21f, TowerPositions(2), jitter: .0f, arrivalTime: 43.21f, settleFraction: SettleFraction, cue: playbook.Towers(state, 2, alpha));
+        ai.Move(47.22f, TowerPositions(3), jitter: .0f, arrivalTime: 53.22f, settleFraction: SettleFraction, cue: playbook.Towers(state, 3, beta));
+        ai.Move(54f, AllThingsEndsBait(1, 4), arrivalTime: 57f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 1));
+        ai.Move(59.6f, TowerPositions(4), jitter: .0f, arrivalTime: 63.86f, settleFraction: SettleFraction, cue: playbook.Towers(state, 4, beta));
+        ai.Move(65.27f, TowerPositions(5), jitter: .0f, arrivalTime: 73.27f, settleFraction: SettleFraction, cue: playbook.Towers(state, 5, beta));
+        ai.Move(75f, AllThingsEndsBait(2, 6), arrivalTime: 78f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 2));
+        ai.Move(81.31f, TowerPositions(6), jitter: .0f, arrivalTime: 85.0f, settleFraction: SettleFraction, cue: playbook.Towers(state, 6, beta));
+        ai.Move(90.32f, TowerPositions(7), jitter: .0f, arrivalTime: 94.32f, settleFraction: SettleFraction, cue: playbook.Towers(state, 7, alpha));
         // Occurrence 3 has no upcoming tower to bisect against and nothing moves the party after
         // it, so it gets the real two-step: gather between the last towers, then relocate once the
         // castbar starts. The boss's facing locks at its Face() call, so moving during the cast is
         // what makes Future's End safe; Past's End's second move is a same-spot no-op.
-        ai.Move(95.83f, BetweenLastTowers(), arrivalTime: 98f, settleFraction: SettleFraction);
-        ai.Move(101.16f, AllThingsEndsBait(3, 7), arrivalTime: 105f, settleFraction: SettleFraction);
+        ai.Move(95.83f, BetweenLastTowers(), arrivalTime: 98f, settleFraction: SettleFraction, cue: playbook.LastClonesGather(state));
+        ai.Move(101.16f, AllThingsEndsBait(3, 7), arrivalTime: 105f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 3));
     }
 
     // Future's End sits opposite the upcoming towers, Past's End between them, both on the
