@@ -14,5 +14,6 @@ public sealed class UmadP2ForsakenLpduBuddiesAi : IScenarioAi<UmadP2ForsakenStat
         => new UmadP2ForsakenLpduBuddiesAiHelper(
                UmadP2ForsakenLpduBuddiesAiHelper.StandardOdd,
                UmadP2ForsakenLpduBuddiesAiHelper.DiamonMarkersEven,
-               UmadP2ForsakenLpduBuddiesAiHelper.KroxyReorder).Run(state, world);
+               UmadP2ForsakenLpduBuddiesAiHelper.KroxyReorder,
+               UmadP2ForsakenPlaybook.LpduBuddies).Run(state, world);
 }

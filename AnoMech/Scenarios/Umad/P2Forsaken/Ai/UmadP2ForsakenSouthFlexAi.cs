@@ -14,5 +14,6 @@ public sealed class UmadP2ForsakenSouthFlexAi : IScenarioAi<UmadP2ForsakenState>
         => new UmadP2ForsakenRinonAiHelper(
                UmadP2ForsakenRinonAiHelper.StandardOdd,
                UmadP2ForsakenRinonAiHelper.DiamonMarkersEven,
-               UmadP2ForsakenRinonAiHelper.SouthFlexReorder).Run(state, world);
+               UmadP2ForsakenRinonAiHelper.SouthFlexReorder,
+               UmadP2ForsakenPlaybook.SouthFlex).Run(state, world);
 }
