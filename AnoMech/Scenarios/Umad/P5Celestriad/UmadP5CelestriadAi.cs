@@ -37,9 +37,11 @@ public sealed class UmadP5CelestriadAi : IScenarioAi<UmadP5CelestriadState>
         for (var set = 0; set < 3; set++)
         {
             var s = set;
-            world.Events.Add(CelestriadTiming.TowerStart[s] + MoveDelay, () => PlaceSet(world, state, s, half: 0f));
+            world.Events.Add(CelestriadTiming.TowerStart[s] + MoveDelay,
+                () => PlaceSet(world, state, s, half: 0f, UmadP5CelestriadPlaybook.Towers(state, s)));
             if (CelestriadTiming.CcAt[s] is { } cc)
-                world.Events.Add(cc + ChoiceReadDelay, () => PlaceSet(world, state, s, HalfFor(state, s)));
+                world.Events.Add(cc + ChoiceReadDelay,
+                    () => PlaceSet(world, state, s, HalfFor(state, s), UmadP5CelestriadPlaybook.CatastrophicChoiceHalf(state, s)));
         }
     }
 
@@ -48,9 +50,8 @@ public sealed class UmadP5CelestriadAi : IScenarioAi<UmadP5CelestriadState>
             ? (choice == CatastrophicChoice.Aero ? -1f : 1f)
             : 0f;
 
-    private static void PlaceSet(SimWorld world, UmadP5CelestriadState state, int set, float half)
+    private static void PlaceSet(SimWorld world, UmadP5CelestriadState state, int set, float half, StratCue cue)
     {
-        var party = world.Party;
         var freeRoles = state.PlayerDebuffElement.Where(kv => kv.Value is null).Select(kv => kv.Key).ToArray();
 
         // Grouped by element to recover the doubled-pair ordering State guarantees (ascending
@@ -68,22 +69,23 @@ public sealed class UmadP5CelestriadAi : IScenarioAi<UmadP5CelestriadState>
 
             var towers = group.ToArray();
             for (var i = 0; i < towers.Length; i++)
-                PlaceAtTower(party, towers[i], i == 0 ? debuffedRoles : freeRoles, half);
+                PlaceAtTower(world, towers[i], i == 0 ? debuffedRoles : freeRoles, half, cue);
         }
     }
 
-    private static void PlaceAtTower(SimParty party, CelestriadTower tower, IReadOnlyList<PartyRole> roles, float half)
+    private static void PlaceAtTower(SimWorld world, CelestriadTower tower, IReadOnlyList<PartyRole> roles, float half, StratCue cue)
     {
         var inward = Vector3.Normalize(-tower.Position);
         var lateral = new Vector3(-inward.Z, 0f, inward.X);
 
         for (var i = 0; i < roles.Count; i++)
         {
-            var bot = party.Get(roles[i]);
+            var bot = world.Party.Get(roles[i]);
             if (bot is null || !bot.IsAlive()) continue;
 
             var side = i == 0 ? -1f : 1f;
             var dest = tower.Position + lateral * (side * PairOffset) + inward * (half * HalfOffset);
+            world.Strat.Note(roles[i], new Vector2(dest.X, dest.Z), cue);
             bot.MoveTo(dest, MoveSpeed);
         }
     }

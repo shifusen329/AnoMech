@@ -102,7 +102,7 @@ public sealed class UmadP5ExaflaresAi : IScenarioAi<UmadP5ExaflaresState>
 
         // Spread phase: opens after wave 6's last snapshot (~22.65), closes at the spread snapshot
         // (25.09); relaxation runs across that window from the scenario's Tick.
-        timeline.Add(22.75f, () => { spreadPhase = true; innerRing = ResolveInnerRing(); Array.Clear(relaxMoving); });
+        timeline.Add(22.75f, () => { spreadPhase = true; innerRing = ResolveInnerRing(); Array.Clear(relaxMoving); NoteSpreadSpots(); });
         timeline.Add(25.09f, () => spreadPhase = false);
         state.SpreadTick = RelaxStep;
     }
@@ -131,6 +131,7 @@ public sealed class UmadP5ExaflaresAi : IScenarioAi<UmadP5ExaflaresState>
         bool leftWave = (n % 2) == 0;
         var lanes = UsableBands(n);                                  // safe crit lanes (central + maybe outer)
         if (lanes.Count == 0) return;
+        var cue = UmadP5ExaflaresPlaybook.Wave(state, n);
 
         // Addresses all 8 slots uniformly, including whichever holds the real player --
         // PlayerMovement.MoveTo is the one place that decides whether that's safe (no-op
@@ -145,7 +146,7 @@ public sealed class UmadP5ExaflaresAi : IScenarioAi<UmadP5ExaflaresState>
             bool inner = IsInnerRole((PartyRole)slot);
             var (crit, perp) = ToCritPerp(bot.Position, leftWave);
             float want = (inner ? 0f : crit) + Jitter();            // melee hug the boss; others hold their spot
-            picks.Add(new Pick(bot, PlaceInLanes(lanes, want), perp, inner));
+            picks.Add(new Pick(bot, (PartyRole)slot, PlaceInLanes(lanes, want), perp, inner));
         }
 
         DeClump(picks, lanes);
@@ -154,9 +155,15 @@ public sealed class UmadP5ExaflaresAi : IScenarioAi<UmadP5ExaflaresState>
         {
             var dest = FromCritPerp(pk.Crit, pk.Perp, leftWave);
             float delay = budget - FlatDist(pk.Bot.Position, dest) / DodgeSpeed; // leave late enough to arrive on time
-            if (delay > 0f) timeline.Add(delay, () => pk.Bot.MoveTo(dest, DodgeSpeed));
-            else pk.Bot.MoveTo(dest, DodgeSpeed);                   // farther than the budget allows: best effort
+            if (delay > 0f) timeline.Add(delay, () => DodgeTo(pk, dest, cue));
+            else DodgeTo(pk, dest, cue);                            // farther than the budget allows: best effort
         }
+    }
+
+    private void DodgeTo(Pick pk, Vector3 dest, StratCue cue)
+    {
+        world.Strat.Note(pk.Role, new Vector2(dest.X, dest.Z), cue);
+        pk.Bot.MoveTo(dest, DodgeSpeed);
     }
 
     // Opening fan-out: push each doppel out of the tight spawn ring into the melee annulus before the
@@ -182,6 +189,7 @@ public sealed class UmadP5ExaflaresAi : IScenarioAi<UmadP5ExaflaresState>
                 float angle = baseAngle + ((float)world.Rng.NextDouble() - 0.5f) * FanAngleJitter;
                 float radius = inner + (float)world.Rng.NextDouble() * (outer - inner);
                 var target = new Vector3(MathF.Sin(angle) * radius, 0f, MathF.Cos(angle) * radius);
+                world.Strat.Note((PartyRole)slot, new Vector2(target.X, target.Z), UmadP5ExaflaresPlaybook.FanOut);
                 bot.MoveTo(target, FanSpeed);
             }
         });
@@ -256,10 +264,11 @@ public sealed class UmadP5ExaflaresAi : IScenarioAi<UmadP5ExaflaresState>
     private sealed class Pick
     {
         public readonly SimCharacter Bot;
+        public readonly PartyRole Role;
         public float Crit;
         public readonly float Perp;
         public readonly bool Inner;
-        public Pick(SimCharacter bot, float crit, float perp, bool inner) { Bot = bot; Crit = crit; Perp = perp; Inner = inner; }
+        public Pick(SimCharacter bot, PartyRole role, float crit, float perp, bool inner) { Bot = bot; Role = role; Crit = crit; Perp = perp; Inner = inner; }
     }
 
     private static float FlatDist(Vector3 a, Vector3 b) =>
@@ -325,6 +334,24 @@ public sealed class UmadP5ExaflaresAi : IScenarioAi<UmadP5ExaflaresState>
                 relaxMoving[slot] = false;
             }
         }
+    }
+
+    private void NoteSpreadSpots()
+    {
+        for (int slot = 0; slot < 8; slot++)
+        {
+            var member = world.Party.Get(slot);
+            if (member is null || !member.IsAlive()) continue;
+            var spot = SpreadRingSpot(slot, new Vector2(member.Position.X, member.Position.Z));
+            world.Strat.Note((PartyRole)slot, spot, UmadP5ExaflaresPlaybook.Spread);
+        }
+    }
+
+    private Vector2 SpreadRingSpot(int slot, Vector2 p)
+    {
+        float r = p.Length();
+        var rdir = r > 1e-3f ? p / r : Spoke(slot);
+        return IsInnerRole((PartyRole)slot) ? rdir * Math.Clamp(r, NoGoRadius, innerRing) : rdir * OuterRing;
     }
 
     // Inner ring = max-melee around the boss (fixed at arena centre): live hitbox + 3, floored.
