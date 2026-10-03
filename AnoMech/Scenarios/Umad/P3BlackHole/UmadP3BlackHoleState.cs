@@ -104,7 +104,7 @@ public sealed class UmadP3BlackHoleState
     // Final-slot (post-swap) line number and Accretion, mirroring the per-index status
     // assignment in UmadP3BlackHoleScenario.Run_OtherDebuffs. Slots 0-3 hold the supports
     // (slot 3 never a tank), slots 4-7 the DPS; Swap(3,7) trades the two Accretion holders.
-    private static readonly int[] SlotLine = [1, 2, 3, 1, 1, 2, 3, 2];          // 1/2/3 = First/Second/Third in line
+    internal static readonly int[] SlotLine = [1, 2, 3, 1, 1, 2, 3, 2];          // 1/2/3 = First/Second/Third in line
     private static readonly bool[] SlotAccretion = [false, false, false, true, false, false, false, true];
 
     // Every seat's line/Accretion request solved together against the fight's own slot layout:

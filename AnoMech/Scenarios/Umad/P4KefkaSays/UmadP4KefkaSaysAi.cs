@@ -49,23 +49,23 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
         var ai = new AiManager(world);
 
         // Gather near centre before the first Mystery Magic resolves (~16s).
-        ai.Move(2f, () => Stack(new Vector2(0f, 0f)), jitter: 2f, arrivalTime: 9f);
-        ai.Move(11.6f, () => Stack(SafeSpot(state.Mystery[0])), jitter: 0.8f, arrivalTime: 15.4f);
-        ai.Move(26.4f, () => Stack(SafeSpot(state.Mystery[1])), jitter: 0.8f, arrivalTime: 30.3f);
-        ai.Move(41.5f, () => Stack(SafeSpot(state.Mystery[2])), jitter: 0.8f, arrivalTime: 45.4f);
+        ai.Move(2f, () => Stack(new Vector2(0f, 0f)), jitter: 2f, arrivalTime: 9f, cue: UmadP4KefkaSaysPlaybook.Gather);
+        ai.Move(11.6f, () => Stack(SafeSpot(state.Mystery[0])), jitter: 0.8f, arrivalTime: 15.4f, cue: UmadP4KefkaSaysPlaybook.MysteryMagic(state, 0));
+        ai.Move(26.4f, () => Stack(SafeSpot(state.Mystery[1])), jitter: 0.8f, arrivalTime: 30.3f, cue: UmadP4KefkaSaysPlaybook.MysteryMagic(state, 1));
+        ai.Move(41.5f, () => Stack(SafeSpot(state.Mystery[2])), jitter: 0.8f, arrivalTime: 45.4f, cue: UmadP4KefkaSaysPlaybook.MysteryMagic(state, 2));
 
-        ai.Move(57.6f, () => FloodOfNaught(state), jitter: 2.5f, arrivalTime: 62.2f);
-        ai.Move(63, () => ResolveElements(state.ElemRoles[0], state.ElemTrue[0]), arrivalTime: 70.5f);
+        ai.Move(57.6f, () => FloodOfNaught(state), jitter: 2.5f, arrivalTime: 62.2f, cue: UmadP4KefkaSaysPlaybook.FloodOfNaught(state));
+        ai.Move(63, () => ResolveElements(state.ElemRoles[0], state.ElemTrue[0]), arrivalTime: 70.5f, cue: UmadP4KefkaSaysPlaybook.Elements(state, 0));
         ScheduleWave1Gaze(ai, state, world);
 
         // Stray Flames: bait the fire stacked in the middle (scenario locks each bait
         // at ~87.3s), then react to the resolved shape, which lands ~92.4s.
-        ai.Move(81f, () => Stack(new Vector2(0f, 0f)), jitter: 1f, arrivalTime: 86.5f);
-        ai.Move(88f, () => StrayFlames(state.InfernoMystery), jitter: 0.5f, arrivalTime: 92f);
+        ai.Move(81f, () => Stack(new Vector2(0f, 0f)), jitter: 1f, arrivalTime: 86.5f, cue: UmadP4KefkaSaysPlaybook.FireBait);
+        ai.Move(88f, () => StrayFlames(state.InfernoMystery), jitter: 0.5f, arrivalTime: 92f, cue: UmadP4KefkaSaysPlaybook.StrayFlames(state));
 
         // Elemental wave 2 (~96.5s) folded into Mystery[3]'s Blizzard-safe wedges (~97.4s);
         // arrival at 96.0 also clears the Acceleration Bomb check at 96.28.
-        ai.Move(92.5f, () => ResolveElementsUnderBlizzard(state.ElemRoles[1], state.ElemTrue[1], state.Mystery[3]), arrivalTime: 96.0f);
+        ai.Move(92.5f, () => ResolveElementsUnderBlizzard(state.ElemRoles[1], state.ElemTrue[1], state.Mystery[3]), arrivalTime: 96.0f, cue: UmadP4KefkaSaysPlaybook.Elements(state, 1));
 
         // Wave2 Death Shriek (~104.4s): a pure positioning+facing solve in the middle,
         // nothing else live. Position the pair, then nudge to set the gaze facing.
@@ -74,8 +74,8 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
         // Water bait (~109.98 lock) + last Mystery Magic (Mystery[4], ~115.6s): bait
         // Stray Spray stacked in the middle, then one final move that clears the water
         // (in for the real Donut / out for the fake Chariot) and solves Mystery[4].
-        ai.Move(106f, () => Stack(new Vector2(0f, 0f)), jitter: 0.8f, arrivalTime: 109.5f);
-        ai.Move(111f, () => StraySprayAndMystery(state.TsunamiMystery, state.Mystery[4]), jitter: 0.3f, arrivalTime: 114.5f);
+        ai.Move(106f, () => Stack(new Vector2(0f, 0f)), jitter: 0.8f, arrivalTime: 109.5f, cue: UmadP4KefkaSaysPlaybook.WaterBait);
+        ai.Move(111f, () => StraySprayAndMystery(state.TsunamiMystery, state.Mystery[4]), jitter: 0.3f, arrivalTime: 114.5f, cue: UmadP4KefkaSaysPlaybook.StraySprayAndManaRelease(state));
 
         ScheduleAccelerationBombDodge(state, world);
     }
@@ -110,7 +110,9 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
                 return;
             }
             DiagnosticLog.Info($"[AccelerationBombDodge] wiggle firing at t={resolveTime - 0.6f:F2} (resolve at {resolveTime:F2}) from ({member.Position.X:F1},{member.Position.Z:F1}).");
-            member.MoveTo(member.Position + new Vector3(0.3f, 0f, 0f), speed: 0.4f);
+            var wiggle = member.Position + new Vector3(0.3f, 0f, 0f);
+            world.Strat.Note(role, new Vector2(wiggle.X, wiggle.Z), UmadP4KefkaSaysPlaybook.AccelerationBombFake, deadline: null);
+            member.MoveTo(wiggle, speed: 0.4f);
         });
     }
 
@@ -118,24 +120,24 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
     {
         if (gazeLayout == GazeLayout.SupportsNorthDpsSouth)
         {
-            ai.Move(72, () => SupportsNorthAlongThunderEdge(state.Wave1, state.Mystery[3], 0f), jitter: 0, arrivalTime: 76f);
-            ai.Move(78.5f, () => SupportsNorthAlongThunderEdge(state.Wave1, state.Mystery[3], GazeFacingStep(state.Wave1True)), jitter: 0);
+            ai.Move(72, () => SupportsNorthAlongThunderEdge(state.Wave1, state.Mystery[3], 0f), jitter: 0, arrivalTime: 76f, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 0, facing: false));
+            ai.Move(78.5f, () => SupportsNorthAlongThunderEdge(state.Wave1, state.Mystery[3], GazeFacingStep(state.Wave1True)), jitter: 0, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 0, facing: true));
             return;
         }
-        ai.Move(72, () => ResolveGaze(state.Wave1, state.Mystery[3]), jitter: 0, arrivalTime: 76f);
-        ai.Move(78.5f, () => ResolveGazeLook(world, state.Mystery[3], state.Wave1True), jitter: 0);
+        ai.Move(72, () => ResolveGaze(state.Wave1, state.Mystery[3]), jitter: 0, arrivalTime: 76f, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 0, facing: false));
+        ai.Move(78.5f, () => ResolveGazeLook(world, state.Mystery[3], state.Wave1True), jitter: 0, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 0, facing: true));
     }
 
     private void ScheduleWave2Gaze(AiManager ai, UmadP4KefkaSaysState state, SimWorld world)
     {
         if (gazeLayout == GazeLayout.SupportsNorthDpsSouth)
         {
-            ai.Move(98f, () => SupportsNorthAroundBoss(state.Wave2, 0f), jitter: 0, arrivalTime: 101.5f);
-            ai.Move(102.5f, () => SupportsNorthAroundBoss(state.Wave2, GazeFacingStep(state.Wave2True)), jitter: 0);
+            ai.Move(98f, () => SupportsNorthAroundBoss(state.Wave2, 0f), jitter: 0, arrivalTime: 101.5f, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 1, facing: false));
+            ai.Move(102.5f, () => SupportsNorthAroundBoss(state.Wave2, GazeFacingStep(state.Wave2True)), jitter: 0, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 1, facing: true));
             return;
         }
-        ai.Move(98f, () => ResolveGazeCentre(state.Wave2), jitter: 0, arrivalTime: 101.5f);
-        ai.Move(102.5f, () => ResolveGazeCentreLook(world, state.Wave2True), jitter: 0);
+        ai.Move(98f, () => ResolveGazeCentre(state.Wave2), jitter: 0, arrivalTime: 101.5f, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 1, facing: false));
+        ai.Move(102.5f, () => ResolveGazeCentreLook(world, state.Wave2True), jitter: 0, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 1, facing: true));
     }
 
     private const float ThunderEdgeInset = 1.25f;

@@ -21,19 +21,19 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         world = worldParam;
         var ai = new AiManager(world);
 
-        ai.Move(0.5f, StackAtBosses);
-        ai.Move(4.5f, BaitOut, arrivalTime: 7.5f);
-        ai.Move(8.3f, TanksIntoStack, arrivalTime: 12.0f);
-        ai.Move(8.4f, BaitBack, arrivalTime: 12.6f);
+        ai.Move(0.5f, StackAtBosses, cue: UmadP3LimitCutPlaybook.Stack(state));
+        ai.Move(4.5f, BaitOut, arrivalTime: 7.5f, cue: UmadP3LimitCutPlaybook.UmbraBait(state));
+        ai.Move(8.3f, TanksIntoStack, arrivalTime: 12.0f, cue: UmadP3LimitCutPlaybook.TanksIntoStack);
+        ai.Move(8.4f, BaitBack, arrivalTime: 12.6f, cue: UmadP3LimitCutPlaybook.BaitBack(state));
         world.Events.Add(15.3f, FaceForVacuumWave);
-        ai.Move(17.5f, StackForCyclones, arrivalTime: 19.6f);
-        ai.Move(20.6f, ChargeSpots, arrivalTime: 30.2f);
-        ai.Move(32.7f, ClearForThunder, arrivalTime: 37.5f);
+        ai.Move(17.5f, StackForCyclones, arrivalTime: 19.6f, cue: UmadP3LimitCutPlaybook.Cyclones);
+        ai.Move(20.6f, ChargeSpots, arrivalTime: 30.2f, cue: UmadP3LimitCutPlaybook.Charges(state));
+        ai.Move(32.7f, ClearForThunder, arrivalTime: 37.5f, cue: UmadP3LimitCutPlaybook.ClearForThunder(state));
         world.Events.Add(33.6f, FirstTankOntoExdeath);
         world.Events.Add(37.5f, InvulnPlannedTank);
-        ai.Move(38.9f, SwapThunderTanks, arrivalTime: 41.2f);
+        ai.Move(38.9f, SwapThunderTanks, arrivalTime: 41.2f, cue: UmadP3LimitCutPlaybook.ThunderSwap(state));
         ScheduleThunderClearance(36.5f, 38.9f, 42.2f);
-        ai.Move(47.0f, StackAtBosses);
+        ai.Move(47.0f, StackAtBosses, cue: UmadP3LimitCutPlaybook.Uptime(state));
     }
 
     private (PartyRole First, PartyRole? Second) ThunderRoles => ThunderIIIPlanning.Roles(state.ThunderPlan);
@@ -51,7 +51,11 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
     private void FirstTankOntoExdeath()
     {
         if (state.Objects.Exdeath is not { } exdeath) return;
-        if (world.Party.Get(ThunderRoles.First) is { } first && first.IsAlive()) first.Follow(exdeath);
+        if (world.Party.Get(ThunderRoles.First) is { } first && first.IsAlive())
+        {
+            world.Strat.Note(ThunderRoles.First, Flat(exdeath.Position), UmadP3LimitCutPlaybook.ThunderTank(state), deadline: null);
+            first.Follow(exdeath);
+        }
     }
 
     private void InvulnPlannedTank()
@@ -102,6 +106,7 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
                 var seatClearRadius = Geometry.ArenaRadius - 1f;
                 if (seat.LengthSquared() > seatClearRadius * seatClearRadius)
                     seat = seat.LengthSquared() > 1e-4f ? Vector2.Normalize(seat) * seatClearRadius : seat;
+                world.Strat.Note(secondRole, seat, UmadP3LimitCutPlaybook.ThunderClearance(first, secondRole), deadline: null);
                 secondMember.MoveTo(new Vector3(seat.X, 0f, seat.Y));
             }
         }
@@ -120,6 +125,7 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
             var clearRadius = Geometry.ArenaRadius - 1f;
             if (target.LengthSquared() > clearRadius * clearRadius)
                 target = target.LengthSquared() > 1e-4f ? Vector2.Normalize(target) * clearRadius : target;
+            world.Strat.Note(role, target, UmadP3LimitCutPlaybook.ThunderClearance(first, second), deadline: null);
             member.MoveTo(new Vector3(target.X, 0f, target.Y));
         }
     }
@@ -185,10 +191,12 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
     private void FaceForVacuumWave()
     {
         if (state.Objects.Exdeath is not { } exdeath) return;
+        var cue = UmadP3LimitCutPlaybook.VacuumWave(state);
         for (var slot = 0; slot < 8; slot++)
         {
             var member = world.Party.Get(slot);
             if (member is null || !member.IsAlive() || member is not ISimPartyMember pm) continue;
+            world.Strat.Note(pm.Role, StackSpot(slot), cue, deadline: null);
             if (member is SimPlayer && !DebugBotControl.Enabled) continue;
             var away = member.Position - exdeath.Position;
             member.Face(state.Winds[pm.Role] == Wind.Headwind ? member.Position + away : exdeath.Position);
