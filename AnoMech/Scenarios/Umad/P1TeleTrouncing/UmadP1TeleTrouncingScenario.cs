@@ -37,8 +37,10 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
     private SimParty party = null!;
     private UmadP1TeleTrouncingState state = null!;
     private SimEnemy? kefka;
-    private SimEnemy? confusedStatue;
-    private SimEnemy? sleepStatue;
+    // One Graven Image per tether, four stacked at each side's attach point: a character draws
+    // only the tether in its own slot 0, so four from one actor left just the last one showing.
+    private readonly SimEnemy?[] confusedStatues = new SimEnemy?[4];
+    private readonly SimEnemy?[] sleepStatues = new SimEnemy?[4];
     // The gazes are cast from the statues' eye points, not the tether sources 14.5y / 9y away.
     private SimEnemy? gazeCasterInverted;
     private SimEnemy? gazeCasterNormal;
@@ -193,8 +195,11 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
             var dps = party.Get(state.ConfettiStackDps);
             dps?.AddStatus(Constants.StatusId.DoubleTroubleTrap, 22.69f);
 
-            confusedStatue = SpawnGravenImage(ConfusedStatuePos);
-            sleepStatue = SpawnGravenImage(SleepStatuePos);
+            for (var i = 0; i < confusedStatues.Length; i++)
+            {
+                confusedStatues[i] = SpawnGravenImage(ConfusedStatuePos);
+                sleepStatues[i] = SpawnGravenImage(SleepStatuePos);
+            }
             gazeCasterInverted = SpawnGravenImage(GazeStatueInvertedAnimPos);
             gazeCasterNormal = SpawnGravenImage(GazeStatueNormalAnimPos);
 
@@ -1052,8 +1057,11 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
     // A Graven Image whose packet spawn the engine dropped is replaced by the Lalafell doppel.
     private void TickGravenImageFallback()
     {
-        ReplaceIfDropped(ref confusedStatue, ConfusedStatuePos);
-        ReplaceIfDropped(ref sleepStatue, SleepStatuePos);
+        for (var i = 0; i < confusedStatues.Length; i++)
+        {
+            ReplaceIfDropped(ref confusedStatues[i], ConfusedStatuePos);
+            ReplaceIfDropped(ref sleepStatues[i], SleepStatuePos);
+        }
         ReplaceIfDropped(ref gazeCasterInverted, GazeStatueInvertedAnimPos);
         ReplaceIfDropped(ref gazeCasterNormal, GazeStatueNormalAnimPos);
     }
@@ -1108,12 +1116,17 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
         }
     }
 
+    // A whole role category goes to each side, so a role's place within its category (PartyRole's
+    // 0-3 / 4-7 split) picks one of that side's four statues.
+    private SimEnemy? StatueFor(PartyRole role, bool confused)
+        => (confused ? confusedStatues : sleepStatues)[(int)role % 4];
+
     private void TetherStatues()
     {
         foreach (var role in state.Debuffs.Keys)
         {
             var confused = UmadP1TeleTrouncingState.IsDps(role) == state.DpsGetsConfused;
-            var anchor = confused ? confusedStatue : sleepStatue;
+            var anchor = StatueFor(role, confused);
             var member = party.Get(role);
             if (anchor != null && member != null)
                 world.Tether(anchor, member, Constants.TetherId.GravenImage, duration: 8.99f);
@@ -1141,20 +1154,23 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
         {
             var confused = UmadP1TeleTrouncingState.IsDps(role) == state.DpsGetsConfused;
             var member = party.Get(role);
+            var statue = StatueFor(role, confused);
 
             // Cast before AddVfx: the real ability resolves as one packet, so the hit-react lands
             // with the vfx. The Cast exists for the per-target animation.
-            if (confused && member != null) confusedStatue?.Cast(Constants.ActionId.IndulgentWill, castSeconds: 0f, targetId: member.GameObjectId, animationLock: Constants.AnimationLock.Helper);
-            if (!confused && member != null) sleepStatue?.Cast(Constants.ActionId.IdyllicWill, castSeconds: 0f, targetId: member.GameObjectId, animationLock: Constants.AnimationLock.Helper);
+            if (member != null)
+                statue?.Cast(confused ? Constants.ActionId.IndulgentWill : Constants.ActionId.IdyllicWill, castSeconds: 0f,
+                    targetId: member.GameObjectId, animationLock: Constants.AnimationLock.Helper);
 
-            // Caster-side on the statue once, target-side on every hit player.
+            // Caster-side once per side (its four statues share one spot), target-side on every
+            // hit player.
             if (confused)
             {
                 if (!confusedStatuePlayed)
                 {
                     confusedStatuePlayed = true;
-                    confusedStatue?.AddVfx(Constants.VfxPath.IndulgentWillCasterShoot, persistent: false);
-                    confusedStatue?.AddVfx(Constants.VfxPath.IndulgentWillCasterBurst, persistent: false);
+                    statue?.AddVfx(Constants.VfxPath.IndulgentWillCasterShoot, persistent: false);
+                    statue?.AddVfx(Constants.VfxPath.IndulgentWillCasterBurst, persistent: false);
                 }
                 member?.AddVfx(Constants.VfxPath.IndulgentWillTarget, persistent: false);
             }
@@ -1163,7 +1179,7 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
                 if (!sleepStatuePlayed)
                 {
                     sleepStatuePlayed = true;
-                    sleepStatue?.AddVfx(Constants.VfxPath.IdyllicWillCaster, persistent: false);
+                    statue?.AddVfx(Constants.VfxPath.IdyllicWillCaster, persistent: false);
                 }
                 member?.AddVfx(Constants.VfxPath.IdyllicWillTarget, persistent: false);
                 // Idyllic Will's hit carries the 0.96s Magic Vulnerability Up (Indulgent's doesn't).
@@ -1214,7 +1230,7 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
         {
             var member = party.Get(role);
             var firstSource = kefka?.GameObjectId ?? default;
-            var secondSource = confusedStatue?.GameObjectId ?? default;
+            var secondSource = confusedStatues[0]?.GameObjectId ?? default;
             if (first == second)
             {
                 member?.AddStatus(PrimaryStatusId(first), 7.000f, sourceObject: firstSource);
@@ -1397,8 +1413,7 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
             kefka?.SetTargetable(false);
             kefka?.SetVisible(false);
         }
-        confusedStatue?.SetVisible(false);
-        sleepStatue?.SetVisible(false);
+        foreach (var statue in confusedStatues.Concat(sleepStatues)) statue?.SetVisible(false);
         // The EObj slots are released a beat later by DespawnGazeProps so the animation plays.
         Beat(gazeStatueNormal, EObjAnimDespawn);
         Beat(gazeStatueInverted, EObjAnimDespawn);
