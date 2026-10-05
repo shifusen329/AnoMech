@@ -70,6 +70,14 @@ public class MitPracticeTests
     }
 
     [Test]
+    public void APressPlannedBeforeTheStartIsAppliedForThePlayer()
+    {
+        world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.SGE, MitActionId.Holos, -6.5f, "Big Hit", [5f])));
+        Step(0.1f);
+        Assert.That(world.Party.Player!.HasStatus(3003), "the player's Sage had no chance to press Holos");
+    }
+
+    [Test]
     public void BeginPutsEveryoneOnTheirClassMaxHp()
     {
         world.MitPractice.Begin(Data());

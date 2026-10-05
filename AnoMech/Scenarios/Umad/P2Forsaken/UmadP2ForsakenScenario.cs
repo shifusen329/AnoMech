@@ -20,6 +20,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -33,6 +34,7 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     public string Name => "Forsaken";
     public IPhase Phase => UmadZone.P2;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
 
     public void DrawSettings() => settingsWindow.Draw();
     public object SettingsOverrides => settingsWindow.Overrides;
@@ -57,6 +59,10 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     private SimWorld world = null!;
     private SimParty party = null!;
     private DamageSolver damage = null!;
+    private SimEnemy? kefka;
+
+    private static string EndHit(EndAttack end)
+        => end == EndAttack.PastsEnd ? UmadP2ForsakenMitigation.PastsEnd : UmadP2ForsakenMitigation.FuturesEnd;
 
     // The current run's randomized per-run assignments, exposed so
     // MultiplayerManager can read them after a host Start and broadcast them --
@@ -82,7 +88,9 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
             ((IScenarioAi<UmadP2ForsakenState>)AiStrats[idx]).Run(state, world);
         damage = new DamageSolver(party);
         damage.SetStatuses(DamageType.Magic, StatusId.MagicVulnerabilityUp);
-        
+        world.MitPractice.Begin(UmadP2ForsakenMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
+
         
         Run_Kefka_40004FD3();
         Run_Kefka_40004FAC();
@@ -149,6 +157,8 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     private void Run_Kefka_40004FD3()
     {
         SimEnemy? kefka_40004FD3 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.GodKefka, NameId: BNpcNameId.Kefka, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, IsVisible: true, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 0.000f)));
+        kefka = kefka_40004FD3;
+        world.Events.Add(9.46f, () => world.MitPractice.HitParty(UmadP2ForsakenMitigation.Forsaken));
         world.Events.Add(1.0f, () => kefka_40004FD3?.Face(party.Get(PartyRole.OffTank)));
         world.Events.Add(1.30f, () => kefka_40004FD3?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.OffTank)?.GameObjectId));
         world.Events.Add(2.46f, () => kefka_40004FD3?.Cast(ActionId.Forsaken));
@@ -187,7 +197,8 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
             EndAttackTargets = party.Find.ClosestN(kefka_40004FD3.Position, 4);
             var target = EndAttackTargets.Count > 0 ? EndAttackTargets[0] : null;
             kefka_40004FD3?.Cast(end.KefkaResolveAction, castSeconds: 0f, targetId: target?.GameObjectId);
-            damage.Resolve(target, end.KefkaResolveAction, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)]);
+            var hit = damage.Resolve(target, end.KefkaResolveAction, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)]);
+            world.MitPractice.Hit(hit, EndHit(end));
         });
         world.Events.Add(start + 12.8f, () => kefka_40004FD3?.Face(party.Player));
         world.Events.Add(start + 12.9f, () => kefka_40004FD3?.Cast(end.AllThingsEnding, targetLocation: party.Player!.Position));
@@ -282,15 +293,18 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
             {
                 case LockonId.ForsakenStack:
                     towerHelper[index]?.Cast(ActionId.Spelldriver);
-                    damage.Resolve(towerHelper[index], ActionId.Spelldriver, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: 3);
+                    world.MitPractice.Hit(damage.Resolve(towerHelper[index], ActionId.Spelldriver, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: 3),
+                        UmadP2ForsakenMitigation.Spelldriver);
                     break;
                 case LockonId.ForsakenChariot:
                     towerHelper[index]?.Cast(ActionId.Spellscatter);
-                    damage.Resolve(towerHelper[index], ActionId.Spellscatter, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)]);
+                    world.MitPractice.Hit(damage.Resolve(towerHelper[index], ActionId.Spellscatter, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)]),
+                        UmadP2ForsakenMitigation.Spellscatter);
                     break;
                 case LockonId.ForsakenCone:
                     towerHelper[index]?.Cast(ActionId.Spellwave);
-                    damage.Resolve(towerHelper[index], ActionId.Spellwave, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], size: MathF.PI / 4, excludeTargets: [character]);
+                    world.MitPractice.Hit(damage.Resolve(towerHelper[index], ActionId.Spellwave, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], size: MathF.PI / 4, excludeTargets: [character]),
+                        UmadP2ForsakenMitigation.Spellwave);
                     break;
             }
         });
@@ -329,8 +343,8 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
         {
             var target = EndAttackTargets.Count > index + 1 ? EndAttackTargets[index + 1] : null;
             enemy?.Cast(end.CloneResolveAction, castSeconds: 0f, targetId: target?.GameObjectId);
-            damage.Resolve(target, end.CloneResolveAction, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)]);
-            
+            var hit = damage.Resolve(target, end.CloneResolveAction, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)]);
+            world.MitPractice.Hit(hit, EndHit(end));
         });
         world.Events.Add(start + 6f, () => enemy?.Face(party.Player));
         world.Events.Add(start + 6.1f, () => enemy?.Cast(end.AllThingsEnding, targetLocation: party.Player!.Position));

@@ -17,9 +17,8 @@ public static class MitGrader
     // kefkasim's rules, button by button: the latest press after that button's previous row closed
     // and no later than this row's close is the one judged (early if before the row opened). With
     // none, the first unclaimed press after the close but before the last cover and the next row
-    // opening is late. A row still open when an unfinished run ended was not reached.
-    public static IReadOnlyList<MitGrade> Grade(IReadOnlyList<ResolvedPress> plan, PartyRole slot, IReadOnlyList<MitPress> presses,
-        float cutoff, bool complete)
+    // opening is late. A row still open when the run ended (at `cutoff`) was not reached.
+    public static IReadOnlyList<MitGrade> Grade(IReadOnlyList<ResolvedPress> plan, PartyRole slot, IReadOnlyList<MitPress> presses, float cutoff)
     {
         var grades = new List<MitGrade>();
         var claimed = new HashSet<int>();
@@ -41,7 +40,7 @@ public static class MitGrader
                     grades.Add(new(row, counting.Press.At < row.Open - Epsilon ? MitGradeKind.Early : MitGradeKind.OnTime, counting.Press.At));
                     continue;
                 }
-                if (!complete && row.Close > cutoff)
+                if (row.Close > cutoff)
                 {
                     grades.Add(new(row, MitGradeKind.NotReached, null));
                     continue;

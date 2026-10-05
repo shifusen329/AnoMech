@@ -58,7 +58,12 @@ public sealed class MitPractice
         clock = scenarioClock ?? (() => world.Events.Elapsed);
         var jobs = world.Party.AllMembers().OfType<ISimPartyMember>().ToDictionary(m => m.Role, m => (JobId)m.ClassJob);
         plan = MitPlan.Resolve(planData.Entries, jobs);
-        pending.AddRange(plan.Where(p => world.Party.Get(p.Slot) is SimPartyNpc && planData.Entries[p.Entry].ActionId != MitPlanEntry.TankLb3)
+        pending.AddRange(plan.Where(p => world.Party.Get(p.Slot) switch
+                             {
+                                 SimPartyNpc => planData.Entries[p.Entry].ActionId != MitPlanEntry.TankLb3,
+                                 SimPlayer => p.IsPreStart,
+                                 _ => false,
+                             })
                              .OrderBy(p => p.At));
         hpMode = planData.Hits.Any(h => h.Raw != null);
         grading = Natives.UserActions.Enabled;
@@ -97,6 +102,14 @@ public sealed class MitPractice
 
     private void Press(ResolvedPress p, float now)
     {
+        // The player's press from before the scenario began: there was no chance to make it.
+        if (world.Party.Get(p.Slot) is SimPlayer player && p.IsPreStart)
+        {
+            JobActions.ClearStatuses(player, p.Action.ActionId);
+            JobActions.ApplyEffects(player, p.Action.ActionId, (ulong)player.GameObjectId, Random.Shared);
+            presses.Add(new MitPress(p.Slot, p.Action.ActionId, p.At));
+            return;
+        }
         if (world.Party.Get(p.Slot) is not SimPartyNpc bot || !bot.IsAlive()) return;
         var key = (p.Slot, p.Action.ActionId);
         if (p.Action.Recast > 0f && lastPress.TryGetValue(key, out var last) && now - last < p.Action.Recast - 0.01f)
@@ -185,17 +198,18 @@ public sealed class MitPractice
     {
         if (!IsActive) return;
         finished = true;
+        DiagnosticLog.Info($"[MitPractice] Finish ({end}) at {clock():F2}s: {presses.Count} presses recorded.");
         if (world.Party.Player is not { } player) return;
-        foreach (var line in Summary(player, end == MitRunEnd.Completed, clock()))
+        foreach (var line in Summary(player, clock()))
             Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[AnoMech] {line}" });
     }
 
-    private IReadOnlyList<string> Summary(SimPlayer player, bool complete, float now)
+    private IReadOnlyList<string> Summary(SimPlayer player, float now)
     {
         if (!grading) return ["Mitigation: your presses weren't graded. Turn on \"Resolve your own actions\" to grade them."];
         if (!plan.Any(p => p.Slot == player.Role && !p.IsPreStart))
             return [$"Mitigation: no planned presses for your {JobName((JobId)player.ClassJob)} in {player.Role.ShortLabel()}."];
-        return MitGrader.Summary(MitGrader.Grade(plan, player.Role, presses, now, complete), now);
+        return MitGrader.Summary(MitGrader.Grade(plan, player.Role, presses, now), now);
     }
 
     internal void Clear()

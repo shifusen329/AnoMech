@@ -18,7 +18,7 @@ public class MitGraderTests
     ], Sage);
 
     private static IReadOnlyList<MitGrade> Grade(params float[] presses)
-        => MitGrader.Grade(Plan(), Me, presses.Select(t => new MitPress(Me, MitActionId.Kerachole, t)).ToList(), 100f, complete: true);
+        => MitGrader.Grade(Plan(), Me, presses.Select(t => new MitPress(Me, MitActionId.Kerachole, t)).ToList(), 100f);
 
     [Test]
     public void APressInsideTheWindowIsOnTime()
@@ -31,7 +31,7 @@ public class MitGraderTests
     {
         // Hit 1's window opens at 20 - 15 + 0.3 = 5.3 at the latest, and its planned 18.
         var grades = MitGrader.Grade(MitPlan.Resolve([new(SheetColumn.SGE, MitActionId.Kerachole, 18f, "Hit", [20f, 32f])], Sage),
-            Me, [new(Me, MitActionId.Kerachole, 10f)], 100f, complete: true);
+            Me, [new(Me, MitActionId.Kerachole, 10f)], 100f);
         Assert.That(grades.Single().Kind, Is.EqualTo(MitGradeKind.Early));
     }
 
@@ -59,7 +59,7 @@ public class MitGraderTests
     [Test]
     public void ARowStillOpenWhenTheRunEndedIsNotReached()
     {
-        var grades = MitGrader.Grade(Plan(), Me, [new(Me, MitActionId.Kerachole, 18f)], cutoff: 40f, complete: false);
+        var grades = MitGrader.Grade(Plan(), Me, [new(Me, MitActionId.Kerachole, 18f)], cutoff: 40f);
         Assert.That(grades.Select(g => g.Kind), Is.EqualTo(new[] { MitGradeKind.OnTime, MitGradeKind.NotReached }));
     }
 
@@ -67,7 +67,7 @@ public class MitGraderTests
     public void AnAliasCountsForItsButton()
     {
         var plan = MitPlan.Resolve([new(SheetColumn.SGE, MitActionId.EukrasianPrognosisII, 10f, "Hit", [12f])], Sage);
-        var grades = MitGrader.Grade(plan, Me, [new(Me, MitActionId.EukrasianPrognosis, 10f)], 100f, complete: true);
+        var grades = MitGrader.Grade(plan, Me, [new(Me, MitActionId.EukrasianPrognosis, 10f)], 100f);
         Assert.That(grades.Single().Kind, Is.EqualTo(MitGradeKind.OnTime));
     }
 
@@ -76,21 +76,21 @@ public class MitGraderTests
     {
         var plan = Plan();
         var presses = new List<MitPress> { new(Me, MitActionId.Kerachole, 18f) };
-        var lines = MitGrader.Summary(MitGrader.Grade(plan, Me, presses, 100f, complete: true), 100f);
+        var lines = MitGrader.Summary(MitGrader.Grade(plan, Me, presses, 100f), 100f);
         Assert.That(lines, Is.EqualTo(new[]
         {
             "Mitigation: 1 of 2 planned presses on time (1 missed).",
             "Kerachole for Hit 2: not pressed (window 45.3–59.8s).",
         }));
 
-        var rdm = MitGrader.Summary(MitGrader.Grade(plan, PartyRole.CasterDps, [], 100f, complete: true), 100f);
+        var rdm = MitGrader.Summary(MitGrader.Grade(plan, PartyRole.CasterDps, [], 100f), 100f);
         Assert.That(rdm[1], Does.StartWith("Magick Barrier (Extras) for Hit 2: not pressed"));
     }
 
     [Test]
     public void TheSummaryNotesWhatTheRunDidntReach()
     {
-        var lines = MitGrader.Summary(MitGrader.Grade(Plan(), Me, [new(Me, MitActionId.Kerachole, 18f)], 40f, complete: false), 40f);
+        var lines = MitGrader.Summary(MitGrader.Grade(Plan(), Me, [new(Me, MitActionId.Kerachole, 18f)], 40f), 40f);
         Assert.That(lines.Single(), Is.EqualTo("Mitigation: 1 of 1 planned presses on time. (1 not reached: the run ended at 40.0s.)"));
     }
 }
