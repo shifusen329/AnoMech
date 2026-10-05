@@ -23,14 +23,22 @@ public sealed class StratTrail(EventScheduler events)
         => Record(new StratTarget(role, new Vector3(spot.X, 0f, spot.Y), events.Elapsed, deadline,
             cue?.Mechanic, cue?.Why(role), cue?.Source));
 
-    // The strat's latest word for `role` as of `time`. A move due later in the same frame isn't
-    // recorded yet when a death resolves, so it can't be picked up by mistake.
-    public StratTarget? LatestFor(PartyRole role, float time)
+    // The spot `role` was due at by `time`: the last one whose deadline had passed (one without a
+    // deadline is due as it's issued). Strats hand out the next spot before the current mechanic
+    // resolves, so the latest one issued is often for what comes next; it's returned only when
+    // nothing is due yet. A move due later in the same frame isn't recorded yet when a death
+    // resolves, so it can't be picked up by mistake.
+    public StratTarget? DueFor(PartyRole role, float time)
     {
+        StratTarget? upcoming = null;
         for (var i = targets.Count - 1; i >= 0; i--)
-            if (targets[i].Role == role && targets[i].IssuedAt <= time)
-                return targets[i];
-        return null;
+        {
+            var target = targets[i];
+            if (target.Role != role || target.IssuedAt > time) continue;
+            if ((target.Deadline ?? target.IssuedAt) <= time) return target;
+            upcoming ??= target;
+        }
+        return upcoming;
     }
 
     public void Clear() => targets.Clear();

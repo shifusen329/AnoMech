@@ -562,7 +562,7 @@ public sealed class Game : IDisposable
         var aoe = hostAoe;
         if (aoe == null && target is SimCharacter { LastAoe: { } hit } && MathF.Abs(hit.At - now) < SameMomentSeconds)
             aoe = hit.Query;
-        var strat = hostStrat ?? World.Strat.LatestFor(target.Role, now);
+        var strat = hostStrat ?? World.Strat.DueFor(target.Role, now);
         return DeathRecap.Build(target.Role, cause, (target as IPositioned)?.Position ?? Vector3.Zero, now, strat, aoe, World.Coordinates, progress);
     }
 
@@ -575,7 +575,7 @@ public sealed class Game : IDisposable
     {
         var now = Events.Elapsed;
         var aoe = World.Party.Get(role) is { LastAoe: { } hit } && MathF.Abs(hit.At - now) < SameMomentSeconds ? hit.Query : (AoeQuery?)null;
-        return (World.Strat.LatestFor(role, now), aoe, activeScenario?.RunProgress);
+        return (World.Strat.DueFor(role, now), aoe, activeScenario?.RunProgress);
     }
 
     // Closing the recap releases an auto-restart it was holding.
