@@ -219,15 +219,15 @@ public unsafe class MainWindow : Window, IDisposable
         }
         if (scenarioMistake && !_wasScenarioMistake)
         {
-            RequestCollapsed(false);
+            if (!HoldsCollapsed(died: scenarioFailed)) RequestCollapsed(false);
         }
         else if (scenarioFailed && !_wasScenarioFailed)
         {
-            RequestCollapsed(false);
+            if (!HoldsCollapsed(died: true)) RequestCollapsed(false);
         }
         else if (scenarioSucceeded && !_wasScenarioSucceeded)
         {
-            RequestCollapsed(false);
+            if (!HoldsCollapsed(died: false)) RequestCollapsed(false);
         }
         else if (!scenarioActive && _wasScenarioActive)
         {
@@ -265,6 +265,17 @@ public unsafe class MainWindow : Window, IDisposable
         _wasScenarioFailed = scenarioFailed;
         _wasScenarioSucceeded = scenarioSucceeded;
         _wasInInstance = inInstance;
+    }
+
+    // A collapsed window stays collapsed through an outcome auto-restart will rerun, rather than
+    // opening over the arena every run; one it won't rerun opens so Start is in reach.
+    private bool HoldsCollapsed(bool died)
+    {
+        var game = plugin.Game;
+        if (!game.AutoRestart || !IsActuallyCollapsed) return false;
+        return died
+            ? game.AutoRestartOn != AnoMech.Core.Game.AutoRestartTrigger.AfterSuccess
+            : game.AutoRestartOn != AnoMech.Core.Game.AutoRestartTrigger.AfterDeath;
     }
 
     private void RequestCollapsed(bool collapsed)
@@ -576,6 +587,7 @@ public unsafe class MainWindow : Window, IDisposable
                     if (!inSession) DrawRoleSelector();
                     DrawStratSelector(mpGuest);
                     DrawWaymarkSelector();
+                    if (!mpGuest && !SoloSelected) DrawBotTimingSelector();
                     SettingsGrid.End();
                 }
                 ImGui.TreePop();
@@ -931,6 +943,26 @@ public unsafe class MainWindow : Window, IDisposable
             if (plugin.Game.World.Map.IsInInstance)
                 plugin.Game.World.PlaceWaymarks(presets[_selectedWaymark].Markers);
         }
+    }
+
+    // Indexed by !NaturalBotTiming.
+    private static readonly string[] BotTimingLabels = ["Natural", "Last moment"];
+
+    private void DrawBotTimingSelector()
+    {
+        var idx = Plugin.Config.NaturalBotTiming ? 0 : 1;
+        SettingsGrid.Row("Bot timing:");
+        ImGui.SetNextItemWidth(SetupDropdownWidth * ImGuiHelpers.GlobalScale);
+        if (ImGui.Combo("##bot-timing", ref idx, BotTimingLabels, BotTimingLabels.Length))
+        {
+            Plugin.Config.NaturalBotTiming = idx == 0;
+            Plugin.Config.Save();
+            plugin.Game.World.NaturalBotTiming = idx == 0;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Natural: bots head to their next spot early and wait there, as players do.\n"
+                             + "Last moment: they leave as late as they can and arrive just in time, as in upstream AnoMech.\n"
+                             + "Only P1 Graven Image 1 and 2 and P2 Forsaken have natural timing; other scenarios always move at the last moment.");
     }
 
     private void DrawRoleSelector()

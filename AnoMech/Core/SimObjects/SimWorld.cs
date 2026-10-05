@@ -42,6 +42,10 @@ public sealed class SimWorld : ISimObject, IDisposable
     public AnoMech.Core.Game.Ai.StratTrail Strat { get; }
     public Vector3 ScenarioOrigin { get; set; }
 
+    // On, bots in the strats tuned for it take their next spot early and wait there, as players
+    // do (AiManager.Move's settleFraction); off, every bot leaves at the last moment, as upstream.
+    public bool NaturalBotTiming { get; set; } = true;
+
     // The run's mechanic randomness; engine noise draws from a named Stream instead, so it
     // can't shift these rolls. Replaced per run by Game (see Reseed).
     public Rng Rng { get; private set; } = Rng.Detached;

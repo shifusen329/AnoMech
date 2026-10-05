@@ -39,7 +39,8 @@ public sealed class AiManager
     // (only meaningful without `arrivalTime`) forces SprintSpeed and sizes the
     // Sprint status off distance instead of a deadline. `settleFraction` (only
     // with `arrivalTime`) is the share of a walker's spare time spent waiting at the
-    // destination instead of the start: 0 leaves at the last moment, 1 leaves now. Every live
+    // destination instead of the start: 0 leaves at the last moment, 1 leaves now; ignored while
+    // SimWorld.NaturalBotTiming is off. Every live
     // slot's spot goes on world.Strat with `cue`, the human's included.
     //
     // Every prompt MoveTo fires via PromptMoveDelay: a 0-delay entry added during
@@ -104,7 +105,7 @@ public sealed class AiManager
                 var delay = available - dist / RunSpeed;
                 if (delay > 0f)
                 {
-                    delay *= 1f - Math.Clamp(settleFraction, 0f, 1f);
+                    delay *= 1f - (world.NaturalBotTiming ? Math.Clamp(settleFraction, 0f, 1f) : 0f);
                     AnoMech.Core.DiagnosticLog.Info($"[AiManager] Move@{time:F1}: {role} from ({member.Position.X:F1},{member.Position.Z:F1}) -> ({target.X:F1},{target.Z:F1}) deferred {delay:F2}s (arrive {time + delay + dist / RunSpeed:F1}, deadline {deadline:F1}).");
                     world.Events.Add(delay, () => member.MoveTo(target, speed: RunSpeed));
                     continue;

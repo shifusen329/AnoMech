@@ -18,6 +18,8 @@ public class Configuration : IPluginConfiguration
     // On your death: where you were, where the strat had you, and why.
     public bool ShowDeathRecap { get; set; } = true;
     public bool AutoCollapseWhileRunning { get; set; } = false;
+    // See SimWorld.NaturalBotTiming.
+    public bool NaturalBotTiming { get; set; } = true;
     public string LastSelectedScenario { get; set; } = "";
 
     // Multiplayer relay address (see AnoMech.Relay.Host/README.md) -- remembered across
