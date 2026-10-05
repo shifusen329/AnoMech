@@ -501,7 +501,7 @@ internal static unsafe class JobActions
         [16013] = [Status(3017, 30f), Status(3018, 30f), Status(1820, 30f), Status(2699, 30f), Status(3868, 30f)], // Flourish (5 procs)
         [16012] = [TargetStatus(1826, 15f)],                            // Shield Samba
         [16014] = [Status(1827, 15f)],                                  // Improvisation (Rising Rhythm builds in DancerStateHandler)
-        [25789] = [ScaleByStacks(2696, [1f, 1.2f, 1.4f, 1.6f, 2f], TargetStatus(2697, 30f)), RemoveStatus(1827)],   // Improvised Finish: 5/6/7/8/10% by Rising Rhythm
+        [25789] = [ScaleByStacks(2696, [1f, 1.2f, 1.4f, 1.6f, 2f], TargetStatus(2697, 30f))],   // Improvised Finish: 5/6/7/8/10% by Rising Rhythm
         [15997] = [Status(1818, 15f)], [15998] = [Status(1819, 15f)],   // Standard/Technical Step
         [16003] = [Status(1821, 60f), Status(3867, 30f)],               // Standard Finish → dmg + Last Dance Ready
         [16004] = [Status(1822, 20f), Status(2698, 30f), Status(3869, 30f)], // Technical Finish → dmg + Flourishing Finish + Dance of Dawn Ready
@@ -691,6 +691,7 @@ internal static unsafe class JobActions
         [3017] = [ActionId(15991), ActionId(15995)], [3018] = [ActionId(15992), ActionId(15996)],
         [1820] = [ActionId(16009)], [2699] = [ActionId(25791)], [2700] = [ActionId(25792)], [2698] = [ActionId(25790)],
         [3867] = [ActionId(36983)], [3868] = [ActionId(36984)], [3869] = [ActionId(36985)],
+        [1827] = [ActionId(25789)],   // Improvisation: ended by Improvised Finish (which reads Rising Rhythm, not this)
         [1818] = [ActionId(16003)], [1819] = [ActionId(16004)],
         // WHM / SCH / SGE
         [3879] = [ActionId(37009)],
@@ -802,7 +803,6 @@ internal static unsafe class JobActions
     private static IActionEffect EnemyStatus(ushort statusId, float duration, int stacks = 0) => new EnemyStatusEffect(statusId, duration, stacks);
     private static IActionEffect PartyStatus(ushort statusId, float duration, float range) => new PartyStatusEffect(statusId, duration, range);
     private static IActionEffect GroundZone(ushort statusId, float radius, float duration) => new GroundZoneEffect(statusId, radius, duration);
-    private static IActionEffect RemoveStatus(ushort statusId) => new RemoveStatusEffect(statusId);
     private static IActionEffect IfCasterHas(ushort statusId, params IActionEffect[] inner) => new IfCasterHasEffect(statusId, inner);
     private static IActionEffect Boost(ushort statusId, float factor, params IActionEffect[] inner) => new BoostEffect(statusId, factor, inner);
     private static IActionEffect ScaleByStacks(ushort statusId, float[] scaleByStacks, params IActionEffect[] inner) => new ScaleByStacksEffect(statusId, scaleByStacks, inner);

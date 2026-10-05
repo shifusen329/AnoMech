@@ -72,12 +72,6 @@ internal sealed class StatusEffect(ushort statusId, float duration, int stacks =
     }
 }
 
-// Leaf: take a status off the caster (a press that ends what it was gated on).
-internal sealed class RemoveStatusEffect(ushort statusId) : IActionEffect
-{
-    public void Apply(ActionContext ctx) => ctx.Caster.RemoveStatus(statusId);
-}
-
 // A peer runs no scenario logic: the host decides who lives, from the statuses on its own copy
 // of each character. Only mitigation is sent, the one kind of status the host acts on.
 internal static class HostReport
