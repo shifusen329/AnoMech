@@ -11,11 +11,13 @@
 // Suppressed 261|Change keys (state-sync churn — no C# emission):
 //   CurrentMP, Heading, MaxHP, NPCTargetID, PosX, PosY, PosZ
 
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 
@@ -25,9 +27,11 @@ public sealed class UmadP5ForsakenNull : IScenario
 {
     public string Name => "Forsaken Null";
     public IPhase Phase => UmadZone.P5;
+    public bool SupportsMitigationPractice => true;
 
     private SimWorld world = null!;
     private SimParty party = null!;
+    private SimEnemy? kefka;
 
     public IReadOnlyList<IScenarioAi> AiStrats => [];
 
@@ -35,6 +39,9 @@ public sealed class UmadP5ForsakenNull : IScenario
     {
         world = worldParam;
         party = worldParam.Party;
+        kefka = null;
+        world.MitPractice.Begin(UmadP5ForsakenNullMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
 
         Run_Kefka_4001DE6B();
         Run_Kefka_4001D7AD();
@@ -44,6 +51,19 @@ public sealed class UmadP5ForsakenNull : IScenario
         Run_Kefka_4001D7AB();
         Run_InstanceEvents();
         Run_PlayerLockons();
+        Run_MitigationHits();
+    }
+
+    private void Run_MitigationHits()
+    {
+        world.Events.Add(13.21f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.Forsaken));
+        world.Events.Add(18.32f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
+        world.Events.Add(21.39f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.Forsaken));
+        world.Events.Add(26.47f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
+        world.Events.Add(29.55f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.Forsaken));
+        world.Events.Add(34.62f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
+        world.Events.Add(37.69f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.Forsaken));
+        world.Events.Add(42.78f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
     }
 
     private void Run_InstanceEvents()
@@ -111,7 +131,7 @@ public sealed class UmadP5ForsakenNull : IScenario
     private void Run_Kefka_4001DE6B()
     {
         SimEnemy? kefka_4001DE6B = null;
-        world.Events.Add(0f, () => kefka_4001DE6B = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: Constants.BNpcBaseId.Kefka, NameId: Constants.BNpcNameId.Kefka, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, IsVisible: true, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 0.000f))));
+        world.Events.Add(0f, () => kefka = kefka_4001DE6B = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: Constants.BNpcBaseId.Kefka, NameId: Constants.BNpcNameId.Kefka, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, IsVisible: true, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 0.000f))));
         
         world.Events.Add(1.08f, () => kefka_4001DE6B?.Cast(Constants.ActionId.UnknownC652, castSeconds: 0f, targetId: kefka_4001DE6B?.GameObjectId));
         world.Events.Add(3.21f, () => kefka_4001DE6B?.Cast(Constants.ActionId.Forsaken));

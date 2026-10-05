@@ -6,6 +6,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -32,6 +33,7 @@ public sealed class UmadP5FloodScenario : IMultiplayerReplayable
     public float BgmSecondsAtStart => 39.53f;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP5FloodAi()];
 
     private const byte Level = 100;
@@ -145,6 +147,8 @@ public sealed class UmadP5FloodScenario : IMultiplayerReplayable
 
         timeline.Clear();
         DiagnosticLog.Info($"[UmadP5Flood] Wave carrier mode: {settingsWindow.Overrides.CarrierMode}.");
+        world.MitPractice.Begin(UmadP5FloodMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka }, () => timeline.Elapsed);
 
         if (selectedAi is { } idx && idx < AiStrats.Count)
             ((IScenarioAi<UmadP5FloodState>)AiStrats[idx]).Run(state, world);
@@ -326,7 +330,9 @@ public sealed class UmadP5FloodScenario : IMultiplayerReplayable
             if (settingsWindow.Overrides.WaveAnimLock) HoldAnimLock(caster);
             StartAnchorWatch(target);
         }
-        foreach (var hit in damage.Resolve(target, ActionId.ChaoticFlood, [DamageType.Magic], []))
+        var hits = damage.Resolve(target, ActionId.ChaoticFlood, [DamageType.Magic], []);
+        world.MitPractice.Hit(hits, UmadP5FloodMitigation.ChaoticFlood);
+        foreach (var hit in hits)
         {
             var tank = hit is ISimPartyMember { Role: PartyRole.MainTank or PartyRole.OffTank };
             damage.ApplyDamage(hit, tank ? StackDamageFractionTank : StackDamageFraction, ActionId.ChaoticFlood, "stack", lethal: false);

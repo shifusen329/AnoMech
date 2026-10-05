@@ -5,6 +5,7 @@ using System.Numerics;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
 using static AnoMech.Scenarios.Umad.UmadConstants;
@@ -29,6 +30,7 @@ public sealed class UmadP5CelestriadScenario : IMultiplayerReplayable
     public IPhase Phase => UmadZone.P5;
     public bool SupportsSolo => false;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
 
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP5CelestriadAi()];
 
@@ -66,6 +68,8 @@ public sealed class UmadP5CelestriadScenario : IMultiplayerReplayable
         damage.SetStatuses(DamageType.Fire, CelestriadStatusId.FireResistanceDownII);
         damage.SetStatuses(DamageType.Ice, CelestriadStatusId.IceResistanceDownII);
         towerInstances.Clear();
+        world.MitPractice.Begin(UmadP5CelestriadMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
 
         if (selectedAi is { } idx && idx < AiStrats.Count)
             ((IScenarioAi<UmadP5CelestriadState>)AiStrats[idx]).Run(state, world);
@@ -107,6 +111,7 @@ public sealed class UmadP5CelestriadScenario : IMultiplayerReplayable
     // Silent: no cast or animation on the player when the initial debuff lands, just the status.
     private void ApplyDebuffs()
     {
+        world.MitPractice.HitParty(UmadP5CelestriadMitigation.Celestriad);
         foreach (var (role, element) in state.PlayerDebuffElement)
         {
             if (element is not { } e) continue;
@@ -180,6 +185,7 @@ public sealed class UmadP5CelestriadScenario : IMultiplayerReplayable
                 tower.Element.TowerSoakedActionId, [tower.Element.DamageType],
                 [(tower.Element.VulnUpStatusId, CelestriadTiming.DebuffDuration)],
                 stackMinTargets: 2);
+            world.MitPractice.Hit(soakers, UmadP5CelestriadMitigation.Tower);
             if (soakers.Count == 0)
             {
                 damage.Resolve(tower.Marker, tower.Element.TowerFailedActionId, [], [(StatusId.DamageDown, CelestriadTiming.DamageDownDuration)]);

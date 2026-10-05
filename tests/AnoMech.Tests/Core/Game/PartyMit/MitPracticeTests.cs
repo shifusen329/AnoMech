@@ -3,6 +3,7 @@ using AnoMech.Core.Game.Party;
 using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Core.UserActions;
+using AnoMech.Scenarios.Umad;
 
 namespace AnoMech.Tests;
 
@@ -75,6 +76,21 @@ public class MitPracticeTests
         world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.SGE, MitActionId.Holos, -6.5f, "Big Hit", [5f])));
         Step(0.1f);
         Assert.That(world.Party.Player!.HasStatus(3003), "the player's Sage had no chance to press Holos");
+    }
+
+    [Test]
+    public void ADebuffGoesOnTheBossItsRowNames()
+    {
+        var chaos = world.SpawnEnemy(new EnemySpawnConfig(UmadConstants.BNpcBaseId.ChaosP3))!;
+        var exdeath = world.SpawnEnemy(new EnemySpawnConfig(UmadConstants.BNpcBaseId.Exdeath))!;
+        var chaosSource = new MitSource("Chaos");
+        var exdeathSource = new MitSource("Exdeath");
+        world.MitPractice.Begin(new MitPlanData(Profile, [new("hit", "Big Hit", null, exdeathSource)], [new(5f, ["hit"])],
+                [new MitPlanEntry(SheetColumn.D4, MitActionId.Addle, 1f, "Big Hit", [5f], On: exdeathSource)], chaosSource),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [chaosSource] = () => chaos, [exdeathSource] = () => exdeath });
+        Step(1.1f);
+        Assert.That(exdeath.HasStatus(1203), "the row names Exdeath");
+        Assert.That(chaos.HasStatus(1203), Is.False, "though the plan's debuffs go on Chaos");
     }
 
     [Test]

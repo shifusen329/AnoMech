@@ -8,6 +8,7 @@ using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Map;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
 using static AnoMech.Scenarios.Umad.UmadConstants;
@@ -29,6 +30,7 @@ public sealed class UmadP5ExaflaresScenario : IMultiplayerReplayable
     public IPhase Phase => UmadZone.P5;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
 
     // Enemy spawn level.
     private const byte Level = 100;
@@ -90,6 +92,8 @@ public sealed class UmadP5ExaflaresScenario : IMultiplayerReplayable
 
         // Re-arm the scenario clock for this run (the scenario object is reused).
         timeline.Clear();
+        world.MitPractice.Begin(UmadP5ExaflaresMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka }, () => timeline.Elapsed);
 
         // Bots schedule on the scenario `timeline` (after Clear, so their adds are absolute).
         if (selectedAi is { } idx && idx < AiStrats.Count)
@@ -221,6 +225,7 @@ public sealed class UmadP5ExaflaresScenario : IMultiplayerReplayable
             var caught = damage.Resolve(helper, ActionId.ExaflareSpread, [DamageType.Lethal], [],
                 killTargets: false);
             spreadHits.AddRange(caught);
+            world.MitPractice.Hit(caught, UmadP5ExaflaresMitigation.StrayEntropy);
         }
     }
 

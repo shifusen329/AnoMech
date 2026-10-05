@@ -28,8 +28,8 @@ _✅ works · ⚠️ partial · ❌ not simulated · ➖ nothing to simulate (pu
 | Technical Finish | 16004 | ✅ | Technical Finish (1822, 20s) + Flourishing Finish (2698, 30s) + Dance of the Dawn Ready (3869, 30s); clears dance. |
 | Flourish | 16013 | ✅ | Flourishing Symmetry (3017) + Flow (3018) + Threefold (1820) + Fourfold Fan Dance (2699) + Finishing Move Ready (3868), all 30s. |
 | Saber Dance | 16005 | ✅ | Spends 50 Esprit. |
-| Improvisation | 16014 | ❌ | Rising Rhythm (2696) self-status (stacks every 3s) not granted. |
-| Improvised Finish | 25789 | ➖ | Barrier (damage-model); Improvisation pair unmodelled. |
+| Improvisation | 16014 | ✅ | Improvisation (1827, 15s); a Rising Rhythm (2696) stack every 3s, max 4. Moving, jumping or any other action ends the dance. |
+| Improvised Finish | 25789 | ✅ | Usable during the dance; ends it. Party barrier (2697, 30s) sized by the Rising Rhythm stacks spent. |
 | Tillana | 25790 | ✅ | +50 Esprit; consumes Flourishing Finish (2698). |
 | Fan Dance IV | 25791 | ✅ | Consumes Fourfold Fan Dance (2699). |
 | Starfall Dance | 25792 | ✅ | Consumes Flourishing Starfall (2700). |
@@ -48,5 +48,4 @@ All potency, native swaps, or handled via the action rows above → nothing to f
 Leg Graze, Second Wind, Foot Graze, Peloton, Head Graze, Arm's Length — all ➖.
 
 ## Not simulated
-- **Improvisation (16014) → Rising Rhythm (2696).** The stacking self-status (a stack every 3s, max 4) and the Improvisation/Improvised Finish pair are unmodelled.
 - **Dance-step HUD write unconfirmed.** `DancerStateHandler` seeds and advances the dance-step sequence in the gauge, but whether the `DanceSteps[]` writes reach the on-screen Step Gauge display is unverified in-game.

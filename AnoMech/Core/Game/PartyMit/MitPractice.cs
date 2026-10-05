@@ -122,7 +122,7 @@ public sealed class MitPractice
             DiagnosticLog.Warn($"[MitPractice] {p.Slot} skips {p.Action.Name} at {now:F2}s: needs {StatusLookup.Name(p.Action.Requires)} ({p.Label}).");
             return;
         }
-        bot.UseAction(p.Action.ActionId, p.Action.Kind == MitKind.Debuff ? DebuffTarget() : null);
+        bot.UseAction(p.Action.ActionId, p.Action.Kind == MitKind.Debuff ? DebuffTarget(p) : null);
         var pressedAt = p.IsPreStart ? p.At : now;
         lastPress[key] = pressedAt;
         presses.Add(new MitPress(p.Slot, p.Action.ActionId, pressedAt));
@@ -186,7 +186,7 @@ public sealed class MitPractice
         return p.Action.Kind switch
         {
             MitKind.None => true,
-            MitKind.Debuff => DebuffTarget() is { } boss && granted.Any(boss.HasStatus),
+            MitKind.Debuff => DebuffTarget(p) is { } boss && granted.Any(boss.HasStatus),
             MitKind.Shield => presses.Any(x => x.Slot == p.Slot && MitCatalogue.Find(x.ActionId)?.ActionId == p.Action.ActionId
                                                && x.At <= now && now - x.At <= p.Action.Duration),
             _ => granted.Any(victim.HasStatus),
@@ -231,8 +231,8 @@ public sealed class MitPractice
 
     private SimCharacter? Source(MitSource source) => sources.TryGetValue(source, out var actor) ? actor() : null;
 
-    private SimCharacter? DebuffTarget()
-        => data?.DebuffTarget is { } target ? Source(target) : sources.Values.FirstOrDefault()?.Invoke();
+    private SimCharacter? DebuffTarget(ResolvedPress p)
+        => (data!.Entries[p.Entry].On ?? data.DebuffTarget) is { } target ? Source(target) : sources.Values.FirstOrDefault()?.Invoke();
 
     private ShieldLedger Ledger(SimCharacter member)
     {

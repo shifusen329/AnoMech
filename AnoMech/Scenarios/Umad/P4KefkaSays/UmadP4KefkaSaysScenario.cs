@@ -6,6 +6,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -26,6 +27,7 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
 
     public void DrawSettings() => settingsWindow.Draw();
     public object SettingsOverrides => settingsWindow.Overrides;
+    public bool SupportsMitigationPractice => true;
     private readonly UmadP4KefkaSaysSettingsWindow settingsWindow = new();
 
     public IReadOnlyList<IScenarioAi> AiStrats =>
@@ -38,6 +40,7 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
     private SimWorld world = null!;
     private SimParty party = null!;
     private DamageSolver damage = null!;
+    private SimEnemy? kefka;
     private SimEnemy[] detonationHelpers = [];  // invisible KefkaHelper that casts DeathSurge on Allagan Field detonation
     private int detonatioHelperIndex;
 
@@ -60,6 +63,9 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
         damage.SetStatuses(DamageType.Magic, StatusId.MagicVulnerabilityUp);
         damage.SetStatuses(DamageType.Black, StatusId.BlackWound);
         damage.SetStatuses(DamageType.White, StatusId.WhiteWound);
+        kefka = null;
+        world.MitPractice.Begin(UmadP4KefkaSaysMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
 
         Run_Kefka_40004142();
         Run_Neo_Exdeath_400041A4();
@@ -75,6 +81,19 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
         Run_InstanceEvents();
         Run_OtherDebuffs();
         Run_AccelerationBomb();
+        Run_MitigationHits();
+    }
+
+    // The raidwides the scenario shows only as casts.
+    private void Run_MitigationHits()
+    {
+        world.Events.Add(20.37f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.GrandCross));
+        world.Events.Add(25.51f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.InfernoTsunami));
+        world.Events.Add(35.30f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.GrandCross));
+        world.Events.Add(40.43f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.InfernoTsunami));
+        world.Events.Add(50.26f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.GrandCross));
+        world.Events.Add(62.39f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.FloodOfNaught));
+        world.Events.Add(89.60f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.UltimaUpsurge));
     }
 
     // First played on a fresh actor, where an unloaded timeline can drop (see ActionTimelinePreload).
@@ -196,7 +215,7 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
     private void Run_Kefka_40004142()
     {
         SimEnemy? kefka_40004142 = null;
-        world.Events.Add(0f, () => kefka_40004142 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Kefka, NameId: BNpcNameId.Kefka, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, IsVisible: true, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 3.140f))));
+        world.Events.Add(0f, () => kefka = kefka_40004142 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Kefka, NameId: BNpcNameId.Kefka, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, IsVisible: true, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 3.140f))));
         world.Events.Add(1.36f, () => kefka_40004142?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(1.45f, () => kefka_40004142?.Cast(ActionId.KefkaSays));
         world.Events.Add(9.41f, () => kefka_40004142?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
@@ -444,7 +463,9 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
             world.Events.Add(70.09f, () => neo_Exdeath_400040E9_5 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.KefkaHelper, NameId: BNpcNameId.NeoExdeath, Level: 1, Targetable: false, EnemyList: EnemyListMode.Never, IsVisible: false, Placement: new Placement(new Vector3(-0.210f, 0.000f, 0.290f), 2.960f))));
             world.Events.Add(71.28f, () => neo_Exdeath_400040E9_5?.SetPosition(state.ElemRoles[0].Get(targetId)!.Placement()));
             world.Events.Add(71.37f, () => neo_Exdeath_400040E9_5?.Cast(actionId));
-            world.Events.Add(71.37f, () => damage.Resolve(neo_Exdeath_400040E9_5, actionId, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: minTargets1));
+            world.Events.Add(71.37f, () => world.MitPractice.Hit(
+                damage.Resolve(neo_Exdeath_400040E9_5, actionId, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: minTargets1),
+                UmadP4KefkaSaysMitigation.DeathBoltWave));
             
             if (i < 2)
             {
@@ -455,7 +476,9 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
             
             world.Events.Add(96.39f, () => neo_Exdeath_400040E9_5?.SetPosition(state.ElemRoles[1].Get(targetId)!.Position));
             world.Events.Add(96.48f, () => neo_Exdeath_400040E9_5?.Cast(actionId));
-            world.Events.Add(96.48f, () => damage.Resolve(neo_Exdeath_400040E9_5, actionId, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: minTargets2));
+            world.Events.Add(96.48f, () => world.MitPractice.Hit(
+                damage.Resolve(neo_Exdeath_400040E9_5, actionId, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: minTargets2),
+                UmadP4KefkaSaysMitigation.DeathBoltWave));
         
             if (i < 2)
             {

@@ -14,4 +14,8 @@ public static class UmadMitigation
 
     // Kefka's hits; the party's Reprisal, Feint and Addle go on him.
     public static readonly MitSource Kefka = new("Kefka");
+
+    // P3's bosses. The sheet puts most debuffs on Chaos and names Exdeath where it means him.
+    public static readonly MitSource Chaos = new("Chaos");
+    public static readonly MitSource Exdeath = new("Exdeath");
 }

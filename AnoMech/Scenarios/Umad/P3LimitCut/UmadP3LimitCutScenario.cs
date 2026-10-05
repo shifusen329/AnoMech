@@ -6,6 +6,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
 using AnoMech.Scenarios.Umad.P3BlackHole;
@@ -33,6 +34,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
     public object SettingsOverrides => settingsWindow.Overrides;
     public IReadOnlyList<string> SettingsConflicts => settingsWindow.Overrides.Validate().Problems;
     public void DrawMultiplayerSettings() => settingsWindow.DrawThunderIIIPlan();
+    public bool SupportsMitigationPractice => true;
 
     private readonly UmadP3LimitCutSettingsWindow settingsWindow = new();
     private SimWorld world = null!;
@@ -72,6 +74,11 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         world.EnforceArenaBoundary(Constants.Geometry.ArenaRadius, "Fell off the arena");
         SpawnActors();
         ApplyStartingStatuses();
+        world.MitPractice.Begin(UmadP3LimitCutMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+        {
+            [UmadMitigation.Chaos] = () => state.Objects.Chaos,
+            [UmadMitigation.Exdeath] = () => state.Objects.Exdeath,
+        });
 
         var u = Constants.Timing.UmbraCastAt;
         world.Events.Add(1.0f, () =>
@@ -273,6 +280,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
 
     private void ResolveDecisiveBattle()
     {
+        world.MitPractice.HitParty(UmadP3LimitCutMitigation.DecisiveBattle);
         state.Objects.Chaos?.AddStatus(UmadConstants.StatusId.EpicVillain);
         state.Objects.Exdeath?.AddStatus(UmadConstants.StatusId.FatedVillain);
         foreach (var role in Enum.GetValues<PartyRole>())
@@ -319,6 +327,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
     private void ResolveVacuumWave()
     {
         if (state.Objects.Exdeath is not { } exdeath) return;
+        world.MitPractice.HitParty(UmadP3LimitCutMitigation.VacuumWave);
         var source = exdeath.Position;
         cycloneTargets.Clear();
         var members = party.ActiveMembers().Where(m => m.IsAlive()).ToList();
@@ -377,6 +386,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         clone.Cast(Constants.ActionId.UltimaBlaster, castSeconds: 0f, animationLock: Constants.AnimationLock.CloneAppear);
         foreach (var member in party.ActiveMembers().ToList())
             Hit(member, Constants.Damage.CloneAppear, Constants.ActionId.UltimaBlaster, "raidwide");
+        world.MitPractice.HitParty(UmadP3LimitCutMitigation.UltimaBlaster);
     }
 
     private void AttachNumbers()
@@ -398,9 +408,9 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         for (var i = 0; i < centres.Count; i++)
         {
             cycloneHelpers[i % cycloneHelpers.Length]?.Cast(UmadConstants.ActionId.Cyclone, castSeconds: 0f, targetId: centres[i].GameObjectId, animationLock: Constants.AnimationLock.Cyclone);
-            damage.Resolve(centres[i], UmadConstants.ActionId.Cyclone, [DamageType.Wind],
+            world.MitPractice.Hit(damage.Resolve(centres[i], UmadConstants.ActionId.Cyclone, [DamageType.Wind],
                 [(Constants.StatusId.WindResistanceDownII, Constants.Damage.WindResistanceDownSeconds)],
-                stackMinTargets: 2, understackedTankMitigation: Constants.Damage.CycloneSoloTankMitigation);
+                stackMinTargets: 2, understackedTankMitigation: Constants.Damage.CycloneSoloTankMitigation), UmadP3LimitCutMitigation.Cyclone);
         }
     }
 

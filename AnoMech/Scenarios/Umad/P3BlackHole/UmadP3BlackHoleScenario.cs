@@ -12,6 +12,7 @@ using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Geometry;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -31,6 +32,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     public object SettingsOverrides => settingsWindow.Overrides;
     public IReadOnlyList<string> SettingsConflicts => settingsWindow.Overrides.Validate().Problems;
     public void DrawMultiplayerSettings() => settingsWindow.DrawThunderIIIPlan();
+    public bool SupportsMitigationPractice => true;
     private readonly UmadP3BlackHoleSettingsWindow settingsWindow = new();
 
     public IReadOnlyList<IScenarioAi> AiStrats =>
@@ -76,6 +78,11 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         damage.SetStatuses(DamageType.Magic, StatusId.MagicVulnerabilityUp);
         
         PrimodialCrustsToResolve = 0;
+        world.MitPractice.Begin(UmadP3BlackHoleMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+        {
+            [UmadMitigation.Chaos] = () => state.ScenarioObjects.Chaos,
+            [UmadMitigation.Exdeath] = () => state.ScenarioObjects.Exdeath,
+        });
 
        
         BlackHolePositions = Enumerable.Range(0, 4).Select(GenerateBlackHolePositions).ToArray();
@@ -224,6 +231,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(0.1f, () => chaos_4000414D?.AddStatus(StatusId.EpicVillain));
         world.Events.Add(0.98f, () => chaos_4000414D?.Cast(ActionId.Earthquake));
         world.Events.Add(1f, () => chaos_4000414D?.Follow(party.Get(PartyRole.MainTank)));
+        world.Events.Add(5.98f, () => world.MitPractice.HitParty(UmadP3BlackHoleMitigation.Earthquake));
         world.Events.Add(12.07f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(15.09f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(18.13f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
@@ -279,6 +287,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
             helper?.Cast(ActionId.ThunderIII_Resolve, targetId: target?.GameObjectId);
             damage.Resolve(target, ActionId.ThunderIII_Resolve, [DamageType.TankBuster, DamageType.Magic, DamageType.Lightning], [(StatusId.LightningResistanceDownII, 3.96f)],
                 requiredMitigation: ThunderIIIRequiredMitigation);
+            world.MitPractice.Hit(target, UmadP3BlackHoleMitigation.ThunderIII);
         });
         world.Events.Add(time + 3f, () =>
         {
@@ -288,6 +297,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
             // without a tank swap, which only an invuln lives through.
             damage.Resolve(target, ActionId.ThunderIII_Resolve, [DamageType.TankBuster, DamageType.Magic, DamageType.Lightning], [(StatusId.LightningResistanceDownII, 3.96f)],
                 requiredMitigation: ThunderIIIRequiredMitigation);
+            world.MitPractice.Hit(target, UmadP3BlackHoleMitigation.ThunderIII);
         });
         world.Events.Add(time + 3.5f, () => exdeath?.Follow(party.Get(PartyRole.OffTank)));
     }
@@ -463,7 +473,9 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
             var size = MathF.PI / 6;      // half cone 30 degrees, estimated based on animation
             world.Events.Add(time - 0.2f, () => enemy?.Face(LiveConeTarget(target)));
             world.Events.Add(time, () => enemy?.Cast(actionId, targetId: LiveConeTarget(target)?.GameObjectId));
-            world.Events.Add(time, () => damage.Resolve(enemy, actionId, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: isFullStack ? 8 : 0, size: size));
+            world.Events.Add(time, () => world.MitPractice.Hit(
+                damage.Resolve(enemy, actionId, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: isFullStack ? 8 : 0, size: size),
+                UmadP3BlackHoleMitigation.ShockingImpact));
         }
     }
 
@@ -557,6 +569,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
 
     private void ResolveNothingness(IReadOnlyList<SimCharacter> targets, Vector3 holePos)
     {
+        world.MitPractice.Hit(targets, UmadP3BlackHoleMitigation.Nothingness);
         foreach (var simCharacter in targets)
         {
            var role = (simCharacter as ISimPartyMember)?.Role.ToString() ?? "?";
@@ -670,9 +683,13 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(147.09f, () => chaos_400040E1?.SetPosition(new Placement(new Vector3(-4.452f, 0.200f, -5.299f), -2.220f)));
         world.Events.Add(146.83f, () => chaos_400040E1 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.KefkaHelper, NameId: BNpcNameId.Chaos, Level: 1, Targetable: false, EnemyList: EnemyListMode.Never, IsVisible: false, Placement: new Placement(new Vector3(-4.450f, 0.000f, -5.300f), -2.220f))));
         world.Events.Add(152.13f, () => chaos_400040E1?.Cast(ActionId.KnockDown, castSeconds: 0f, targetId: state.StackTargets.Get(0)?.GameObjectId));
-        world.Events.Add(152.13f, () => damage.Resolve(state.StackTargets.Get(0), ActionId.KnockDown, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.960f)], stackMinTargets: 4));
+        world.Events.Add(152.13f, () => world.MitPractice.Hit(
+            damage.Resolve(state.StackTargets.Get(0), ActionId.KnockDown, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.960f)], stackMinTargets: 4),
+            UmadP3BlackHoleMitigation.KnockDown));
         world.Events.Add(157.67f, () => chaos_400040E1?.Cast(ActionId.KnockDown, castSeconds: 0f, targetId: state.StackTargets.Get(1)?.GameObjectId));
-        world.Events.Add(157.67f, () => damage.Resolve(state.StackTargets.Get(1), ActionId.KnockDown, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.960f)], stackMinTargets: 4));
+        world.Events.Add(157.67f, () => world.MitPractice.Hit(
+            damage.Resolve(state.StackTargets.Get(1), ActionId.KnockDown, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.960f)], stackMinTargets: 4),
+            UmadP3BlackHoleMitigation.KnockDown));
     }
 
 
@@ -693,7 +710,9 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(offset, () => kefka_400040D7?.Cast(ActionId.StompAMole));
         world.Events.Add(offset + 1.5f, () =>
         {
-            if (damage.Resolve(kefka_400040D7, ActionId.StompAMole, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 3)], stackMinTargets: 2).Count == 0)
+            var stacked = damage.Resolve(kefka_400040D7, ActionId.StompAMole, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 3)], stackMinTargets: 2);
+            world.MitPractice.Hit(stacked, UmadP3BlackHoleMitigation.StompAMole);
+            if (stacked.Count == 0)
             {
                kefka_400040D7?.Cast(ActionId.UnmitigatedImpact); 
                damage.Resolve(kefka_400040D7, ActionId.UnmitigatedImpact, [DamageType.Lethal], []);

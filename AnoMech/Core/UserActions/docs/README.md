@@ -23,7 +23,7 @@ doesn't work. Marks: ✅ works · ⚠️ partial · ❌ not simulated · ➖ not
 | DRG | none (fully simulated) |
 | GNB | Bloodfest temporary cartridge cap→6 not modelled (cosmetic) |
 | BLM | Paradox's Firestarter grant |
-| DNC | Improvisation → Rising Rhythm status |
+| DNC | none (fully simulated) |
 | PCT | Rainbow Bright never granted |
 | SMN | Arcanum (Ifrit/Titan/Garuda-Ready) summon-select bits |
 | VPR | Twinfang/Twinblood reciprocal venom grants; Ready-to-Reawaken over-charges SO |
@@ -38,7 +38,7 @@ doesn't work. Marks: ✅ works · ⚠️ partial · ❌ not simulated · ➖ not
 | MNK | Fury gauge unwritten; blitz-window encoding unverified |
 | BRD | Repertoire/Soul Voice/Song-Gauge economy unmodelled |
 | RPR | Shadow/Whorl of Death KO-gated Soul over-generates; Plentiful Harvest unreachable solo (party mechanic) |
-| SCH | Emergency Tactics/Protraction/Expedient/Dissipation self-buffs; Faerie Gauge unmodelled |
+| SCH | Emergency Tactics/Protraction/Expedience/Dissipation self-buffs; Faerie Gauge unmodelled |
 | AST | card set per draw unverified; Synastry/Collective Unconscious/Horoscope self-buff icons |
 | NIN | Mudra → Ninjutsu not simulable (no writable field); Raiton over-grants Raiju Ready; Huton → Shadow Walker |
 
