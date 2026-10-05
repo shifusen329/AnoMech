@@ -342,12 +342,12 @@ public sealed partial class MultiplayerManager
 
     private static DeathRecapState BuildRecapState(PartyRole role)
     {
-        var (strat, aoe) = Plugin.GameInstance.RecapFor(role);
+        var (strat, aoe, progress) = Plugin.GameInstance.RecapFor(role);
         return new DeathRecapState(
             strat != null, strat?.Spot.X ?? 0f, strat?.Spot.Z ?? 0f, strat?.IssuedAt ?? 0f, strat?.Deadline,
             strat?.Mechanic, strat?.Why, strat?.Source,
             aoe?.ActionId ?? 0u, aoe?.Source.Position.X ?? 0f, aoe?.Source.Position.Z ?? 0f, aoe?.Source.Rotation ?? 0f,
-            aoe?.OmenRotate ?? 0f, aoe?.Size);
+            aoe?.OmenRotate ?? 0f, aoe?.Size, progress);
     }
 
     private void OnOmenSpawnedHost(string path, Placement placement, Vector3 scale, float durationSeconds)

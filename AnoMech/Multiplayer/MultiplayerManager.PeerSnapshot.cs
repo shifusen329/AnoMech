@@ -692,16 +692,16 @@ public sealed partial class MultiplayerManager
         DiagnosticLog.Info($"[Multiplayer] {msg.Role} killed: {cause}");
         if (Plugin.GameInstance.World.Party.Get(msg.Role) is ISimPartyMember member)
         {
-            var (strat, aoe) = ReadRecap(msg.Role, msg.Recap);
-            Plugin.GameInstance.Kill(member, cause, strat, aoe);
+            var (strat, aoe, progress) = ReadRecap(msg.Role, msg.Recap);
+            Plugin.GameInstance.Kill(member, cause, strat, aoe, progress);
         }
         else
             DiagnosticLog.Debug($"[Multiplayer] RoleKilled for {msg.Role} but that slot isn't an ISimPartyMember locally -- dropping.");
     }
 
-    private static (StratTarget? Strat, AoeQuery? Aoe) ReadRecap(PartyRole role, DeathRecapState? recap)
+    private static (StratTarget? Strat, AoeQuery? Aoe, string? Progress) ReadRecap(PartyRole role, DeathRecapState? recap)
     {
-        if (recap == null) return (null, null);
+        if (recap == null) return (null, null, null);
         StratTarget? strat = null;
         if (recap.HasSpot && NetGuard.TryPosition(recap.SpotX, 0f, recap.SpotZ, out var spot) && NetGuard.IsFinite(recap.IssuedAt))
             strat = new StratTarget(role, spot, recap.IssuedAt,
@@ -713,7 +713,7 @@ public sealed partial class MultiplayerManager
             && NetGuard.TryPosition(recap.AoeX, 0f, recap.AoeZ, out var origin))
             aoe = new AoeQuery(recap.AoeActionId, new Placement(origin, NetGuard.Rotation(recap.AoeRotation)),
                 NetGuard.Rotation(recap.AoeOmenRotate), recap.AoeSize is { } size && NetGuard.IsFinite(size) ? size : null);
-        return (strat, aoe);
+        return (strat, aoe, Optional(recap.Progress, NetGuard.MaxStringLength));
     }
 
     private static string? Optional(string? value, int maxLength)

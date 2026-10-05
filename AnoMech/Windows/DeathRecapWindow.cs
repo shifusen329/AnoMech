@@ -35,6 +35,7 @@ public sealed class DeathRecapWindow : Window
         ImGui.TextUnformatted(recap.Cause);
         if (recap.Aoe is { } aoe && !recap.Cause.Contains(aoe.Name))
             ImGui.TextColored(MutedColor, $"Caught in {aoe.Name}.");
+        if (recap.Progress is { } progress) ImGui.TextUnformatted(progress);
 
         Section("Where you should have been");
         if (recap.Strat?.Mechanic is { } mechanic) ImGui.TextUnformatted(mechanic);

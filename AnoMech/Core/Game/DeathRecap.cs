@@ -22,15 +22,15 @@ public sealed record DeathAoe(uint ActionId, string Name, byte CastType, float R
 
 // What the death recap shows. Positions are world coordinates, taken at the death, since the
 // scenario origin resets with the run.
-public sealed record DeathRecap(PartyRole Role, string Cause, Vector3 DiedAt, float DiedAtTime, StratTarget? Strat, Vector3? Spot, DeathAoe? Aoe)
+public sealed record DeathRecap(PartyRole Role, string Cause, Vector3 DiedAt, float DiedAtTime, StratTarget? Strat, Vector3? Spot, DeathAoe? Aoe, string? Progress = null)
 {
     // Closer than this counts as on the spot: the bots themselves land up to 0.3y off theirs.
     public const float OnSpotTolerance = 1f;
 
-    public static DeathRecap Build(PartyRole role, string cause, Vector3 localDiedAt, float diedAtTime, StratTarget? strat, AoeQuery? aoe, Coordinates coordinates)
+    public static DeathRecap Build(PartyRole role, string cause, Vector3 localDiedAt, float diedAtTime, StratTarget? strat, AoeQuery? aoe, Coordinates coordinates, string? progress = null)
         => new(role, cause, coordinates.ToGlobal(localDiedAt), diedAtTime, strat,
             strat is { } s ? coordinates.ToGlobal(s.Spot) : null,
-            aoe is { } q ? DeathAoe.From(q, coordinates) : null);
+            aoe is { } q ? DeathAoe.From(q, coordinates) : null, progress);
 
     public float? MissedBy => Spot is { } spot ? DistanceXZ(spot, DiedAt) : null;
 

@@ -68,10 +68,14 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     // Edge-triggers BuildMidRunUpdateMessage -- see IMultiplayerReplayable.BuildMidRunUpdateMessage.
     private string? lastBroadcastLockonsKey;
 
+    private int towerSetsCleared;
+    public string? RunProgress => $"You cleared {towerSetsCleared} of 8 tower sets.";
+
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
         party = worldParam.Party;
+        towerSetsCleared = 0;
         state = new UmadP2ForsakenState(world.Rng, party, settingsWindow.Overrides);
         LastState = state;
         if (selectedAi is { } idx && idx >= 0 && idx < AiStrats.Count)
@@ -226,6 +230,7 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
             }
             if (targets2.Count == 2 && targets1.Count == 2)
             {
+                towerSetsCleared++;
                 ReapplyLockons([targets1[0], targets1[1], targets2[0], targets2[1]], index);
             }
         });

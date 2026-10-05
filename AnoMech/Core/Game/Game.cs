@@ -488,8 +488,9 @@ public sealed class Game : IDisposable
     // false when it was already dead, invulnerable (UseInvuln), or godmode
     // swallowed it. Callers that run extra on-death logic should gate on this
     // so an invuln'd/godmode'd "death" doesn't trigger gameplay consequences.
-    // hostStrat / hostAoe: a peer's own spot and killing AoE, which only the host worked out.
-    public bool Kill(ISimPartyMember target, string cause, AnoMech.Core.Game.Ai.StratTarget? hostStrat = null, AoeQuery? hostAoe = null)
+    // hostStrat / hostAoe / hostProgress: a peer's own spot, killing AoE and run progress, which
+    // only the host worked out.
+    public bool Kill(ISimPartyMember target, string cause, AnoMech.Core.Game.Ai.StratTarget? hostStrat = null, AoeQuery? hostAoe = null, string? hostProgress = null)
     {
         if (target == null) return false;
         if (target.Dead) return false;
@@ -503,9 +504,10 @@ public sealed class Game : IDisposable
 
         AnoMech.Core.DiagnosticLog.Warn(
             $"[Game] Kill: {target.Role} died at ({(target as IPositioned)?.Position.X:F1},{(target as IPositioned)?.Position.Z:F1}) -- {cause}");
-        PrintDeath(target, cause);
+        var progress = hostProgress ?? activeScenario?.RunProgress;
+        PrintDeath(target, target is SimPlayer && progress != null ? $"{cause}. {progress}" : cause);
         if (target is SimPlayer && Plugin.Config.ShowDeathRecap)
-            Recap = BuildRecap(target, cause, hostStrat, hostAoe);
+            Recap = BuildRecap(target, cause, hostStrat, hostAoe, progress);
         if (!firstDeathScheduled)
         {
             firstDeathScheduled = true;
@@ -554,25 +556,26 @@ public sealed class Game : IDisposable
         return true;
     }
 
-    private DeathRecap BuildRecap(ISimPartyMember target, string cause, AnoMech.Core.Game.Ai.StratTarget? hostStrat, AoeQuery? hostAoe)
+    private DeathRecap BuildRecap(ISimPartyMember target, string cause, AnoMech.Core.Game.Ai.StratTarget? hostStrat, AoeQuery? hostAoe, string? progress)
     {
         var now = Events.Elapsed;
         var aoe = hostAoe;
         if (aoe == null && target is SimCharacter { LastAoe: { } hit } && MathF.Abs(hit.At - now) < SameMomentSeconds)
             aoe = hit.Query;
         var strat = hostStrat ?? World.Strat.LatestFor(target.Role, now);
-        return DeathRecap.Build(target.Role, cause, (target as IPositioned)?.Position ?? Vector3.Zero, now, strat, aoe, World.Coordinates);
+        return DeathRecap.Build(target.Role, cause, (target as IPositioned)?.Position ?? Vector3.Zero, now, strat, aoe, World.Coordinates, progress);
     }
 
     // A DamageSolver hit stamped this long before the death is the one that caused it.
     private const float SameMomentSeconds = 0.1f;
 
-    // What the host sends a peer about its own death: the strat's spot and the AoE it stood in.
-    public (AnoMech.Core.Game.Ai.StratTarget? Strat, AoeQuery? Aoe) RecapFor(PartyRole role)
+    // What the host sends a peer about its own death: the strat's spot, the AoE it stood in and
+    // how far the run got.
+    public (AnoMech.Core.Game.Ai.StratTarget? Strat, AoeQuery? Aoe, string? Progress) RecapFor(PartyRole role)
     {
         var now = Events.Elapsed;
         var aoe = World.Party.Get(role) is { LastAoe: { } hit } && MathF.Abs(hit.At - now) < SameMomentSeconds ? hit.Query : (AoeQuery?)null;
-        return (World.Strat.LatestFor(role, now), aoe);
+        return (World.Strat.LatestFor(role, now), aoe, activeScenario?.RunProgress);
     }
 
     // Closing the recap releases an auto-restart it was holding.
