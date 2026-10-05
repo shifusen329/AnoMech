@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using AnoMech.Core.SimObjects;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
@@ -277,6 +278,10 @@ internal static unsafe class JobActions
         [7531] = [Status(1191, 20f)],   // Rampart
         [7535] = [EnemyStatus(1193, 15f)],   // Reprisal
 
+        // Melee / caster role
+        [7549] = [EnemyStatus(1195, 15f)],   // Feint
+        [7560] = [EnemyStatus(1203, 15f)],   // Addle
+
         // Tank LB3
         [199]   = [TargetStatus(196, 8f)],    // Last Bastion
         [4240]  = [TargetStatus(863, 8f)],    // Land Waker
@@ -411,6 +416,8 @@ internal static unsafe class JobActions
         [17209] = [Status(2688, 10f, 5)],                             // Hypercharge → Overheated (5 stk)
         [7414]  = [Status(3864, 30f), Status(3866, 30f)],             // Barrel Stabilizer → Hypercharged + Full Metal Machinist
         [2878]  = [Status(1946, 10f)],                                // Wildfire → self-status (enables Detonator)
+        [16889] = [TargetStatus(1951, 15f)],                          // Tactician
+        [2887]  = [EnemyStatus(860, 10f)],                            // Dismantle
 
         // RDM — all flat: mana is "Additional Effect", never combo-gated
         [37004] = [Gauge(RdmWhite, 2), Gauge(RdmBlack, 2)],   // Jolt III
@@ -431,6 +438,7 @@ internal static unsafe class JobActions
         [7518]  = [Status(1238, 20f), Status(3877, 30f)],  // Acceleration + Grand Impact Ready
         [7520]  = [Status(1239, 20f), Status(3876, 30f)],  // Embolden + Thorned Flourish
         [7521]  = [Status(1971, 30f), Status(3875, 30f, 3), Status(3878, 30f)], // Manafication → range + Magicked Swordplay (3 stk) + Prefulgence Ready
+        [25857] = [TargetStatus(2707, 10f)],                  // Magick Barrier
         // Enchanted melee each grant 1 Mana Stack (at 3, Verthunder/Veraero → Verflare/Verholy):
         [7527] = [Gauge(RdmManaStacks, 1)], [7528] = [Gauge(RdmManaStacks, 1)], [7529] = [Gauge(RdmManaStacks, 1)], // Enchanted Riposte/Zwerchhau/Redoublement
         [7530] = [Gauge(RdmManaStacks, 1)], [37002] = [Gauge(RdmManaStacks, 1)], [37003] = [Gauge(RdmManaStacks, 1)], // Enchanted Moulinet/Deux/Trois
@@ -442,6 +450,12 @@ internal static unsafe class JobActions
         [7436]  = [Status(3882, 30f)],        // Chain Stratagem → Impact Imminent
         [16542] = [Status(1896, 15f)],        // Recitation
         [37014] = [Status(3884, 20f), Status(4327, 20f)],   // Seraphism → self-status (Manifestation/Accession/Seraphic Halo swaps)
+        [3585]  = [TargetStatus(297, 30f, shieldScale: 2.45f)],   // Deployment Tactics → a spread crit Adloquium's Galvanize
+        [186]   = [TargetStatus(297, 30f)], [37013] = [TargetStatus(297, 30f)],   // Succor / Concitation → Galvanize
+        [25868] = [TargetStatus(2711, 20f)],                // Expedient → Desperate Measures
+        [188]   = [GroundZone(299, 15f, 15f)],              // Sacred Soil
+        [16545] = [PartyStatus(1917, 30f, 30f)], [16546] = [PartyStatus(1917, 30f, 30f)],   // Summon Seraph / Consolation → Seraphic Veil
+        [16538] = [PartyStatus(317, 20f, 30f)],             // Fey Illumination
 
         // VPR
         [34620] = [Gauge(VprRattlingCoil, 1)],      // Vicewinder
@@ -468,7 +482,9 @@ internal static unsafe class JobActions
         [16531] = [Gauge(WhmBloodLily, 1)],   // Afflatus Solace
         [16534] = [Gauge(WhmBloodLily, 1)],   // Afflatus Rapture
         [136]   = [Status(157, 15f), Status(3879, 30f, 3)],   // Presence of Mind → self-haste + Sacred Sight (3 stk)
-        [16536] = [Status(3881, 30f)],   // Temperance → Divine Grace (enables Divine Caress)
+        [16536] = [Status(3881, 30f), Status(1872, 20f), PartyStatus(1873, 20f, 50f)],   // Temperance → Divine Grace (enables Divine Caress) + the party's 10%
+        [37011] = [TargetStatus(3903, 10f)],   // Divine Caress
+        [7433]  = [TargetStatus(1219, 10f)],   // Plenary Indulgence → Confession
         [120]   = [Random(0.15f, Status(155, 15f))],   // Cure → Freecure (15%)
 
         // DNC — Feathers only (50% procs); Esprit is buff-gated, not modelled
@@ -483,6 +499,9 @@ internal static unsafe class JobActions
         [16007] = [Random(0.5f, Status(1820, 30f))], [16008] = [Random(0.5f, Status(1820, 30f))],   // Fan Dance I/II → Threefold Fan Dance (50%)
         [16011] = [Status(1825, 20f), Status(2700, 20f)],               // Devilment + Flourishing Starfall
         [16013] = [Status(3017, 30f), Status(3018, 30f), Status(1820, 30f), Status(2699, 30f), Status(3868, 30f)], // Flourish (5 procs)
+        [16012] = [TargetStatus(1826, 15f)],                            // Shield Samba
+        [16014] = [Status(1827, 15f)],                                  // Improvisation (Rising Rhythm builds in DancerStateHandler)
+        [25789] = [ScaleByStacks(2696, [1f, 1.2f, 1.4f, 1.6f, 2f], TargetStatus(2697, 30f)), RemoveStatus(1827)],   // Improvised Finish: 5/6/7/8/10% by Rising Rhythm
         [15997] = [Status(1818, 15f)], [15998] = [Status(1819, 15f)],   // Standard/Technical Step
         [16003] = [Status(1821, 60f), Status(3867, 30f)],               // Standard Finish → dmg + Last Dance Ready
         [16004] = [Status(1822, 20f), Status(2698, 30f), Status(3869, 30f)], // Technical Finish → dmg + Flourishing Finish + Dance of Dawn Ready
@@ -539,6 +558,7 @@ internal static unsafe class JobActions
         [114]   = [Status(2217, 45f)],                    // Mage's Ballad
         [116]   = [Status(2218, 45f)],                    // Army's Paeon
         [3559]  = [Status(2216, 45f)],                    // the Wanderer's Minuet
+        [7405]  = [TargetStatus(1934, 15f)],              // Troubadour
 
         // BLM
         [141]  = [Random(0.4f, Status(165, 30f)), Status(3870, 30f)],   // Fire → Firestarter (40%) + Thunderhead (stance entry)
@@ -564,7 +584,10 @@ internal static unsafe class JobActions
         // AST
         [16552] = [Status(1878, 20f), Status(3893, 30f)],  // Divination + Divining
         [3606]  = [Status(841, 15f)],                      // Lightspeed
-        [16559] = [Status(3895, 30f)],   // Neutral Sect → Suntouched (enables Sun Sign)
+        [16559] = [Status(3895, 30f), Status(1892, 20f)],   // Neutral Sect → Suntouched (enables Sun Sign) + Neutral Sect (Helios barriers)
+        [37031] = [TargetStatus(3896, 15f)],   // Sun Sign
+        [37030] = [IfCasterHas(1892, TargetStatus(1921, 30f))], [3601] = [IfCasterHas(1892, TargetStatus(1921, 30f))],   // Helios Conjunction / Aspected Helios → barrier under Neutral Sect
+        [3613]  = [TargetStatus(849, 10f)],    // Collective Unconscious
         [25874] = [Status(2718, 15f)],   // Macrocosmos (enables Microcosmos)
         [3594]  = [Random(0.15f, Status(815, 15f))],   // Benefic → Enhanced Benefic II (15%)
         [7439]  = [Status(1224, 10f)],   // Earthly Star → Earthly Dominance (enables Stellar Detonation, first 10s)
@@ -580,11 +603,17 @@ internal static unsafe class JobActions
         [34675] = [Status(3685, 20f), Status(3690, 30f), Status(3689, 30f), Status(3688, 30f, 5), Status(3681, 20f)], // Starry Muse suite
         [34671] = [Status(4103, 0f)],                       // Winged Muse → Moogle Portrait
         [34673] = [Status(4104, 0f)],                       // Fanged Muse → Madeen Portrait
-        [34685] = [Status(3686, 10f)],                      // Tempera Coat → self-status (enables Tempera Grassa)
+        [34685] = [Status(3686, 10f)],                      // Tempera Coat → its own barrier, which also enables Tempera Grassa
+        [34686] = [TargetStatus(3687, 10f)],                // Tempera Grassa (spends the Coat, see StatusClearedOnAction)
 
         // SGE
         [24290] = [Status(2606, 0f)],                     // Eukrasia (toggle, no-expiry)
         [37035] = [Status(3898, 20f), Status(3899, 20f)], // Philosophia + Eudaimonia
+        [24298] = [TargetStatus(2618, 15f)],              // Kerachole
+        [24300] = [Status(2611, 30f)],                    // Zoe
+        [37034] = [Boost(2611, 1.5f, TargetStatus(2609, 30f))], [24292] = [Boost(2611, 1.5f, TargetStatus(2609, 30f))],   // Eukrasian Prognosis II / I (Zoe: x1.5)
+        [24310] = [TargetStatus(3003, 20f), TargetStatus(3365, 20f)],   // Holos + Holosakos
+        [24311] = [TargetStatus(2613, 15f), TargetStatus(2643, 15f, 5)], // Panhaima + Panhaimatinon (5 stk)
         [24309] = [Gauge(SgeAddersgall, 1)],              // Rhizomata → +1 Addersgall (passive fill in TimedGauges)
     };
 
@@ -713,12 +742,23 @@ internal static unsafe class JobActions
     // Consumes one stack of every status the given action clears — `AddStatus(id, 0, -1)`
     // decrements a stacking buff (Requiescat, Meikyo…) and despawns a plain proc (Stacks 0
     // → 0 → removed), so both cases fall out of one call.
-    public static void ClearStatuses(SimPlayer player, uint actionId)
+    public static void ClearStatuses(SimCharacter caster, uint actionId)
     {
         foreach (var (statusId, predicates) in StatusClearedOnAction)
             foreach (var predicate in predicates)
-                if (predicate.Matches(actionId)) { player.AddStatus(statusId, 0f, -1); break; }
+                if (predicate.Matches(actionId)) { caster.AddStatus(statusId, 0f, -1); break; }
     }
+
+    // Every status the action grants, wherever it lands, with its duration.
+    public static IReadOnlyList<(ushort StatusId, float Duration)> GrantsOf(uint actionId)
+        => Actions.TryGetValue(actionId, out var effects)
+            ? effects.OfType<IGrantsStatus>().SelectMany(g => g.Grants).ToList()
+            : [];
+
+    // The statuses an action needs on its caster first (Divine Grace for Divine Caress).
+    public static IReadOnlyList<ushort> StatusesSpentBy(uint actionId)
+        => StatusClearedOnAction.Where(kv => kv.Value.Any(p => p is ActionIdPredicate && p.Matches(actionId)))
+                                .Select(kv => kv.Key).ToList();
 
     // (job, Action-sheet PrimaryCostType) → the gauge(s) an action spends; PrimaryCostValue is
     // the amount. Covers every scalar job gauge, so spenders need NO per-action rows. Keyed on
@@ -758,8 +798,14 @@ internal static unsafe class JobActions
     private static IActionEffect Gauge(ResourceGauge gauge, int amount) => new GaugeEffect(gauge, amount);
     private static IActionEffect SetGauge(ResourceGauge gauge, int value) => new SetGaugeEffect(gauge, value);
     private static IActionEffect Status(ushort statusId, float duration, int stacks = 0) => new StatusEffect(statusId, duration, stacks);
-    private static IActionEffect TargetStatus(ushort statusId, float duration, int stacks = 0) => new TargetStatusEffect(statusId, duration, stacks);
+    private static IActionEffect TargetStatus(ushort statusId, float duration, int stacks = 0, float shieldScale = 1f) => new TargetStatusEffect(statusId, duration, stacks, shieldScale);
     private static IActionEffect EnemyStatus(ushort statusId, float duration, int stacks = 0) => new EnemyStatusEffect(statusId, duration, stacks);
+    private static IActionEffect PartyStatus(ushort statusId, float duration, float range) => new PartyStatusEffect(statusId, duration, range);
+    private static IActionEffect GroundZone(ushort statusId, float radius, float duration) => new GroundZoneEffect(statusId, radius, duration);
+    private static IActionEffect RemoveStatus(ushort statusId) => new RemoveStatusEffect(statusId);
+    private static IActionEffect IfCasterHas(ushort statusId, params IActionEffect[] inner) => new IfCasterHasEffect(statusId, inner);
+    private static IActionEffect Boost(ushort statusId, float factor, params IActionEffect[] inner) => new BoostEffect(statusId, factor, inner);
+    private static IActionEffect ScaleByStacks(ushort statusId, float[] scaleByStacks, params IActionEffect[] inner) => new ScaleByStacksEffect(statusId, scaleByStacks, inner);
     private static IActionEffect Combo(params IActionEffect[] inner) => new ComboEffect(inner);
     private static IActionEffect Random(float chance, params IActionEffect[] inner) => new RandomEffect(chance, inner);
 

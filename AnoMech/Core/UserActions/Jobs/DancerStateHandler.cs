@@ -1,3 +1,4 @@
+using AnoMech.Core.Native.Interfaces;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Gauge;
 
@@ -12,10 +13,22 @@ internal sealed unsafe class DancerStateHandler : IUserActionHandler
 {
     private readonly System.Random _rng = new();
 
+    // Improvisation: a Rising Rhythm stack every 3s while dancing, up to 4. Moving or any other
+    // action ends the dance; Improvised Finish spends it in its own JobActions row.
+    private const uint ImprovisationAction = 16014;
+    private const uint ImprovisedFinishAction = 25789;
+    private const ushort ImprovisationStatus = 1827;
+    private const ushort RisingRhythmStatus = 2696;
+    private const float RisingRhythmInterval = 3f;
+    private const int RisingRhythmMax = 4;
+    private float danced;
+
     public void OnAction(ActionType actionType, uint actionId)
     {
         if (actionType != ActionType.Action) return;
         if (PlayerJob.Current != JobId.Dancer) return;
+        if (actionId == ImprovisationAction) danced = 0f;
+        else if (actionId != ImprovisedFinishAction) EndImprovisation();
         var jgm = JobGaugeManager.Instance();
         if (jgm == null) return;
 
@@ -28,6 +41,33 @@ internal sealed unsafe class DancerStateHandler : IUserActionHandler
                 break;
             case 16003 or 16004: ClearDance(jgm); break;   // Standard / Technical Finish
         }
+    }
+
+    public void OnTick(float deltaSeconds)
+    {
+        if (Plugin.GameInstance?.Player is not { } player || player.FindStatus(ImprovisationStatus) is not { } dance)
+        {
+            danced = 0f;
+            return;
+        }
+        if (Natives.PlayerInput.MovementInputActive || Natives.PlayerInput.IsJumping)
+        {
+            EndImprovisation();
+            return;
+        }
+        danced += deltaSeconds;
+        if (danced < RisingRhythmInterval) return;
+        danced -= RisingRhythmInterval;
+        if ((player.FindStatus(RisingRhythmStatus)?.Stacks ?? 0) < RisingRhythmMax)
+            player.AddStatus(RisingRhythmStatus, dance.RemainingTime);
+    }
+
+    private void EndImprovisation()
+    {
+        danced = 0f;
+        if (Plugin.GameInstance?.Player is not { } player) return;
+        player.RemoveStatus(ImprovisationStatus);
+        player.RemoveStatus(RisingRhythmStatus);
     }
 
     // Fill the first `count` slots with a random DanceStep (Emboite..Pirouette), the rest with

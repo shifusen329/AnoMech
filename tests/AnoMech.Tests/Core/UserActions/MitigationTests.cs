@@ -6,12 +6,16 @@ public class MitigationTests
 {
     private const ushort Rampart = 1191;
     private const ushort Reprisal = 1193;
+    private const ushort Feint = 1195;
     private const ushort DarkMind = 746;
     private const ushort HallowedGround = 82;
     private const ushort BlackestNight = 1178;
     private const ushort Guardian = 3829;
     private const ushort GuardiansWill = 3830;
     private const ushort ThrillOfBattle = 87;
+    private const ushort Kerachole = 2618;
+    private const ushort DivineCaress = 3903;
+    private const ushort ImprovisedFinish = 2697;
 
     [Test]
     public void NoKnownStatusesMitigateNothing()
@@ -23,7 +27,27 @@ public class MitigationTests
     [Test]
     public void PercentagesStackMultiplicatively()
     {
-        Assert.That(Mitigation.Effective([Rampart, Reprisal], DamageKind.Physical), Is.EqualTo(0.28f).Within(1e-5f));
+        Assert.That(Mitigation.Effective([Rampart, Kerachole], DamageKind.Physical), Is.EqualTo(0.28f).Within(1e-5f));
+    }
+
+    [Test]
+    public void EnemyDebuffsCountOnlyFromTheAttacker()
+    {
+        Assert.That(Mitigation.Effective([Rampart], DamageKind.Physical, enemyStatusIds: [Reprisal]), Is.EqualTo(0.28f).Within(1e-5f));
+        Assert.That(Mitigation.Effective([Rampart, Reprisal], DamageKind.Physical), Is.EqualTo(0.20f).Within(1e-5f));
+    }
+
+    [TestCase(DamageKind.Physical, 0.10f)]
+    [TestCase(DamageKind.Magic, 0.05f)]
+    public void FeintIsTyped(DamageKind kind, float expected)
+    {
+        Assert.That(Mitigation.Effective([], kind, enemyStatusIds: [Feint]), Is.EqualTo(expected).Within(1e-5f));
+    }
+
+    [Test]
+    public void TheSameStatusCountsOnce()
+    {
+        Assert.That(Mitigation.Effective([Kerachole, Kerachole], DamageKind.Magic), Is.EqualTo(0.10f).Within(1e-5f));
     }
 
     [TestCase(DamageKind.Magic, 0.20f)]
@@ -53,6 +77,15 @@ public class MitigationTests
     }
 
     [Test]
+    public void AnAbsoluteShieldIsAShareOfTheTargetsMaxHp()
+    {
+        var maxHp = Mitigation.ByStatusId[DivineCaress].ShieldAbsolute * 10f;
+        Assert.That(Mitigation.Effective([DivineCaress], DamageKind.Magic, maxHp), Is.EqualTo(1f - 1f / 1.1f).Within(1e-5f));
+        Assert.That(Mitigation.ShieldFraction([DivineCaress, ImprovisedFinish], maxHp), Is.EqualTo(0.15f).Within(1e-5f));
+        Assert.That(Mitigation.Effective([DivineCaress], DamageKind.Magic), Is.EqualTo(0f), "no max HP to size it against");
+    }
+
+    [Test]
     public void BonusMaxHpCountsLikeAShield()
     {
         Assert.That(Mitigation.Effective([ThrillOfBattle], DamageKind.Magic), Is.EqualTo(1f - 1f / 1.2f).Within(1e-5f));
@@ -77,6 +110,14 @@ public class MitigationTests
     {
         foreach (var (id, m) in Mitigation.ByStatusId)
             if (m.IsShield)
-                Assert.That(m with { ShieldHp = 0f, ShieldPotency = 0f }, Is.EqualTo(default(Mitigation)), $"status {id}");
+                Assert.That(m with { ShieldHp = 0f, ShieldPotency = 0f, ShieldAbsolute = 0f, ShieldHits = 0 }, Is.EqualTo(default(Mitigation)), $"status {id}");
+    }
+
+    [Test]
+    public void OnlyShieldsAbsorbPerHit()
+    {
+        foreach (var (id, m) in Mitigation.ByStatusId)
+            if (m.ShieldHits > 0)
+                Assert.That(m.IsShield, $"status {id}");
     }
 }

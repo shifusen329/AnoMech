@@ -183,9 +183,14 @@ public class DamageSolver
         return survives;
     }
 
+    // The enemy whose Reprisal/Feint/Addle count toward these checks. Unset, only the target's own
+    // statuses do: hits often come from helpers, and existing thresholds were tuned that way.
+    public Func<SimCharacter?>? DebuffSource { get; set; }
+
     // Read-only, for anyone: what a hit's shown number should be scaled by.
     public float EffectiveMitigation(SimCharacter target, DamageKind kind = DamageKind.Physical)
-        => Mitigation.Effective(target.ActiveStatusSnapshot.Select(s => s.StatusId), kind);
+        => Mitigation.Effective(target.ActiveStatusSnapshot.Select(s => s.StatusId), kind, target.Proxy?.MaxHealth ?? 0u,
+            DebuffSource?.Invoke()?.ActiveStatusSnapshot.Select(s => s.StatusId));
 
     private bool ChecksMitigation(SimCharacter target)
         => Plugin.Config.EnableTankMitigation && Natives.UserActions.Enabled

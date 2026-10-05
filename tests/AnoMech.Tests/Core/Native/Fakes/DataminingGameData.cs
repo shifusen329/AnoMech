@@ -32,7 +32,8 @@ internal sealed class DataminingGameData : IGameData
             OmenPath(row.UInt("OmenAlt")),
             row.UInt("ActionCategory"),
             row.Bool("CanTargetSelf"),
-            row.Bool("CanTargetParty"));
+            row.Bool("CanTargetParty"),
+            row.UInt("Recast100ms") / 10f);
     }
 
     public KnockbackRow? Knockback(uint knockbackId)

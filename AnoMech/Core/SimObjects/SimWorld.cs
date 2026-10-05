@@ -129,6 +129,14 @@ public sealed class SimWorld : ISimObject, IDisposable
         return tower;
     }
 
+    // `center` is scenario-local; onEnter reports each member who walks in, with the time left.
+    public SimGroundZone PlaceGroundZone(Vector3 center, float radius, ushort statusId, float duration, Action<PartyRole, float>? onEnter = null)
+    {
+        var zone = new SimGroundZone(Party, center, radius, statusId, duration, onEnter);
+        children.Add(zone);
+        return zone;
+    }
+
     // Places the scenario's waymark layout (scenario-local offsets). Cleared in Despawn, not a
     // tracked child.
     public void PlaceWaymarks(IReadOnlyList<Waymark> layout)

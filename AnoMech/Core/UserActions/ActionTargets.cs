@@ -49,6 +49,11 @@ internal static class ActionTargets
         }
     }
 
+    public static IReadOnlyList<SimCharacter> PartyAround(SimCharacter caster, float range)
+        => Plugin.GameInstance is { } game
+            ? game.World.Party.ActiveMembers().Where(m => InRange(caster, m, range)).ToList()
+            : [];
+
     private static bool TryGetAction(uint actionId, [NotNullWhen(true)] out ActionRow? action)
         => (action = Natives.Data.Action(actionId)) != null;
 

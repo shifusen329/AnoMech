@@ -115,7 +115,7 @@ internal sealed unsafe class PartyHud : IPartyHud
     {
         var bc = member.BattleCharaPtr();
         if (bc == null) return;
-        var fraction = Mitigation.ShieldFraction(member.ActiveStatusSnapshot.Select(s => s.StatusId));
+        var fraction = Mitigation.ShieldFraction(member.ActiveStatusSnapshot.Select(s => s.StatusId), bc->MaxHealth);
         bc->ShieldValue = (byte)Math.Clamp(fraction * 100f, 0f, 100f);
     }
 
