@@ -51,44 +51,30 @@ public sealed class UmadP2ForsakenP3ZBuddyMeowAiHelper
         ai.Move(1f, InitialLineup, cue: playbook.Lineup);
         ai.Move(10.16f, TowerPositions(0), jitter: .0f, arrivalTime: 22.16f, settleFraction: SettleFraction, cue: playbook.Towers(state, 0, alpha));
         ai.Move(25.17f, TowerPositions(1), jitter: .0f, arrivalTime: 32.16f, settleFraction: SettleFraction, cue: playbook.Towers(state, 1, alpha));
-        ai.Move(33f, AllThingsEndsBait(0, 2), arrivalTime: 37f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 0));
+        ai.Move(33f, AllThingsEndsBait(0, 2), jitter: .0f, arrivalTime: 37f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 0));
         ai.Move(39.21f, TowerPositions(2), jitter: .0f, arrivalTime: 43.21f, settleFraction: SettleFraction, cue: playbook.Towers(state, 2, alpha));
         ai.Move(47.22f, TowerPositions(3), jitter: .0f, arrivalTime: 53.22f, settleFraction: SettleFraction, cue: playbook.Towers(state, 3, beta));
-        ai.Move(54f, AllThingsEndsBait(1, 4), arrivalTime: 57f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 1));
+        ai.Move(54f, AllThingsEndsBait(1, 4), jitter: .0f, arrivalTime: 57f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 1));
         ai.Move(59.6f, TowerPositions(4), jitter: .0f, arrivalTime: 63.86f, settleFraction: SettleFraction, cue: playbook.Towers(state, 4, beta));
         ai.Move(65.27f, TowerPositions(5), jitter: .0f, arrivalTime: 73.27f, settleFraction: SettleFraction, cue: playbook.Towers(state, 5, beta));
-        ai.Move(75f, AllThingsEndsBait(2, 6), arrivalTime: 78f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 2));
+        ai.Move(75f, AllThingsEndsBait(2, 6), jitter: .0f, arrivalTime: 78f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 2));
         ai.Move(81.31f, TowerPositions(6), jitter: .0f, arrivalTime: 85.0f, settleFraction: SettleFraction, cue: playbook.Towers(state, 6, beta));
         ai.Move(90.32f, TowerPositions(7), jitter: .0f, arrivalTime: 94.32f, settleFraction: SettleFraction, cue: playbook.Towers(state, 7, alpha));
         // Occurrence 3 has no upcoming tower to bisect against and nothing moves the party after
         // it, so it gets the real two-step: gather between the last towers, then relocate once the
         // castbar starts. The boss's facing locks at its Face() call, so moving during the cast is
         // what makes Future's End safe; Past's End's second move is a same-spot no-op.
-        ai.Move(95.83f, BetweenLastTowers(), arrivalTime: 98f, settleFraction: SettleFraction, cue: playbook.LastClonesGather(state));
-        ai.Move(101.16f, AllThingsEndsBait(3, 7), arrivalTime: 105f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 3));
+        ai.Move(95.83f, BetweenLastTowers(), jitter: .0f, arrivalTime: 98f, settleFraction: SettleFraction, cue: playbook.LastClonesGather(state));
+        ai.Move(101.16f, AllThingsEndsBait(3, 7), jitter: .0f, arrivalTime: 105f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 3));
     }
 
-    // Future's End sits opposite the upcoming towers, Past's End between them, both on the
-    // NewNorthAt(2*i+2) bisector the tower pair straddles, well outside the hitbox: the farther
-    // from the clones, the shallower their cleaves. These are about as far out as the sprint to
-    // the next towers still beats All Things Ending (the cone tracks party.Player, who is in this
-    // stack). Both casters sit at the origin.
-    private const float PastBaitFromCenter = 13f;
-    private const float FutureBaitFromCenter = 15f;
-
+    // On the NewNorthAt(2*i+2) bisector the next tower pair straddles (see UmadP2ForsakenEndBait).
     private Func<IAiMove> AllThingsEndsBait(int i, int northIndex)
-    {
-        var distance = state.EndAttacks[i] == EndAttack.PastsEnd ? -PastBaitFromCenter : FutureBaitFromCenter;
-        return () => AiMove.All(new(0, distance))
-                           .ApplyPositions(state.NewNorthAt(northIndex).Apply);
-    }
+        => () => UmadP2ForsakenEndBait.Move(state.EndAttacks[i] == EndAttack.PastsEnd, state.NewNorthAt(northIndex));
 
     // Occurrence 3's first leg: both variants start between the towers.
     private Func<IAiMove> BetweenLastTowers()
-    {
-        return () => AiMove.All(new(0, -PastBaitFromCenter))
-                           .ApplyPositions(state.NewNorthAt(7).Apply);
-    }
+        => () => UmadP2ForsakenEndBait.Move(betweenTowers: true, state.NewNorthAt(7));
 
     private void Init()
     {

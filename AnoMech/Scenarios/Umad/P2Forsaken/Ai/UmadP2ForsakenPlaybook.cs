@@ -88,14 +88,14 @@ public sealed class UmadP2ForsakenPlaybook
         var nextSet = occurrence * 2 + 3;
         return new($"{EndName(state.EndAttacks[occurrence])}: All Things Ending",
             _ => future
-                ? $"It's Future's End: everyone groups 15y out on the side away from set {nextSet}'s towers, because Kefka and his clones turn to the party and cleave their front half. Once they start casting, run to the towers behind them."
-                : $"It's Past's End: everyone groups 13y out between set {nextSet}'s towers, because Kefka and his clones turn to the party and cleave their back half, which leaves the towers safe once they start casting.",
+                ? $"It's Future's End: everyone groups at max melee on the side away from set {nextSet}'s towers, because Kefka and his clones turn to the party and cleave their front half. Once they start casting, run to the towers behind them."
+                : $"It's Past's End: everyone groups at max melee between set {nextSet}'s towers, because Kefka and his clones turn to the party and cleave their back half, which leaves the towers safe once they start casting.",
             $"NAUR §2.6 (0:20:34) · wtfdig kefka_p2/9_future_past_baits · {plan}");
     }
 
     public StratCue LastClonesGather(UmadP2ForsakenState state) => new(
         $"{EndName(state.EndAttacks[3])}: last clones",
-        _ => "Everyone groups 13y out between the last towers so the last clones turn to face the party. "
+        _ => "Everyone groups at max melee between the last towers so the last clones turn to face the party. "
              + (state.EndAttacks[3] == EndAttack.PastsEnd
                  ? "It's Past's End, so you'll stay here, in front of them, while they cleave behind."
                  : "It's Future's End, so once they start casting you'll run through to the far side, behind them."),
