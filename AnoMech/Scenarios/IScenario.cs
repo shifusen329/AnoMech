@@ -19,6 +19,9 @@ public interface IScenario
     // (IMultiplayerReplayable).
     bool SupportsMultiplayer => false;
 
+    // Has a mitigation plan and calls world.MitPractice from Run.
+    bool SupportsMitigationPractice => false;
+
     // Selectable strats. Run's selectedAi indexes this (null = solo); region buttons derive
     // from each strat's IScenarioAi.Group.
     IReadOnlyList<IScenarioAi> AiStrats { get; }

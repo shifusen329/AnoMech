@@ -588,6 +588,7 @@ public unsafe class MainWindow : Window, IDisposable
                     DrawStratSelector(mpGuest);
                     DrawWaymarkSelector();
                     if (!mpGuest && !SoloSelected) DrawBotTimingSelector();
+                    if (!mpGuest && !SoloSelected && scenario.SupportsMitigationPractice) DrawMitigationSelector();
                     SettingsGrid.End();
                 }
                 ImGui.TreePop();
@@ -963,6 +964,26 @@ public unsafe class MainWindow : Window, IDisposable
             ImGui.SetTooltip("Natural: bots head to their next spot early and wait there, as players do.\n"
                              + "Last moment: they leave as late as they can and arrive just in time, as in upstream AnoMech.\n"
                              + "Only P1 Graven Image 1 and 2 and P2 Forsaken have natural timing; other scenarios always move at the last moment.");
+    }
+
+    // Indexed by MitigationPractice.
+    private static readonly string[] MitigationLabels = ["Off", "Practice"];
+
+    private void DrawMitigationSelector()
+    {
+        var idx = Plugin.Config.MitigationPractice ? 1 : 0;
+        SettingsGrid.Row("Mitigation:");
+        ImGui.SetNextItemWidth(SetupDropdownWidth * ImGuiHelpers.GlobalScale);
+        if (ImGui.Combo("##mitigation", ref idx, MitigationLabels, MitigationLabels.Length))
+        {
+            Plugin.Config.MitigationPractice = idx == 1;
+            Plugin.Config.Save();
+            plugin.Game.World.MitPractice.Enabled = idx == 1;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Practice: bots press the party mitigation sheet for the comp you're in, and your own planned presses are graded in chat when the run ends.\n"
+                             + "Hits lower HP bars where the damage is known (P1, P2 Forsaken); a hit that would kill only warns and names what was missing.\n"
+                             + "Grading needs \"Resolve your own actions\" on. Takes effect from the next start.");
     }
 
     private void DrawRoleSelector()

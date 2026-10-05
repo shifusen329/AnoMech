@@ -97,6 +97,7 @@ public sealed class Plugin : IDalamudPlugin
             opcodeUpdater = new OpcodeUpdater();
             Game = new Game();
             Game.World.NaturalBotTiming = Config.NaturalBotTiming;
+            Game.World.MitPractice.Enabled = Config.MitigationPractice;
             GameInstance = Game;
             MultiplayerInstance = Multiplayer;
             if (Config.EnableUserActions) UserActions.Enable();

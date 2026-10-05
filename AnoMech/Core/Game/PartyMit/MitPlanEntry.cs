@@ -30,5 +30,6 @@ public sealed record MitHitDef(string Key, string Name, float? Raw, MitSource? S
 
 public readonly record struct MitScheduledHit(float At, string[] Keys);
 
+// DebuffTarget is the boss the party's Reprisal/Feint/Addle go on.
 public sealed record MitPlanData(MitProfile Profile, IReadOnlyList<MitHitDef> Hits, IReadOnlyList<MitScheduledHit> Schedule,
-    IReadOnlyList<MitPlanEntry> Entries);
+    IReadOnlyList<MitPlanEntry> Entries, MitSource? DebuffTarget = null);

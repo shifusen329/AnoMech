@@ -17,6 +17,9 @@ public interface ISimPartyMember : ISimObject, IPositioned
 {
     PartyRole Role { get; set;}
 
+    // ClassJob sheet row, 0 when unknown.
+    byte ClassJob { get; }
+
     // KO state. Set by the implementer's OnKilled; the member stays present
     // (IsActive) but lies on the floor. Implementers reset it on revive.
     bool Dead { get; }

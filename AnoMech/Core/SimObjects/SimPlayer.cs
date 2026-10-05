@@ -49,6 +49,10 @@ public sealed class SimPlayer(Coordinates coordinates) : SimCharacter(coordinate
 
     public PartyRole Role { get; set; }
     public bool Dead { get; private set; }
+    public byte ClassJob => Proxy is { Exists: true } chara ? chara.ClassJob : (byte)0;
+
+    // Captures the real max HP the first time, so Despawn puts it back.
+    internal override void WriteHp(uint current, uint max) => ApplyNetworkHp(current, max);
 
     // For stillness/movement mechanics: IsMoving = movement input, a jump, any action, or an
     // in-flight debug-bot MoveTo; IsActing also counts auto-attacks. Forced false while KO'd.

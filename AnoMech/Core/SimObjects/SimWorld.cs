@@ -40,6 +40,9 @@ public sealed class SimWorld : ISimObject, IDisposable
 
     // Every strat spot handed out this run (the death recap's "where you should have been").
     public AnoMech.Core.Game.Ai.StratTrail Strat { get; }
+
+    // Optional party mitigation practice; a scenario that supports it calls Begin from Run.
+    public AnoMech.Core.Game.PartyMit.MitPractice MitPractice { get; }
     public Vector3 ScenarioOrigin { get; set; }
 
     // On, bots in the strats tuned for it take their next spot early and wait there, as players
@@ -75,6 +78,7 @@ public sealed class SimWorld : ISimObject, IDisposable
     {
         Events = events;
         Strat = new AnoMech.Core.Game.Ai.StratTrail(events);
+        MitPractice = new AnoMech.Core.Game.PartyMit.MitPractice(this);
         Coordinates = new Coordinates(() => ScenarioOrigin);
     }
 
@@ -226,6 +230,7 @@ public sealed class SimWorld : ISimObject, IDisposable
         Natives.VfxSpawnLog.Tick();
         Natives.BattleCharas.SweepOrphans();
         children.Update(deltaSeconds);
+        MitPractice.Tick();
         Natives.EnmityHud.Refresh(children.OfType<SimEnemy>(), deltaSeconds);
         Natives.PartyHud.Refresh(Party);
     }
@@ -240,6 +245,7 @@ public sealed class SimWorld : ISimObject, IDisposable
         Natives.Waymarks.ClearAll();
         Obstacles.Clear();
         Strat.Clear();
+        MitPractice.Clear();
         ScenarioOrigin = default;
     }
 

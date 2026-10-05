@@ -5,6 +5,7 @@ using System.Linq;
 using Dalamud.Game.Text;
 using System.Numerics;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 using AnoMech.Scenarios;
@@ -463,6 +464,7 @@ public sealed class Game : IDisposable
         scenarioFinishedElapsed = (scenarioFinishedElapsed ?? 0f) + deltaSeconds;
         if (scenarioFinishedElapsed < MechanicResultSettleSeconds) return;
         mechanicResultReported = true;
+        World.MitPractice.Finish(deathOccurredThisRun ? MitRunEnd.Death : MitRunEnd.Completed);
         if (deathOccurredThisRun) return;
         if (lastMistakeElapsed is null)
         {
@@ -543,15 +545,24 @@ public sealed class Game : IDisposable
             AnoMech.Windows.DamageDebugWindow.Instance?.Freeze();
 #endif
             if (RestartsAfterDeath && lastRun is { } p && Recap == null)
-                Events.Add(5f, () => RunScenario(p));
+                Events.Add(5f, () =>
+                {
+                    World.MitPractice.Finish(MitRunEnd.Death);
+                    RunScenario(p);
+                });
             else if (RestartsAfterDeath && lastRun is { } held)
                 Events.Add(5f, () =>
                 {
+                    World.MitPractice.Finish(MitRunEnd.Death);
                     Paused = true;
                     restartAfterRecap = held;
                 });
             else
-                Events.Add(5f, () => Paused = true);
+                Events.Add(5f, () =>
+                {
+                    World.MitPractice.Finish(MitRunEnd.Death);
+                    Paused = true;
+                });
         }
         return true;
     }
@@ -655,6 +666,7 @@ public sealed class Game : IDisposable
 
     private void ResetInternal()
     {
+        World.MitPractice.Finish(MitRunEnd.Reset);
         activeScenario = null;
         scenarioElapsed = 0f;
         Events.Clear();

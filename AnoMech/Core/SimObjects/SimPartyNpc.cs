@@ -23,11 +23,13 @@ public sealed class SimPartyNpc : SimNpc, ISimPartyMember
         DisplayName = name;
     }
 
-    // A bot's button press: the animation, then the same JobActions effects a player's press applies.
-    private void UseAction(uint actionId)
+    // A bot's button press: the animation, then what a player's press does, statuses it spends
+    // first. `target` is who a single-target action is aimed at (the boss, for Feint); else itself.
+    public void UseAction(uint actionId, SimCharacter? target = null)
     {
         PlayAction(actionId);
-        JobActions.ApplyEffects(this, actionId, (ulong)GameObjectId, Random.Shared);
+        JobActions.ClearStatuses(this, actionId);
+        JobActions.ApplyEffects(this, actionId, (ulong)(target ?? this).GameObjectId, Random.Shared);
     }
 
     // level 1-3. False if KO'd or the job has no limit break at that level.

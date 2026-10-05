@@ -20,6 +20,8 @@ public class Configuration : IPluginConfiguration
     public bool AutoCollapseWhileRunning { get; set; } = false;
     // See SimWorld.NaturalBotTiming.
     public bool NaturalBotTiming { get; set; } = true;
+    // See MitPractice.
+    public bool MitigationPractice { get; set; } = false;
     public string LastSelectedScenario { get; set; } = "";
 
     // Multiplayer relay address (see AnoMech.Relay.Host/README.md) -- remembered across

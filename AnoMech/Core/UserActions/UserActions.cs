@@ -32,6 +32,7 @@ public sealed unsafe class UserActions : IUserActions, IDisposable
     private readonly List<IUserActionHandler> effectHandlers =
     [
         new JobActionHandler(),
+        new MitPracticePressHandler(),
         new LimitBreakHandler(),
         new SamuraiStateHandler(),
         new BlackMageStateHandler(),

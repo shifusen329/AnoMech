@@ -17,7 +17,10 @@ public enum PartyRole
 
 public static class PartyRoleExtensions
 {
+    private static readonly string[] ShortLabels = ["MT", "OT", "H1", "H2", "M1", "M2", "R1", "R2"];
+
     public static bool IsTank(this PartyRole role) => role is PartyRole.MainTank or PartyRole.OffTank;
     public static bool IsDps(this PartyRole role) => (int)role >= (int)PartyRole.MeleeDpsA;
+    public static string ShortLabel(this PartyRole role) => ShortLabels[(int)role];
 }
 

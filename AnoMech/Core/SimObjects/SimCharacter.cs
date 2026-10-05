@@ -242,6 +242,18 @@ public abstract class SimCharacter(Coordinates coordinates) : ISimObject, IPosit
     // death recap can outline what did it.
     public AoeHit? LastAoe { get; internal set; }
 
+    // Mitigation practice's simulated HP on the real bar.
+    internal virtual void WriteHp(uint current, uint max)
+    {
+        if (Proxy is not { Exists: true } chara) return;
+        chara.MaxHealth = max;
+        chara.Health = Math.Min(current, max);
+    }
+
+    // What's left of this character's barriers as a share of max HP, when mitigation practice
+    // tracks a partly absorbed one; null shows the shield statuses at full size.
+    public float? ShieldOverride { get; internal set; }
+
     // FIXME: minor, keep track of tethers and slots attached to character
     public bool HasTetherInSlot0(ushort tetherId)
         => Proxy is { Exists: true } chara && chara.GetTetherId(0) == tetherId;

@@ -746,8 +746,11 @@ internal static unsafe class JobActions
     public static void ClearStatuses(SimCharacter caster, uint actionId)
     {
         foreach (var (statusId, predicates) in StatusClearedOnAction)
+        {
+            if (!caster.HasStatus(statusId)) continue;
             foreach (var predicate in predicates)
                 if (predicate.Matches(actionId)) { caster.AddStatus(statusId, 0f, -1); break; }
+        }
     }
 
     // Every status the action grants, wherever it lands, with its duration.

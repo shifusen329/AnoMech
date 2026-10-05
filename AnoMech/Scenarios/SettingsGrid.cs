@@ -19,9 +19,7 @@ internal static class SettingsGrid
 
     public static void ItemWidth(float width) => ImGui.SetNextItemWidth(width * WidthScale * ImGuiHelpers.GlobalScale);
 
-    private static readonly string[] RoleLabels = ["MT", "OT", "H1", "H2", "M1", "M2", "R1", "R2"];
-
-    public static string RoleLabel(PartyRole role) => RoleLabels[(int)role];
+    public static string RoleLabel(PartyRole role) => role.ShortLabel();
 
     // A divider inside the grid: the rows below it are a different kind of setting. Used to
     // split a panel's fight-wide rolls from its per-player ones.

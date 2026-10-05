@@ -33,6 +33,12 @@ public class ConfigurationTests
     }
 
     [Test]
+    public void MitigationPracticeIsOptIn()
+    {
+        Assert.That(new Configuration().MitigationPractice, Is.False);
+    }
+
+    [Test]
     public void InvalidSavedCredentialIsReplaced()
     {
         var config = new Configuration { PeerSecret = "tampered" };
