@@ -7,8 +7,10 @@ using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Geometry;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
+using AnoMech.Scenarios.Umad.P1Shared;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 
 namespace AnoMech.Scenarios.Umad.P1TeleTrouncing;
@@ -30,6 +32,7 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
     public float BgmSecondsAtStart => Constants.BgmSecondsAtStart;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP1TeleTrouncingAi()];
     public object SettingsOverrides => settingsWindow.Overrides;
 
@@ -155,6 +158,8 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
         LastState = state;
         damage = new DamageSolver(party);
         hazeHoldApplied = true;   // what MapController.TryLoad just applied from the phase
+        world.MitPractice.Begin(UmadP1TeleTrouncingMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
 
         // Game.Scenarios reuses one instance across runs; a stopped run's arrow wrappers still
         // hold their frozen positions, and TickArrows would bind someone against them on the
@@ -1016,6 +1021,7 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
             return;
         }
 
+        world.MitPractice.Hit(others, UmadP1Hits.DoubleTroubleTrap);
         party.Knockback(holder.Position, Constants.KnockbackId.DoubleTroubleTrapStack, ConfettiKnockbackRadius, exclude: holder);
     }
 
@@ -1198,6 +1204,10 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
             DiagnosticLog.Info(
                 $"[UmadP1TeleTrouncing] Idyllic Will spread: {killed.Count} player(s) clipped and died -- "
                 + string.Join(", ", killed.Select(c => (c as ISimPartyMember)?.Role.ToString() ?? "?")));
+
+        foreach (var role in state.Debuffs.Keys)
+            world.MitPractice.Hit(party.Get(role),
+                UmadP1TeleTrouncingState.IsDps(role) == state.DpsGetsConfused ? UmadP1Hits.IndulgentWill : UmadP1Hits.IdyllicWill);
     }
 
     // 6.00s each, at the real EffectResult time: the chase and the sleep pose start with the
@@ -1379,6 +1389,7 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
                 damage.ApplyDamage(grp.Key, 0.6f, Constants.ActionId.FlagrantFireSpread, "fire spread",
                     lethal: count >= 2 && i == count - 1);
         }
+        world.MitPractice.Hit(fireSpreadHits.Distinct().ToList(), UmadP1Hits.FlagrantFire);
         fireSpreadHits.Clear();
         DiagnosticLog.Info("[UmadP1TeleTrouncing] Flagrant Fire III: SPREAD resolved.");
     }
@@ -1400,8 +1411,9 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
         var caster = Helper(helperIndex);
         caster?.SetPosition(new Placement(holder.Position, 0f));
         caster?.Cast(Constants.ActionId.FlagrantFireStack, castSeconds: 0f, targetId: holder.GameObjectId, animationLock: Constants.AnimationLock.Helper);
-        damage.Resolve(holder, Constants.ActionId.FlagrantFireStack, [DamageType.Magic],
+        var stacked = damage.Resolve(holder, Constants.ActionId.FlagrantFireStack, [DamageType.Magic],
             [(UmadConstants.StatusId.MagicVulnerabilityUp, Constants.MagicVulnerabilityUpSeconds)], stackMinTargets: 4);
+        world.MitPractice.Hit(stacked, UmadP1Hits.FlagrantFire);
     }
 
     private void EndP1()

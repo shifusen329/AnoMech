@@ -6,6 +6,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Native.Interfaces;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -30,6 +31,7 @@ public sealed class UmadP1GravenImage1Scenario : IMultiplayerReplayable
     public float BgmSecondsAtStart => 14.03f;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP1GravenImage1Ai()];
     public object SettingsOverrides => settingsWindow.Overrides;
     public void DrawSettings() => settingsWindow.Draw();
@@ -66,6 +68,8 @@ public sealed class UmadP1GravenImage1Scenario : IMultiplayerReplayable
         trapHitSupport = [];
         trapHitDps = [];
         world.EnforceArenaBoundary(UmadP1Kit.ArenaRadius, "Knocked off the arena");
+        world.MitPractice.Begin(UmadP1GravenImage1Mitigation.Plan(overrides.ExtrasAtWaveCannon),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => k.Kefka });
         DiagnosticLog.Info($"[UmadP1GravenImage1] Roll: tethers={(state.TetherDps ? "DPS" : "Supports")} ice1={state.Ice1} fire={state.Fire} "
             + $"wave=[{string.Join(",", state.WaveTargets)}] trap={state.TrapSupport}/{state.TrapDps} ice2={state.Ice2} thunder={state.Thunder}.");
 
@@ -156,6 +160,7 @@ public sealed class UmadP1GravenImage1Scenario : IMultiplayerReplayable
 
         world.Events.Add(33.52f, () => k.KefkaCast(Constants.ActionId.LightOfJudgment, CastBar.Long, AnimationLock.LightOfJudgment));
         world.Events.Add(35.47f, () => k.BeatColossus(StatueBeat.ColossusStage2));
+        world.Events.Add(38.51f, () => world.MitPractice.HitParty(UmadP1Hits.LightOfJudgment));
         world.Events.Add(41.65f, k.Hyperdrive);
         world.Events.Add(43.74f, k.Hyperdrive);
         world.Events.Add(45.83f, k.Hyperdrive);
@@ -218,8 +223,9 @@ public sealed class UmadP1GravenImage1Scenario : IMultiplayerReplayable
         {
             if (statues[i] is not { } statue || kit.Party.Get(state.WaveTargets[i]) is not { } target) continue;
             statue.Cast(Constants.ActionId.WaveCannon, castSeconds: 0f, targetId: target.GameObjectId, animationLock: AnimationLock.Helper);
-            kit.Damage.Resolve(statue, Constants.ActionId.WaveCannon, [DamageType.Magic],
+            var hit = kit.Damage.Resolve(statue, Constants.ActionId.WaveCannon, [DamageType.Magic],
                 [(UmadConstants.StatusId.MagicVulnerabilityUp, WaveCannonVulnSeconds)]);
+            kit.World.MitPractice.Hit(hit, UmadP1Hits.WaveCannon);
         }
     }
 
@@ -254,7 +260,7 @@ public sealed class UmadP1GravenImage1Scenario : IMultiplayerReplayable
                 kit.Party.WipeAllPlayers($"Unmitigated Explosion: nobody soaked {owner}'s tower during Graven Image 1");
                 return;
             }
-            kit.Damage.Resolve(helper, Constants.ActionId.Explosion, [DamageType.Magic], []);
+            kit.World.MitPractice.Hit(kit.Damage.Resolve(helper, Constants.ActionId.Explosion, [DamageType.Magic], []), UmadP1Hits.Explosion);
         }
         foreach (var (member, count) in towerCount)
             if (count >= 2 && member.IsAlive())

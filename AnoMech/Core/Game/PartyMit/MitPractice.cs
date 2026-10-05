@@ -44,6 +44,8 @@ public sealed class MitPractice
 
     public bool Enabled { get; set; }
     public bool IsActive => data != null && !finished;
+    // Hits move HP bars and show their own damage numbers.
+    public bool MovesHp => IsActive && hpMode;
 
     // At the scenario's start. `sources` resolves each MitSource to its live actor (the boss the
     // party's debuffs go on); `clock` is the scenario's, when it isn't world.Events.

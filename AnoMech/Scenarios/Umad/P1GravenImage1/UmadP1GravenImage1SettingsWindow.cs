@@ -25,6 +25,10 @@ public sealed class UmadP1GravenImage1SettingsWindow
             UmadP1SettingsRows.TriState("Thunder orb:", "gi1thunlie", "Lie", "Truth", Overrides.ThunderIsLie, v => Overrides.ThunderIsLie = v);
             UmadP1SettingsRows.TriState("Thunder flip:", "gi1thunflip", "Flipped", "Normal", Overrides.ThunderFlipped, v => Overrides.ThunderFlipped = v);
             UmadP1SettingsRows.ThunderOffsetRow("gi1thunoff", Overrides.ThunderRealOffset, v => Overrides.ThunderRealOffset = v);
+            SettingsGrid.Row("RDM/PCT Extras:");
+            if (ImGui.RadioButton("Light of Judgment 1##gi1extrasloj", !Overrides.ExtrasAtWaveCannon)) Overrides.ExtrasAtWaveCannon = false;
+            ImGui.SameLine();
+            if (ImGui.RadioButton("Wave Cannon##gi1extraswave", Overrides.ExtrasAtWaveCannon)) Overrides.ExtrasAtWaveCannon = true;
 #if DEBUG
             UmadP1SettingsRows.PropKnobs("gi1", Overrides.PropsBindDirector, v => Overrides.PropsBindDirector = v,
                 Overrides.PropsForceActive, v => Overrides.PropsForceActive = v, Overrides.PropsBeatMode, v => Overrides.PropsBeatMode = v);

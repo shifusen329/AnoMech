@@ -288,6 +288,7 @@ internal sealed class UmadP1Kit
         if (AggroTank is not { } tank) return;
         Kefka?.Cast(Constants.ActionId.Hyperdrive, castSeconds: 0f, targetId: tank.GameObjectId, animationLock: AnimationLock.Helper);
         Damage.Resolve(IPositioned.From(tank.Position), Constants.ActionId.Hyperdrive, [DamageType.TankBuster], []);
+        World.MitPractice.Hit(tank, UmadP1Hits.Hyperdrive);
     }
 
     // Revolting Ruin III: a 90-degree cone at the aggro tank, lethal to anyone else in it (the
@@ -405,6 +406,7 @@ internal sealed class UmadP1Kit
             for (var i = 0; i < count; i++)
                 Damage.ApplyDamage(group.Key, 0.6f, Constants.ActionId.FlagrantFireSpread, "fire spread", lethal: count >= 2 && i == count - 1);
         }
+        World.MitPractice.Hit(hits.Distinct().ToList(), UmadP1Hits.FlagrantFire);
     }
 
     private void ResolveFireStack(PartyRole holderRole, int helperIndex)
@@ -413,8 +415,9 @@ internal sealed class UmadP1Kit
         var caster = Helper(helperIndex);
         caster?.SetPosition(new Placement(holder.Position, 0f));
         caster?.Cast(Constants.ActionId.FlagrantFireStack, castSeconds: 0f, targetId: holder.GameObjectId, animationLock: AnimationLock.Helper);
-        Damage.Resolve(holder, Constants.ActionId.FlagrantFireStack, [DamageType.Magic],
+        var stacked = Damage.Resolve(holder, Constants.ActionId.FlagrantFireStack, [DamageType.Magic],
             [(UmadConstants.StatusId.MagicVulnerabilityUp, MagicVulnerabilityUpSeconds)], stackMinTargets: 4);
+        World.MitPractice.Hit(stacked, UmadP1Hits.FlagrantFire);
     }
 
     // --- Double-trouble Trap ----------------------------------------------------------------
@@ -450,6 +453,7 @@ internal sealed class UmadP1Kit
             foreach (var m in others) m.Die($"Failed Double-trouble Trap stack ({others.Count + 1}/{TrapStackRequiredCount}) on {holderRole} during {mechanic}");
             return [];
         }
+        World.MitPractice.Hit(others, UmadP1Hits.DoubleTroubleTrap);
         Party.Knockback(holder.Position, Constants.KnockbackId.DoubleTroubleTrapStack, TrapRadius, exclude: holder);
         return others;
     }

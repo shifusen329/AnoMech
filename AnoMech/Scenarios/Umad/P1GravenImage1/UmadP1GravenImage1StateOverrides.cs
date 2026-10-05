@@ -21,6 +21,9 @@ public sealed class UmadP1GravenImage1StateOverrides
     public bool? ThunderFlipped { get; set; }
     public bool? ThunderIsLie { get; set; }
 
+    // Mitigation practice: plan the RDM/PCT Extras for Wave Cannon instead of Light of Judgment 1.
+    public bool ExtrasAtWaveCannon { get; set; }
+
     // Statue prop knobs, as Tele-trouncing's (debug builds only).
     public bool PropsBindDirector { get; set; } = true;
     public bool PropsForceActive { get; set; } = false;

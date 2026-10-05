@@ -230,7 +230,8 @@ public class DamageSolver
     {
         if (target is not ISimPartyMember) return;
         var name = ActionLookup.Name(actionId);
-        if (target.Proxy is { Exists: true } chara)
+        // Mitigation practice shows the real number for the hits it models.
+        if (target.Proxy is { Exists: true } chara && Plugin.GameInstance?.World.MitPractice.MovesHp != true)
             chara.ShowFlyText((uint)MathF.Round(fractionOfMaxHp * chara.MaxHealth), name);
         if (!lethal) return;
         target.Die($"Died to {name} ({context})");

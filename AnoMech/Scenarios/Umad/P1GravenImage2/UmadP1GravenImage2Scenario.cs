@@ -6,6 +6,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Native.Interfaces;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -30,6 +31,7 @@ public sealed class UmadP1GravenImage2Scenario : IMultiplayerReplayable
     // The track starts 59.97s into the pull.
     public float BgmSecondsAtStart => 15.63f;
     public bool SupportsSolo => true;
+    public bool SupportsMitigationPractice => true;
     public bool SupportsMultiplayer => true;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP1GravenImage2Ai()];
     public object SettingsOverrides => settingsWindow.Overrides;
@@ -87,6 +89,8 @@ public sealed class UmadP1GravenImage2Scenario : IMultiplayerReplayable
         puzzleFailed = false;
         puzzleFailure = null;
         world.EnforceArenaBoundary(UmadP1Kit.ArenaRadius, "Knocked off the arena");
+        world.MitPractice.Begin(UmadP1GravenImage2Mitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => k.Kefka });
         DiagnosticLog.Info($"[UmadP1GravenImage2] Roll: purpleDps=[{string.Join(",", state.PurpleDps)}] ice={state.Ice} "
             + $"cleaveWest=[{string.Join(",", state.CleaveWest)}] trap={state.TrapSupport}/{state.TrapDps}.");
 
@@ -168,6 +172,7 @@ public sealed class UmadP1GravenImage2Scenario : IMultiplayerReplayable
 
         world.Events.Add(52.15f, () => k.BeatColossus(StatueBeat.ColossusStage3));
         world.Events.Add(52.24f, () => k.KefkaCast(Constants.ActionId.LightOfJudgment, CastBar.Long, AnimationLock.LightOfJudgment));
+        world.Events.Add(57.23f, () => world.MitPractice.HitParty(UmadP1Hits.LightOfJudgment));
         world.Events.Add(60.39f, k.Hyperdrive);
         world.Events.Add(62.48f, k.Hyperdrive);
         world.Events.Add(64.57f, k.Hyperdrive);
@@ -250,7 +255,11 @@ public sealed class UmadP1GravenImage2Scenario : IMultiplayerReplayable
             .Where(r => kit.Party.Get(r) is { } m && m.IsAlive() && landed.Any(p => DistanceXZ(p, m.Position) > PuddleRadius))
             .ToList();
         if (outside.Count > 0)
+        {
             kit.Party.WipeAllPlayers($"Gravitas: {string.Join(", ", outside)} not in the stack during Graven Image 2");
+            return;
+        }
+        foreach (var _ in landed) kit.World.MitPractice.HitParty(UmadP1Hits.Gravitas);
     }
 
     // Anyone else in a spread is thrown away from its target; a spread touching a puddle sets it
@@ -272,6 +281,7 @@ public sealed class UmadP1GravenImage2Scenario : IMultiplayerReplayable
             foreach (var other in kit.Party.Find.InsideCircle(target.Position, VitrophyreRadius))
                 if (!ReferenceEquals(other, target))
                     (other as ISimPartyMember)?.Knockback(target.Position, VitrophyreKnockback);
+            kit.World.MitPractice.Hit(target, UmadP1Hits.Vitrophyre);
         }
     }
 
@@ -338,6 +348,7 @@ public sealed class UmadP1GravenImage2Scenario : IMultiplayerReplayable
         if (soakers.Count < 3)
             foreach (var soaker in soakers.ToList())
                 soaker.Die($"Gravity III soaked by only {soakers.Count} during Graven Image 2");
+        kit.World.MitPractice.Hit(soakers, UmadP1Hits.GravityIII);
         if (soakers.Count < 4) FailPuzzle($"a set-{puddle.Set + 1} puddle was popped by {soakers.Count} player(s), not 4");
     }
 
