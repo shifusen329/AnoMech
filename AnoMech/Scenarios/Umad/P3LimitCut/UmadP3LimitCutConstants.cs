@@ -76,13 +76,11 @@ public static class UmadP3LimitCutConstants
         public const float SpotRadius = 20f;
         // 17.7-19.1y out in every clean pull: as far from the clone as the arena allows.
         public const float ChargeStandRadius = 19f;
-        // From the EObj spawn packets; the cyclone helpers sit on the wind crystal.
-        public static readonly Vector3 FireCrystal = new(-9.9f, 0f, -9.9f);
-        public static readonly Vector3 WaterCrystal = new(9.9f, 0f, 9.9f);
-        public static readonly Vector3 WindCrystal = new(9.9f, 0f, -9.9f);
-        public const float FireCrystalRotation = 0.785f;
-        public const float WaterCrystalRotation = -2.356f;
-        public const float WindCrystalRotation = -0.785f;
+        // The crystals sit 14y out on intercardinals facing the centre. The wind crystal's corner
+        // varies by pull and the bosses are always held on it; the cyclone helpers sit on it too.
+        public const float CrystalRadius = 14f;
+        public static Vector3 WindCrystal(int bossSpot) => OnCircle(SpotHeading(bossSpot), CrystalRadius);
+        public static float WindCrystalRotation(int bossSpot) => SpotHeading(bossSpot) + MathF.PI;
         // (100,90) world, facing south.
         public static readonly Vector3 KefkaPerch = new(0f, 0f, -10f);
         // Every pull: Chaos held at an intercardinal ~9y out with Exdeath beside him, the party

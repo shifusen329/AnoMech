@@ -130,14 +130,14 @@ public sealed class UmadP2ForsakenRinonAiHelper
     private IAiMove InitialLineup()
     {
         return AiMove.Create(
-            new(-2.5f, -2.5f),
-            new(-2.5f, 2.5f),
-            new(-7.5f, -2.5f),
-            new(-7.5f, 2.5f),
-            new(2.5f, -2.5f),
-            new(2.5f, 2.5f),
-            new(7.5f, -2.5f),
-            new(7.5f, 2.5f)
+            new(-5f, -3f),
+            new(-5f, 3f),
+            new(-10f, -3f),
+            new(-10f, 3f),
+            new(5f, -3f),
+            new(5f, 3f),
+            new(10f, -3f),
+            new(10f, 3f)
         );
     }
 
@@ -194,7 +194,7 @@ public sealed class UmadP2ForsakenRinonAiHelper
     [
         // active group
         new(4.8f, -4.8f),  // stack
-        new(8f, -8f),      // cone
+        new(7.6f, -7.6f),  // cone
         new(-5.4f, -2.4f), // stack
         new(-5.4f, -8.5f), // chariot
         // passive group

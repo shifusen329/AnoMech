@@ -67,7 +67,7 @@ public sealed class UmadP5ExaflaresAi : IScenarioAi<UmadP5ExaflaresState>
     // --- spread relaxation ---
     private const float SpreadKill = 5f;                          // ExaflareSpread EffectRange (kill radius)
     private const float Comfort = 9.75f;                          // relaxation target separation (kill 5y + 50% wider spread)
-    private const float OuterRing = 13f;                          // healers / ranged ring
+    private const float OuterRing = 17f;                          // healers / ranged ring
     private const float InnerFallback = 6.5f;                     // max-melee (inner annulus outer edge) if the boss can't be read
     private const float NoGoRadius = 3.5f;                        // 7y-diameter hard no-go at the boss
     private const float ArenaMax = 19f;

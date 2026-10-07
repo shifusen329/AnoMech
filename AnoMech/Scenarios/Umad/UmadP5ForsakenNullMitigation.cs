@@ -8,16 +8,20 @@ namespace AnoMech.Scenarios.Umad;
 
 // The P5 mitigation sheet's Forsaken rows on this scenario's clock: everything as late as possible,
 // a second round for the 5th hit as the first wears off. The 8th hit's Sacred Soil and Kerachole wait
-// out the 30s recast from the 1st. No damage is known yet, so HP doesn't move.
+// out the 30s recast from the 1st. Kefka himself deals Forsaken, so the party's debuffs reduce it; a
+// helper deals Forsaken Bonds.
 internal static class UmadP5ForsakenNullMitigation
 {
     public const string Forsaken = "forsaken";
+    public const string ForsakenRepeat = "forsaken_repeat";
     public const string ForsakenBonds = "forsaken_bonds";
 
+    // Raw on a physical DPS. The cast Forsaken opens; the three after it are a lighter instant one.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(Forsaken, "Forsaken", null, UmadMitigation.Kefka),
-        new(ForsakenBonds, "Forsaken Bonds", null, UmadMitigation.Kefka),
+        new(Forsaken, "Forsaken", 424000f, UmadMitigation.Kefka),
+        new(ForsakenRepeat, "Forsaken", 309000f, UmadMitigation.Kefka),
+        new(ForsakenBonds, "Forsaken Bonds", 240000f, null),
     ];
 
     private const float Hit1 = 13.21f;
@@ -33,14 +37,14 @@ internal static class UmadP5ForsakenNullMitigation
 
     public static MitPlanData Plan() => new(UmadMitigation.Profile, Hits,
         [
-            new(Hit1, [Forsaken]), new(Hit2, [ForsakenBonds]), new(Hit3, [Forsaken]), new(Hit4, [ForsakenBonds]),
-            new(Hit5, [Forsaken]), new(Hit6, [ForsakenBonds]), new(Hit7, [Forsaken]), new(Hit8, [ForsakenBonds]),
+            new(Hit1, [Forsaken]), new(Hit2, [ForsakenBonds]), new(Hit3, [ForsakenRepeat]), new(Hit4, [ForsakenBonds]),
+            new(Hit5, [ForsakenRepeat]), new(Hit6, [ForsakenBonds]), new(Hit7, [ForsakenRepeat]), new(Hit8, [ForsakenBonds]),
         ],
         Rows, UmadMitigation.Kefka);
 
     private static readonly MitPlanEntry[] Rows =
     [
-        new(MT, MitActionId.Reprisal, 12.21f, "Forsaken (1st hit)", [Hit1, Hit2, Hit3, Hit4]),
+        new(MT, MitActionId.Reprisal, 12.21f, "Forsaken (1st hit)", [Hit1, Hit3]),
         new(MT, PartyMit, 12.21f, "Forsaken (1st hit)", [Hit1], [Warrior, Paladin]),
         new(MT, PartyMit, 12.21f, "Forsaken (1st hit)", [Hit1, Hit2, Hit3, Hit4], [Gunbreaker, DarkKnight]),
         new(WHM, Temperance, 12.21f, "Forsaken (1st hit)", [Hit1, Hit2, Hit3, Hit4, Hit5]),
@@ -54,7 +58,7 @@ internal static class UmadP5ForsakenNullMitigation
         new(SGE, EukrasianPrognosisII, 12.21f, "Forsaken (1st hit, Zoe shields)", [Hit1]),
         new(SGE, Holos, 12.21f, "Forsaken (1st hit)", [Hit1, Hit2, Hit3, Hit4, Hit5]),
         new(SGE, Kerachole, 12.21f, "Forsaken (1st hit)", [Hit1, Hit2, Hit3]),
-        new(D2, Feint, 12.21f, "Forsaken (1st hit)", [Hit1, Hit2, Hit3, Hit4]),
+        new(D2, Feint, 12.21f, "Forsaken (1st hit)", [Hit1, Hit3]),
         new(Extras, Dismantle, 12.21f, "Forsaken (1st hit)", [Hit1], [Machinist]),
         new(Extras, MagickBarrier, 12.21f, "Forsaken (1st hit)", [Hit1], [RedMage]),
         new(Extras, TemperaCoat, 11.51f, "Forsaken (1st hit, Tempera Grassa next)", [], [Pictomancer]),
@@ -67,14 +71,14 @@ internal static class UmadP5ForsakenNullMitigation
         new(SCH, Expedient, 20.39f, "Forsaken (3rd hit)", [Hit3, Hit4, Hit5, Hit6]),
         new(SGE, Panhaima, 20.39f, "Forsaken (3rd hit)", [Hit3, Hit4, Hit5, Hit6, Hit7]),
 
-        new(OT, MitActionId.Reprisal, 28.55f, "Forsaken (5th hit)", [Hit5, Hit6, Hit7, Hit8]),
+        new(OT, MitActionId.Reprisal, 28.55f, "Forsaken (5th hit)", [Hit5, Hit7]),
         new(OT, PartyMit, 28.55f, "Forsaken (5th hit)", [Hit5], [Warrior, Paladin]),
         new(OT, PartyMit, 28.55f, "Forsaken (5th hit)", [Hit5, Hit6, Hit7, Hit8], [Gunbreaker, DarkKnight]),
         new(WHM, DivineCaress, 28.55f, "Forsaken (5th hit)", [Hit5]),
         new(AST, SunSign, 28.55f, "Forsaken (5th hit)", [Hit5, Hit6, Hit7, Hit8]),
-        new(D1, Feint, 28.55f, "Forsaken (5th hit)", [Hit5, Hit6, Hit7, Hit8]),
+        new(D1, Feint, 28.55f, "Forsaken (5th hit)", [Hit5, Hit7]),
         new(D3, PartyMit, 28.55f, "Forsaken (5th hit)", [Hit5, Hit6, Hit7, Hit8]),
-        new(D4, Addle, 28.55f, "Forsaken (5th hit)", [Hit5, Hit6, Hit7, Hit8]),
+        new(D4, Addle, 28.55f, "Forsaken (5th hit)", [Hit5, Hit7]),
 
         new(WHM, PlenaryIndulgence, 33.62f, "Forsaken Bonds (6th hit)", [Hit6, Hit7, Hit8]),
 

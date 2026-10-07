@@ -289,8 +289,16 @@ public sealed class UmadP5FloodScenario : IMultiplayerReplayable
         helpers[1]?.SetPosition(new Placement(b + forward, rotation));
     }
 
+    // The wave kills along the whole telegraphed lane, so it resolves from the wall anchor the
+    // telegraph was cast from: by now the carrier sits at the lane's midpoint, and FloodAOE's 40y
+    // rect from there would reach only the far half.
+    private readonly record struct LaneAnchor(Vector3 Position, float Rotation) : IPositioned;
+
     private void ResolveWaves(int tick)
     {
+        var (a, b, rotation) = tickLanes[tick];
+        damage.Resolve(new LaneAnchor(a, rotation), ActionId.FloodAOE, [DamageType.Lethal], []);
+        damage.Resolve(new LaneAnchor(b, rotation), ActionId.FloodAOE, [DamageType.Lethal], []);
         if (tickHelpers[tick] is not { } helpers) return;
         foreach (var helper in helpers)
         {
@@ -298,7 +306,6 @@ public sealed class UmadP5FloodScenario : IMultiplayerReplayable
             DiagnosticLog.Info($"[UmadP5Flood] wave carrier at {helper.Position}: {helper.DescribeDrawState()}.");
             FireWave(helper);
             if (settingsWindow.Overrides.WaveOnKefka && kefka is { } boss) FireWave(boss);
-            damage.Resolve(helper, ActionId.FloodAOE, [DamageType.Lethal], []);
             // No per-helper despawn: the wave VFX lives on the caster and outlasts any short
             // grace window, and the real helpers persist through the whole mechanic.
         }

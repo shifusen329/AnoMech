@@ -18,10 +18,10 @@ namespace AnoMech.Scenarios.Umad.P5Celestriad;
 // - Only two Catastrophic Choice casts happen in total, not one per set: the first governs set
 //   0's resolution, the second governs set 2's; set 1 has none and resolves independently
 //   between them.
-// - Aero (green) is safe away from the boss; Earth (brown) is safe toward the boss.
+// - Aero (green) is the donut, safe toward the boss; Earth (brown) is the point-blank, safe away
+//   from it.
 //
-// Still unverified: which raw action id (CatastrophicChoiceAero/Earth) is actually the green
-// vs. the brown telegraph.
+// C24E resolves into Quake; C24F into Tornado is by elimination, UNVERIFIED.
 //
 // Nested types are prefixed Celestriad* (not the usual bare ActionId/StatusId) so this file's
 // `using static` can coexist with UmadConstants': both would otherwise declare a same-named
@@ -31,16 +31,16 @@ public static class UmadP5CelestriadConstants
     public static class CelestriadActionId
     {
         public const uint Celestriad = 0xBB42U;
-        public const uint CatastrophicChoiceAero = 0xC24EU;  // green, safe half is toward centre
-        public const uint CatastrophicChoiceEarth = 0xC24FU; // brown, safe half is away from centre
+        public const uint CatastrophicChoiceAero = 0xC24FU;  // green, safe half is toward centre
+        public const uint CatastrophicChoiceEarth = 0xC24EU; // brown, safe half is away from centre
         public const uint FireIII = 0xBB43U;
         public const uint BlizzardIII = 0xBB44U;
         public const uint ThunderIII = 0xBB45U;
         public const uint StardustFireIII = 0xBB46U;
         public const uint StardustBlizzardIII = 0xBB47U;
         public const uint StardustThunderIII = 0xBB48U;
-        public const uint CatastrophicChoiceEarthResolution = 0xBB4BU; // Tornado, 40-yalm donut
-        public const uint CatastrophicChoiceAeroResolution = 0xBB4AU;  // Quake, 10-yalm circle
+        public const uint CatastrophicChoiceAeroResolution = 0xBB4BU;  // Tornado, 40-yalm donut
+        public const uint CatastrophicChoiceEarthResolution = 0xBB4AU; // Quake, 10-yalm circle
     }
 
     // LightningResistanceDownII and DamageDown are already in the shared UmadConstants.StatusId
@@ -81,14 +81,13 @@ public static class UmadP5CelestriadConstants
 
         // Per-set absolute timestamps (scenario-start-relative). TowerStart[0] (Celestriad
         // cast-end + 0.4s) is when all 9 towers first spawn (dormant) and also when set 0's 4
-        // activate; TowerStart[1]/[2] activate that set's 4 on the already-spawned towers.
-        // CcAt[0]/[2] (confirmed) are each set's single Catastrophic Choice; ResolveAt[0]/[2]
-        // equal CcAt + CatastrophicChoiceCastTime, so the CC1-end to CC2-end window is a
-        // confirmed fixed 12.16s that has to contain all of set 1. Set 1's own timing splits
-        // that budget close to evenly (an estimate, not replay-confirmed).
-        public static readonly float[] TowerStart = { 6.1f, 14.4f, 20.6f };
+        // activate; TowerStart[1]/[2] activate that set's 4 on the already-spawned towers,
+        // UNVERIFIED. Towers resolve 4.95s after each Catastrophic Choice cast starts (0.95s after
+        // its bar ends), and its Quake or Tornado a beat later. A set must deactivate before the
+        // next lights: ResolveSet resolves every lit tower.
+        public static readonly float[] TowerStart = { 6.1f, 15.35f, 21.35f };
         public static readonly float?[] CcAt = { 10.18f, null, 22.34f };
-        public static readonly float[] ResolveAt = { 14.18f, 20.5f, 26.34f };
-        public static readonly float[] DeactivateAt = { 14.3f, 20.6f, 26.44f };
+        public static readonly float[] ResolveAt = { 15.13f, 21.15f, 27.18f };
+        public static readonly float[] DeactivateAt = { 15.25f, 21.25f, 27.3f };
     }
 }

@@ -172,7 +172,7 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
         world.Events.Add(17.43f, () => kefka_40004FD3?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.OffTank)?.GameObjectId));
         world.Events.Add(20.17f, () => kefka_40004FD3?.Face(party.Get(PartyRole.OffTank)));
         world.Events.Add(20.47f, () => kefka_40004FD3?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.OffTank)?.GameObjectId));
-        world.Events.Add(13.21f, () => kefka_40004FD3?.Face(party.Get(PartyRole.OffTank)));
+        world.Events.Add(23.21f, () => kefka_40004FD3?.Face(party.Get(PartyRole.OffTank)));
         world.Events.Add(23.51f, () => kefka_40004FD3?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.OffTank)?.GameObjectId));
         
         RunKefkaEndAttack(kefka_40004FD3, 0, 25.61f);
@@ -200,8 +200,8 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
             var hit = damage.Resolve(target, end.KefkaResolveAction, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)]);
             world.MitPractice.Hit(hit, EndHit(end));
         });
-        world.Events.Add(start + 12.8f, () => kefka_40004FD3?.Face(party.Player));
-        world.Events.Add(start + 12.9f, () => kefka_40004FD3?.Cast(end.AllThingsEnding, targetLocation: party.Player!.Position));
+        world.Events.Add(start + 12.8f, () => kefka_40004FD3?.Face(PartyCentre()));
+        world.Events.Add(start + 12.9f, () => kefka_40004FD3?.Cast(end.AllThingsEnding, targetLocation: PartyCentre()));
         world.Events.Add(start + 17.9f, () => damage.Resolve(kefka_40004FD3, end.AllThingsEnding, [DamageType.Lethal], [], size: Geometry.AllThingsEndHalfCone, coneRotationDelta: end.RotationOverride));
     }
 
@@ -332,11 +332,12 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
         }
     }
     
-    // Based on logs, clones end up 4y away from their target
-    // TODO: verify in simulator
+    // Each clone steps out from Kefka's centre to stop 4y short of its End target, and its All
+    // Things Ending fires from there.
     private void RunCloneEndAttack(SimEnemy? enemy, float start, int number, int index)
     {
         var end = state.EndAttacks[number];
+        Placement? landing = null;
         world.Events.Add(start - 0.5f, () => enemy?.SetPosition(new Vector3(0, 0, 0)));
         world.Events.Add(start - 0.2f, () => enemy?.SetVisible(true));
         world.Events.Add(start, () =>
@@ -345,11 +346,28 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
             enemy?.Cast(end.CloneResolveAction, castSeconds: 0f, targetId: target?.GameObjectId);
             var hit = damage.Resolve(target, end.CloneResolveAction, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)]);
             world.MitPractice.Hit(hit, EndHit(end));
+            landing = target is null ? null : CloneLanding(target.Position);
         });
-        world.Events.Add(start + 6f, () => enemy?.Face(party.Player));
-        world.Events.Add(start + 6.1f, () => enemy?.Cast(end.AllThingsEnding, targetLocation: party.Player!.Position));
+        world.Events.Add(start + 0.6f, () => { if (landing is { } spot) enemy?.SetPosition(spot); });
+        world.Events.Add(start + 6f, () => enemy?.Face(PartyCentre()));
+        world.Events.Add(start + 6.1f, () => enemy?.Cast(end.AllThingsEnding, targetLocation: PartyCentre()));
         world.Events.Add(start + 11.1f, () => damage.Resolve(enemy, end.AllThingsEnding, [DamageType.Lethal], [], size: Geometry.AllThingsEndHalfCone, coneRotationDelta: end.RotationOverride));
         world.Events.Add(start + 14.1f, () => enemy?.PlayAnimationTimeline(TimelineId.WarpOut));
+    }
+
+    private static Placement CloneLanding(Vector3 target)
+    {
+        var flat = target with { Y = 0f };
+        var distance = flat.Length();
+        var position = distance > 4f ? flat * ((distance - 4f) / distance) : Vector3.Zero;
+        return new Placement(position, 0f).Face(target);
+    }
+
+    // Kefka and the clones aim All Things Ending at the party as a whole.
+    private Vector3 PartyCentre()
+    {
+        var members = party.ActiveMembers().ToList();
+        return members.Count == 0 ? Vector3.Zero : members.Aggregate(Vector3.Zero, (sum, m) => sum + m.Position) / members.Count;
     }
 
     
@@ -357,7 +375,7 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     {
         for (int i = 0; i < 3; i++)
         {
-            SimEnemy? kefka_40004FD0 = world.SpawnEnemy(new EnemySpawnConfig(HitboxRadius: 3.5f + 0.2f, BNpcBaseId: BNpcBaseId.KefkaClone, NameId: BNpcNameId.Kefka, Level: 100, Targetable: false, EnemyList: EnemyListMode.Never, IsVisible: false, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 0.000f)));
+            SimEnemy? kefka_40004FD0 = world.SpawnEnemy(new EnemySpawnConfig(HitboxRadius: 3.5f, BNpcBaseId: BNpcBaseId.KefkaClone, NameId: BNpcNameId.Kefka, Level: 100, Targetable: false, EnemyList: EnemyListMode.Never, IsVisible: false, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 0.000f)));
             RunCloneEndAttack(kefka_40004FD0, 32.35f, 0, i);
             RunCloneEndAttack(kefka_40004FD0, 53.36f, 1, i);
             RunCloneEndAttack(kefka_40004FD0, 74.24f, 2, i);

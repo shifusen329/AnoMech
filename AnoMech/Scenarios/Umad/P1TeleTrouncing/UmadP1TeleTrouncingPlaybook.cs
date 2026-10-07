@@ -29,8 +29,7 @@ internal static class UmadP1TeleTrouncingPlaybook
             var box = "Every teleporter goes on one clockwise box (a 12y square), each lining the side its arrow runs along. ";
             if (shortArrow == longArrow)
                 return box + $"Both your arrows point {Name(shortArrow)}, so both go on the {BoxSide(shortArrow)} side: "
-                       + (first ? "the short one just counterclockwise of the cardinal" : "the long one on the cardinal")
-                       + ". NAUR drops the short one on the cardinal first; only the order differs.";
+                       + (first ? "the short one on the cardinal" : "the long one just counterclockwise of it") + ".";
             return box + $"Your arrows differ ({Name(shortArrow)} first, then {Name(longArrow)}), so you take the corner where the "
                    + $"{BoxSide(shortArrow)} and {BoxSide(longArrow)} sides meet, one teleporter each side of it, "
                    + (first ? "short arrow first." : "now the long one.");

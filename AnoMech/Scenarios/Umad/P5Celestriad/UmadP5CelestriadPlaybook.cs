@@ -56,10 +56,8 @@ internal static class UmadP5CelestriadPlaybook
         {
             var target = Name(state.ElementForSet(role, set));
             return state.AeroVariant[set] == CatastrophicChoice.Aero
-                ? $"Kefka's choice is Aero (green): this strat reads it as a point-blank AoE and steps to the outer half of your {target} tower. "
-                  + "NAUR doesn't say where to stand, and its notes make wind the donut, which would mean the inner half."
-                : $"Kefka's choice is Earth (brown): this strat reads it as a donut and steps to the inner half of your {target} tower, toward him. "
-                  + "NAUR doesn't say where to stand, and its notes make earth the point-blank, which would mean the outer half.";
+                ? $"Kefka's choice is wind (green): a donut, so step to the inner half of your {target} tower, toward him."
+                : $"Kefka's choice is earth (brown): a point-blank AoE, so step to the outer half of your {target} tower.";
         },
         Choice);
 }

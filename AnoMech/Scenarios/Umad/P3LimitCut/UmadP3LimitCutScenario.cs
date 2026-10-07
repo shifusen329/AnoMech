@@ -206,6 +206,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
     {
         var objects = state.Objects;
         var hold = Constants.Geometry.SpotHeading(state.BossSpot);
+        var crystal = Constants.Geometry.WindCrystal(state.BossSpot);
         objects.Kefka = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: UmadConstants.BNpcBaseId.KefkaP3, NameId: UmadConstants.BNpcNameId.Kefka, Level: 100,
             Targetable: false, EnemyList: EnemyListMode.Always, IsVisible: true,
@@ -234,14 +235,14 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
             cycloneHelpers[i] = world.SpawnEnemy(new EnemySpawnConfig(
                 BNpcBaseId: UmadConstants.BNpcBaseId.Chaos, NameId: UmadConstants.BNpcNameId.Chaos, Level: 1,
                 Targetable: false, EnemyList: EnemyListMode.Never, IsVisible: false,
-                Placement: new Placement(Constants.Geometry.WindCrystal, 0f)));
+                Placement: new Placement(crystal, 0f)));
         // The strike's VFX sits on the target, so the helper's model never matters.
         thunderHelper = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: UmadConstants.BNpcBaseId.KefkaHelper, NameId: UmadConstants.BNpcNameId.Exdeath, Level: 1,
             Targetable: false, EnemyList: EnemyListMode.Never, IsVisible: false,
-            Placement: new Placement(Constants.Geometry.WindCrystal, 0f)));
+            Placement: new Placement(crystal, 0f)));
         // The fire and water crystals faded when their elements resolved, before this window.
-        windCrystal = world.SpawnEventObject(new EventObjectSpawnConfig { EObjId = Constants.EObjId.WindCrystal, Placement = new Placement(Constants.Geometry.WindCrystal, Constants.Geometry.WindCrystalRotation) });
+        windCrystal = world.SpawnEventObject(new EventObjectSpawnConfig { EObjId = Constants.EObjId.WindCrystal, Placement = new Placement(crystal, Constants.Geometry.WindCrystalRotation(state.BossSpot)) });
 
         // Set once the draw objects exist.
         world.Events.Add(0.5f, () =>
@@ -276,11 +277,11 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         damage.Resolve(target, UmadConstants.ActionId.ThunderIII_Resolve, [DamageType.TankBuster, DamageType.Magic, DamageType.Lightning],
             [(UmadConstants.StatusId.LightningResistanceDownII, Constants.Damage.LightningResistanceDownSeconds)],
             requiredMitigation: Constants.Damage.ThunderIIIRequiredMitigation);
+        world.MitPractice.Hit(target, UmadP3LimitCutMitigation.ThunderIII);
     }
 
     private void ResolveDecisiveBattle()
     {
-        world.MitPractice.HitParty(UmadP3LimitCutMitigation.DecisiveBattle);
         state.Objects.Chaos?.AddStatus(UmadConstants.StatusId.EpicVillain);
         state.Objects.Exdeath?.AddStatus(UmadConstants.StatusId.FatedVillain);
         foreach (var role in Enum.GetValues<PartyRole>())
@@ -327,7 +328,6 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
     private void ResolveVacuumWave()
     {
         if (state.Objects.Exdeath is not { } exdeath) return;
-        world.MitPractice.HitParty(UmadP3LimitCutMitigation.VacuumWave);
         var source = exdeath.Position;
         cycloneTargets.Clear();
         var members = party.ActiveMembers().Where(m => m.IsAlive()).ToList();
@@ -442,8 +442,8 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         var target = chargeTargets[k] is { } t && t.IsAlive() ? t : ChargeTarget(k);
         if (target != null) clone.Face(target.Position);
         clone.Cast(Constants.ActionId.UltimaBlasterCharge, castSeconds: 0f, animationLock: Constants.AnimationLock.CloneCharge);
-        damage.Resolve(clone, Constants.ActionId.UltimaBlasterCharge, [DamageType.Magic],
+        world.MitPractice.Hit(damage.Resolve(clone, Constants.ActionId.UltimaBlasterCharge, [DamageType.Magic],
             [(UmadConstants.StatusId.MagicVulnerabilityUp, Constants.Damage.MagicVulnerabilityUpSeconds)],
-            lethalWithin: Constants.Damage.ChargeLethalRange);
+            lethalWithin: Constants.Damage.ChargeLethalRange), UmadP3LimitCutMitigation.UltimaBlasterCharge);
     }
 }

@@ -5,72 +5,72 @@ using static AnoMech.Core.Game.PartyMit.SheetColumn;
 
 namespace AnoMech.Scenarios.Umad.P3LimitCut;
 
-// The P3 mitigation sheet's Limit Cut rows on this scenario's clock, from the Ultima Blaster
-// raidwides to The Decisive Battle. Temperance and Neutral Sect go out for the Stray Flames before
-// the scenario starts and carry into it. No damage is known yet, so HP doesn't move.
+// The P3 mitigation sheet's Limit Cut rows on this scenario's clock. Temperance and Neutral Sect go
+// out for the Stray Flames before the scenario starts and carry into it. Vacuum Wave and The Decisive
+// Battle deal no damage: the sheet's Vacuum Wave row covers the blasters after it, and its Decisive
+// Battle barriers are for the Accretions in Black Hole. Clones and helpers deal every hit here, so
+// the debuffs on Chaos and Exdeath only soften the bosses' autos.
 internal static class UmadP3LimitCutMitigation
 {
     public const string UltimaBlaster = "ultima_blaster";
-    public const string VacuumWave = "vacuum_wave";
     public const string Cyclone = "cyclone";
-    public const string DecisiveBattle = "decisive_battle";
+    public const string UltimaBlasterCharge = "ultima_blaster_charge";
+    public const string ThunderIII = "thunder_iii";
 
+    // Raw on a physical DPS. Cyclone is per Cyclone a player stands in, the stack not sharing it;
+    // Thunder III is what the tank takes before cooldowns.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(UltimaBlaster, "Ultima Blaster", null, UmadMitigation.Kefka),
-        new(VacuumWave, "Vacuum Wave", null, UmadMitigation.Exdeath),
-        new(Cyclone, "Cyclone", null, UmadMitigation.Chaos),
-        new(DecisiveBattle, "The Decisive Battle", null, UmadMitigation.Exdeath),
+        new(UltimaBlaster, "Ultima Blaster", 43000f, null),
+        new(Cyclone, "Cyclone", 198000f, null),
+        new(UltimaBlasterCharge, "Ultima Blaster", 124000f, null),
+        new(ThunderIII, "Thunder III", 566000f, null, TankBuster: true),
     ];
 
     private const float Blaster1 = 8.89f;
-    private const float Blaster2 = 10.90f;
-    private const float Blaster3 = 12.90f;
-    private const float Blaster4 = 14.91f;
-    private const float VacuumHit = 16.10f;
     private const float Blaster5 = 16.92f;
-    private const float Blaster6 = 18.93f;
     private const float CycloneHit = 19.97f;
-    private const float Blaster7 = 20.93f;
-    private const float Blaster8 = 22.93f;
-    private const float DecisiveHit = 46.49f;
 
     private const uint PartyMit = MitPlanEntry.PartyMit;
     private const uint TankLb3 = MitPlanEntry.TankLb3;
 
     public static MitPlanData Plan() => new(UmadMitigation.Profile, Hits,
         [
-            new(Blaster1, [UltimaBlaster]), new(Blaster2, [UltimaBlaster]), new(Blaster3, [UltimaBlaster]), new(Blaster4, [UltimaBlaster]),
-            new(VacuumHit, [VacuumWave]), new(Blaster5, [UltimaBlaster]), new(Blaster6, [UltimaBlaster]), new(CycloneHit, [Cyclone]),
-            new(Blaster7, [UltimaBlaster]), new(Blaster8, [UltimaBlaster]), new(DecisiveHit, [DecisiveBattle]),
+            new(Blaster1, [UltimaBlaster]), new(10.90f, [UltimaBlaster]), new(12.90f, [UltimaBlaster]), new(14.91f, [UltimaBlaster]),
+            new(Blaster5, [UltimaBlaster]), new(18.93f, [UltimaBlaster]), new(CycloneHit, [Cyclone]), new(20.93f, [UltimaBlaster]),
+            new(22.93f, [UltimaBlaster]),
+            new(30.95f, [UltimaBlasterCharge]), new(31.18f, [UltimaBlasterCharge]), new(31.40f, [UltimaBlasterCharge]),
+            new(31.62f, [UltimaBlasterCharge]), new(31.85f, [UltimaBlasterCharge]), new(32.07f, [UltimaBlasterCharge]),
+            new(32.29f, [UltimaBlasterCharge]), new(32.52f, [UltimaBlasterCharge]),
+            new(38.57f, [ThunderIII]), new(41.60f, [ThunderIII]),
         ],
         Rows, UmadMitigation.Chaos);
 
     private static readonly MitPlanEntry[] Rows =
     [
-        new(WHM, Temperance, -1.70f, "Stray Flames/Tsunami (before the scenario)", [Blaster1, VacuumHit]),
+        new(WHM, Temperance, -1.70f, "Stray Flames/Tsunami (before the scenario)", [Blaster1, Blaster5]),
         new(AST, NeutralSect, -1.70f, "Stray Flames/Tsunami (before the scenario)", []),
 
-        new(MT, MitActionId.Reprisal, 7.39f, "Ultima Blaster", [Blaster1, VacuumHit, CycloneHit]),
-        new(AST, SunSign, 7.39f, "Ultima Blaster", [Blaster1, VacuumHit, CycloneHit]),
-        new(SCH, SacredSoil, 7.39f, "Ultima Blaster", [Blaster1, VacuumHit, CycloneHit]),
-        new(SCH, FeyIllumination, 7.39f, "Ultima Blaster", [Blaster1, VacuumHit, CycloneHit]),
+        new(MT, MitActionId.Reprisal, 7.39f, "Ultima Blaster (Chaos's autos)", []),
+        new(AST, SunSign, 7.39f, "Ultima Blaster", [Blaster1, Blaster5, CycloneHit]),
+        new(SCH, SacredSoil, 7.39f, "Ultima Blaster", [Blaster1, Blaster5, CycloneHit]),
+        new(SCH, FeyIllumination, 7.39f, "Ultima Blaster", [Blaster1, Blaster5, CycloneHit]),
         new(SCH, Seraphism, 7.39f, "Ultima Blaster", []),
-        new(SGE, Kerachole, 7.39f, "Ultima Blaster", [Blaster1, VacuumHit, CycloneHit]),
-        new(SGE, Panhaima, 7.39f, "Ultima Blaster", [Blaster1, VacuumHit, CycloneHit]),
-        new(D2, Feint, 7.39f, "Ultima Blaster", [Blaster1, VacuumHit, CycloneHit]),
-        new(D3, PartyMit, 7.39f, "Ultima Blaster", [Blaster1, VacuumHit, CycloneHit]),
+        new(SGE, Kerachole, 7.39f, "Ultima Blaster", [Blaster1, Blaster5, CycloneHit]),
+        new(SGE, Panhaima, 7.39f, "Ultima Blaster", [Blaster1, Blaster5, CycloneHit]),
+        new(D2, Feint, 7.39f, "Ultima Blaster (Chaos's autos)", []),
+        new(D3, PartyMit, 7.39f, "Ultima Blaster", [Blaster1, Blaster5, CycloneHit]),
 
-        new(MT, TankLb3, 14.94f, "Vacuum Wave (either tank)", [VacuumHit, CycloneHit]),
-        new(OT, TankLb3, 14.94f, "Vacuum Wave (either tank)", [VacuumHit, CycloneHit]),
-        new(WHM, PlenaryIndulgence, 14.60f, "Vacuum Wave", [VacuumHit, CycloneHit]),
-        new(AST, CollectiveUnconscious, 14.60f, "Vacuum Wave", [VacuumHit, CycloneHit]),
+        new(MT, TankLb3, 14.94f, "Vacuum Wave (either tank)", [Blaster5, CycloneHit]),
+        new(OT, TankLb3, 14.94f, "Vacuum Wave (either tank)", [Blaster5, CycloneHit]),
+        new(WHM, PlenaryIndulgence, 14.60f, "Vacuum Wave", [Blaster5, CycloneHit]),
+        new(AST, CollectiveUnconscious, 14.60f, "Vacuum Wave", [Blaster5, CycloneHit]),
 
         new(WHM, DivineCaress, 18.47f, "Cyclone", [CycloneHit]),
 
-        new(OT, MitActionId.Reprisal, 44.99f, "The Decisive Battle", [DecisiveHit], On: UmadMitigation.Exdeath),
-        new(SCH, DeploymentTactics, 44.99f, "The Decisive Battle", [DecisiveHit]),
+        new(OT, MitActionId.Reprisal, 44.99f, "The Decisive Battle (Exdeath's autos)", [], On: UmadMitigation.Exdeath),
+        new(SCH, DeploymentTactics, 44.99f, "The Decisive Battle (barriers for the Accretions)", []),
         new(SGE, Zoe, 44.69f, "The Decisive Battle", []),
-        new(SGE, EukrasianPrognosisII, 44.99f, "The Decisive Battle (Zoe shields)", [DecisiveHit]),
+        new(SGE, EukrasianPrognosisII, 44.99f, "The Decisive Battle (barriers for the Accretions)", []),
     ];
 }

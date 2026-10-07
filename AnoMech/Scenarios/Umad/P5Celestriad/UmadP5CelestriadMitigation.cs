@@ -5,34 +5,31 @@ using static AnoMech.Core.Game.PartyMit.SheetColumn;
 
 namespace AnoMech.Scenarios.Umad.P5Celestriad;
 
-// The P5 mitigation sheet's Celestriad row on this scenario's clock. The Feint and Addle it says to
-// use after the third towers are for the Ultima Repeater after the scenario ends, and are left out.
-// No damage is known yet, so HP doesn't move.
+// The P5 mitigation sheet's Celestriad row on this scenario's clock. Celestriad itself deals no
+// damage; the row's party mitigation and Seraph go to the first towers. The Feint and Addle the sheet
+// says to use after the third towers are for the Ultima Repeater after the scenario ends, and are
+// left out.
 internal static class UmadP5CelestriadMitigation
 {
-    public const string Celestriad = "celestriad";
     public const string Tower = "tower";
 
+    // Raw on a physical DPS, per soaker.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(Celestriad, "Celestriad", null, UmadMitigation.Kefka),
-        new(Tower, "Tower", null, UmadMitigation.Kefka),
+        new(Tower, "Tower", 165000f, null),
     ];
 
-    private const float CelestriadHit = 6.10f;
-    private const float Towers1 = 14.18f;
-    private const float Towers2 = 20.50f;
-    private const float Towers3 = 26.34f;
+    private const float Towers1 = 15.13f;
 
     private const uint PartyMit = MitPlanEntry.PartyMit;
 
     public static MitPlanData Plan() => new(UmadMitigation.Profile, Hits,
-        [new(CelestriadHit, [Celestriad]), new(Towers1, [Tower]), new(Towers2, [Tower]), new(Towers3, [Tower])],
+        [new(Towers1, [Tower]), new(21.15f, [Tower]), new(27.18f, [Tower])],
         Rows, UmadMitigation.Kefka);
 
     private static readonly MitPlanEntry[] Rows =
     [
-        new(SCH, SummonSeraph, 3.00f, "Celestriad (during the cast bar)", [CelestriadHit]),
-        new(MT, PartyMit, 4.60f, "Celestriad", [CelestriadHit]),
+        new(SCH, SummonSeraph, 3.00f, "Celestriad (during the cast bar)", [Towers1]),
+        new(MT, PartyMit, 4.60f, "Celestriad", [Towers1]),
     ];
 }

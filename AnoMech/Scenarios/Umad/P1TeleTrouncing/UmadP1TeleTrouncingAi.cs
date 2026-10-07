@@ -132,7 +132,7 @@ public sealed class UmadP1TeleTrouncingAi : IScenarioAi<UmadP1TeleTrouncingState
     }
 
     // The corner if clear; else a small perpendicular nudge (a line can run right along the
-    // diagonal), then further out along the diagonal.
+    // diagonal), then further out along the diagonal, then further in.
     private static Vector2 StackCorner(Vector2 dir, int off, float o)
     {
         var spot = dir * StackCornerRadius;
@@ -145,6 +145,8 @@ public sealed class UmadP1TeleTrouncingAi : IScenarioAi<UmadP1TeleTrouncingState
                 if (LineClearance(q, off, o) >= 2f) return q;
             }
         for (var r = StackCornerRadius + 1f; r <= 17f; r += 0.5f)
+            if (LineClearance(dir * r, off, o) >= 2f) return dir * r;
+        for (var r = StackCornerRadius - 0.5f; r >= 3f; r -= 0.5f)
             if (LineClearance(dir * r, off, o) >= 2f) return dir * r;
         return spot;
     }

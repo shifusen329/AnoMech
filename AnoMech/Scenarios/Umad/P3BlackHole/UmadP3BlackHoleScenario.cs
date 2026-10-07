@@ -56,7 +56,9 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
 
     // 929,000 unmitigated against a 325,047 tank is 65%; eased while only self mitigation counts.
     private const float ThunderIIIRequiredMitigation = 0.60f;
-    private int PrimodialCrustsToResolve;
+    // A broken crust's Earthquake lands this long after the Nothingness that broke it.
+    private const float CrustQuakeDelay = 1.56f;
+    private readonly List<float> crustQuakesDue = [];
     private float CleanseCooldown;
     SimEnemy? CleanseHelper;
 
@@ -77,7 +79,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         damage.SetStatuses(DamageType.Earth, StatusId.EarthResistanceDownII);
         damage.SetStatuses(DamageType.Magic, StatusId.MagicVulnerabilityUp);
         
-        PrimodialCrustsToResolve = 0;
+        crustQuakesDue.Clear();
         world.MitPractice.Begin(UmadP3BlackHoleMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
         {
             [UmadMitigation.Chaos] = () => state.ScenarioObjects.Chaos,
@@ -103,7 +105,6 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         Run_Chaos_400040E1();
         Run_Exdeath_400040D8_1();
         Run_Kefka_400040D6();
-        Run_Chaos_400040E8_6();
         Run_OtherDebuffs();
         Run_PlayerLockons();
         // [64.06s] 03|400040E9|Chaos|00|1|0000|00||7691|9020|44|44|0|10000|||100.00|104.00|0.00|0.00|7fb12caee07dda16
@@ -168,14 +169,16 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
 
     public void Tick(float delta, float elapsed)
     {
-       CleanseCooldown -= elapsed;
+       CleanseCooldown -= delta;
        CleanseCooldown = float.Max(CleanseCooldown, 0f);
-       if (CleanseCooldown == 0f && PrimodialCrustsToResolve > 0)
+       if (CleanseCooldown == 0f && crustQuakesDue.Count > 0 && crustQuakesDue[0] <= world.Events.Elapsed)
        {
-           PrimodialCrustsToResolve--;
+           crustQuakesDue.RemoveAt(0);
            CleanseCooldown = .5f;
            CleanseHelper?.Cast(ActionId.Earthquake_Cleanse);
-           damage.Resolve(CleanseHelper, ActionId.Earthquake_Cleanse, [DamageType.Earth], [(StatusId.EarthResistanceDownII, EarthResistanceDownDuration)]);
+           world.MitPractice.Hit(
+               damage.Resolve(CleanseHelper, ActionId.Earthquake_Cleanse, [DamageType.Earth], [(StatusId.EarthResistanceDownII, EarthResistanceDownDuration)]),
+               UmadP3BlackHoleMitigation.Earthquake);
        }
        
        int wave = elapsed switch
@@ -231,7 +234,6 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(0.1f, () => chaos_4000414D?.AddStatus(StatusId.EpicVillain));
         world.Events.Add(0.98f, () => chaos_4000414D?.Cast(ActionId.Earthquake));
         world.Events.Add(1f, () => chaos_4000414D?.Follow(party.Get(PartyRole.MainTank)));
-        world.Events.Add(5.98f, () => world.MitPractice.HitParty(UmadP3BlackHoleMitigation.Earthquake));
         world.Events.Add(12.07f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(15.09f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(18.13f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
@@ -255,7 +257,9 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(90.00f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(93.02f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(99.18f, () => chaos_4000414D?.Cast(ActionId.Aetherlink_Chaos));
+        world.Events.Add(113.18f, () => chaos_4000414D?.Follow());
         world.Events.Add(113.38f, () => chaos_4000414D?.Cast(state.ImplosionAttack));
+        world.Events.Add(121.30f, () => chaos_4000414D?.Follow(party.Get(PartyRole.MainTank)));
         world.Events.Add(124.41f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(141.47f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(144.50f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
@@ -305,7 +309,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     private void Run_Exdeath_4000414C()
     {
         SimEnemy? thunderHelper = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.KefkaHelper, NameId: BNpcNameId.Exdeath, Level: 1, Targetable: false, EnemyList: EnemyListMode.Never, IsVisible: false, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), -2.190f)));
-        SimEnemy? exdeath_4000414C = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, IsVisible: true, Placement: new Placement(new Vector3(8.000f, 0.000f, 0.000f), 0.000f)));
+        SimEnemy? exdeath_4000414C = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, IsVisible: true, Placement: new Placement(new Vector3(-11.540f, 0.000f, 4.880f), 0.000f)));
         state.ScenarioObjects.Exdeath = exdeath_4000414C;
         world.Events.Add(0.1f, () => exdeath_4000414C?.AddStatus(StatusId.FatedVillain));
         world.Events.Add(1f, () => exdeath_4000414C?.Follow(party.Get(PartyRole.OffTank)));
@@ -352,10 +356,14 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(0.98f, () => chaos_400040E9_1?.Cast(ActionId.Earthquake_Visual));
         world.Events.Add(12.29f, () => chaos_400040E9_1?.SetPosition(new Placement(new Vector3(0.000f, 0.000f, 4.000f), 0.000f)));
         world.Events.Add(12.38f, () => chaos_400040E9_1?.Cast(ActionId.Earthquake_Cleanse, targetId: state.Roles.Get(3)?.GameObjectId));
-        world.Events.Add(12.38f, () => damage.Resolve(chaos_400040E9_1, ActionId.Earthquake_Cleanse, [DamageType.Earth], [(StatusId.EarthResistanceDownII, 1.96f)], excludeTargets: [state.Roles.Get(3)!]));
+        world.Events.Add(12.38f, () => world.MitPractice.Hit(
+            damage.Resolve(chaos_400040E9_1, ActionId.Earthquake_Cleanse, [DamageType.Earth], [(StatusId.EarthResistanceDownII, 1.96f)], excludeTargets: [state.Roles.Get(3)!]),
+            UmadP3BlackHoleMitigation.Earthquake));
         world.Events.Add(12.38f, () => state.Roles.Get(3)?.RemoveStatus(StatusId.Accretion));
         world.Events.Add(16.30f, () => chaos_400040E9_1?.Cast(ActionId.Earthquake_Cleanse, targetId: state.Roles.Get(7)?.GameObjectId));
-        world.Events.Add(16.30f, () => damage.Resolve(chaos_400040E9_1, ActionId.Earthquake_Cleanse, [DamageType.Earth], [(StatusId.EarthResistanceDownII, 1.96f)], excludeTargets: [state.Roles.Get(7)!]));
+        world.Events.Add(16.30f, () => world.MitPractice.Hit(
+            damage.Resolve(chaos_400040E9_1, ActionId.Earthquake_Cleanse, [DamageType.Earth], [(StatusId.EarthResistanceDownII, 1.96f)], excludeTargets: [state.Roles.Get(7)!]),
+            UmadP3BlackHoleMitigation.Earthquake));
         world.Events.Add(16.30f, () => state.Roles.Get(7)?.RemoveStatus(StatusId.Accretion));
     }
 
@@ -475,7 +483,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
             world.Events.Add(time, () => enemy?.Cast(actionId, targetId: LiveConeTarget(target)?.GameObjectId));
             world.Events.Add(time, () => world.MitPractice.Hit(
                 damage.Resolve(enemy, actionId, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: isFullStack ? 8 : 0, size: size),
-                UmadP3BlackHoleMitigation.ShockingImpact));
+                isFullStack ? UmadP3BlackHoleMitigation.ShockingImpact : UmadP3BlackHoleMitigation.Shockwave));
         }
     }
 
@@ -569,7 +577,6 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
 
     private void ResolveNothingness(IReadOnlyList<SimCharacter> targets, Vector3 holePos)
     {
-        world.MitPractice.Hit(targets, UmadP3BlackHoleMitigation.Nothingness);
         foreach (var simCharacter in targets)
         {
            var role = (simCharacter as ISimPartyMember)?.Role.ToString() ?? "?";
@@ -582,7 +589,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
                    simCharacter.RemoveStatus(StatusId.FirstInLine);
                    simCharacter.RemoveStatus(StatusId.SecondInLine);
                    simCharacter.RemoveStatus(StatusId.ThirdInLine);
-                   PrimodialCrustsToResolve++;
+                   crustQuakesDue.Add(world.Events.Elapsed + CrustQuakeDelay);
                    AnoMech.Core.DiagnosticLog.Info($"[UmadP3BlackHoleScenario] ResolveNothingness: {role} hit at MeanestExistence, saved by PrimordialCrust.");
                }
                else
@@ -728,39 +735,6 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         RunStomp(154.63f, 1);
     }
 
-    private void Run_Chaos_400040E8_6()
-    {
-        SimEnemy? chaos_400040E8_6 = null;
-        // [152.58s] 271|400040E8|-2.2196|00|00|95.5477|94.7008|0.2000|7371bf2a5c9e21cf
-        world.Events.Add(152.58f, () => chaos_400040E8_6?.SetPosition(new Placement(new Vector3(-4.452f, 0.200f, -5.299f), -2.220f)));
-        // [152.41s] 03|400040E8|Chaos|00|1|0000|00||7691|9020|44|44|0|10000|||95.55|94.70|0.00|-2.22|36c380f0f2c22b73
-        world.Events.Add(152.41f, () => chaos_400040E8_6 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.KefkaHelper, NameId: BNpcNameId.Chaos, Level: 1, Targetable: false, EnemyList: EnemyListMode.Never, IsVisible: false, Placement: new Placement(new Vector3(-4.450f, 0.000f, -5.300f), -2.220f))));
-        // [157.67s] 22|400040E8|Chaos|BB03|Knock Down|10018AEA|MeleeDpsB|750603|D9DA4001|E80E|B7D0000|1B|BB038000|0|0|0|0|0|0|0|0|0|0|203721|226668|10000|10000|||100.72|99.81|0.00|-2.89|44|44|0|10000|||95.55|94.70|0.00|-2.22|000088F5|0|4|00||01|BB03|BB03|1.100|2591|c160363818571ec0
-        world.Events.Add(157.67f, () => chaos_400040E8_6?.Cast(ActionId.KnockDown, castSeconds: 0f, targetId: party.Get(PartyRole.MeleeDpsB)?.GameObjectId));
-        // [157.67s] 22|400040E8|Chaos|BB03|Knock Down|100AC8F1|CasterDps|750603|CB7D4001|E80E|B7D0000|1B|BB038000|0|0|0|0|0|0|0|0|0|0|220857|227550|10000|10000|||100.23|99.86|0.00|-2.98|44|44|0|10000|||95.55|94.70|0.00|-2.22|000088F5|1|4|00||01|BB03|BB03|1.100|2591|f84a0cf5444efb65
-        world.Events.Add(157.67f, () => chaos_400040E8_6?.Cast(ActionId.KnockDown, castSeconds: 0f, targetId: party.Get(PartyRole.CasterDps)?.GameObjectId));
-        // [157.67s] 22|400040E8|Chaos|BB03|Knock Down|100702A3|Player|750603|69A4002|E80E|B7D0000|1B|BB038000|0|0|0|0|0|0|0|0|0|0|205207|205207|5300|10000|||101.70|99.90|0.00|-2.99|44|44|0|10000|||95.55|94.70|0.00|-2.22|000088F5|2|4|00||01|BB03|BB03|1.100|2591|d19f67482d62e5c2
-        world.Events.Add(157.67f, () => chaos_400040E8_6?.Cast(ActionId.KnockDown, castSeconds: 0f, targetId: party.Get(PartyRole.PhysRangedDps)?.GameObjectId));
-        // [157.67s] 22|400040E8|Chaos|BB03|Knock Down|100A7A8F|OffTank|750603|25134002|E80E|B7D0000|1B|BB038000|0|0|0|0|0|0|0|0|0|0|174334|217488|10000|10000|||102.05|99.66|0.00|2.02|44|44|0|10000|||95.55|94.70|0.00|-2.22|000088F5|3|4|00||01|BB03|BB03|1.100|2591|f7ccbbb98d551a3d
-        world.Events.Add(157.67f, () => chaos_400040E8_6?.Cast(ActionId.KnockDown, castSeconds: 0f, targetId: party.Get(PartyRole.OffTank)?.GameObjectId));
-        // [157.67s] 264|400040E8|BB03|000088F5|1|-0.015|-0.015|-0.015|-2.220|10018AEA|9a97441abbbfd96a
-        // [157.67s] 26|B7D|Magic Vulnerability Up|1.96|400040E8|Chaos|100A7A8F|OffTank|00|217488|44|54f645505c17fa23
-        world.Events.Add(157.67f, () => party.Get(PartyRole.OffTank)?.AddStatus(StatusId.MagicVulnerabilityUp, 1.960f));
-        // [157.67s] 26|B7D|Magic Vulnerability Up|1.96|400040E8|Chaos|100702A3|Player|00|205207|44|cf3efedf4042d732
-        world.Events.Add(157.67f, () => party.Get(PartyRole.PhysRangedDps)?.AddStatus(StatusId.MagicVulnerabilityUp, 1.960f));
-        // [157.67s] 26|B7D|Magic Vulnerability Up|1.96|400040E8|Chaos|10018AEA|MeleeDpsB|00|226668|44|50a17351eacef49b
-        world.Events.Add(157.67f, () => party.Get(PartyRole.MeleeDpsB)?.AddStatus(StatusId.MagicVulnerabilityUp, 1.960f));
-        // [157.67s] 26|B7D|Magic Vulnerability Up|1.96|400040E8|Chaos|100AC8F1|CasterDps|00|227550|44|227a758b9a274952
-        world.Events.Add(157.67f, () => party.Get(PartyRole.CasterDps)?.AddStatus(StatusId.MagicVulnerabilityUp, 1.960f));
-        // [159.63s] 30|B7D|Magic Vulnerability Up|0.00|400040E8|Chaos|100A7A8F|OffTank|00|217488|44|c183a023713c6598
-        world.Events.Add(159.63f, () => party.Get(PartyRole.OffTank)?.RemoveStatus(StatusId.MagicVulnerabilityUp));
-        // [159.63s] 30|B7D|Magic Vulnerability Up|0.00|400040E8|Chaos|100702A3|Player|00|205207|44|fef45bd6e3d43914
-        world.Events.Add(159.63f, () => party.Get(PartyRole.PhysRangedDps)?.RemoveStatus(StatusId.MagicVulnerabilityUp));
-        // [159.63s] 30|B7D|Magic Vulnerability Up|0.00|400040E8|Chaos|10018AEA|MeleeDpsB|00|226668|44|c31a0ed01d93c9b4
-        world.Events.Add(159.63f, () => party.Get(PartyRole.MeleeDpsB)?.RemoveStatus(StatusId.MagicVulnerabilityUp));
-        // [159.63s] 30|B7D|Magic Vulnerability Up|0.00|400040E8|Chaos|100AC8F1|CasterDps|00|227550|44|8ea67f20190b40b7
-        world.Events.Add(159.63f, () => party.Get(PartyRole.CasterDps)?.RemoveStatus(StatusId.MagicVulnerabilityUp));
-    }
 
     public MpMessage? BuildReplayStateMessage()
         => LastState is { } s ? new AiReplayStateMessage(

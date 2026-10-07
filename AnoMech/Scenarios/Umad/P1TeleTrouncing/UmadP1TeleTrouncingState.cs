@@ -198,7 +198,7 @@ public sealed class UmadP1TeleTrouncingState
         foreach (var (role, (first, second)) in debuffs)
         {
             spots[role] = first == second
-                ? (SideSpot(first, 1), SideSpot(first, 2))
+                ? (SideSpot(first, 2), SideSpot(first, 1))
                 : (SideSpot(first, 3), SideSpot(second, 0));
         }
         return spots;

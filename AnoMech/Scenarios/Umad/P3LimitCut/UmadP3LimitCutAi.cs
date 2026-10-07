@@ -33,6 +33,7 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         world.Events.Add(37.5f, InvulnPlannedTank);
         ai.Move(38.9f, SwapThunderTanks, arrivalTime: 41.2f, cue: UmadP3LimitCutPlaybook.ThunderSwap(state));
         ScheduleThunderClearance(36.5f, 38.9f, 42.2f);
+        ai.Move(43.6f, SplitForDecisiveBattle, arrivalTime: 46.3f, cue: UmadP3LimitCutPlaybook.DecisiveBattleSplit);
         ai.Move(47.0f, StackAtBosses, cue: UmadP3LimitCutPlaybook.Uptime(state));
     }
 
@@ -153,6 +154,27 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         coords[(int)PartyRole.MainTank] = Flat(Geometry.OnCircle(Hold, Geometry.ChaosHoldRadius - 1.5f));
         coords[(int)PartyRole.OffTank] = Flat(Geometry.OnCircle(Hold, Geometry.ExdeathHoldRadius - 1.5f) + Geometry.OnCircle(Hold + MathF.PI / 2f, 2.5f));
         for (var slot = 2; slot < 8; slot++) coords[slot] = StackSpot(slot);
+        return AiMove.Create(coords).NaturalOrder();
+    }
+
+    private static readonly PartyRole[] EpicHeroes = [PartyRole.MainTank, PartyRole.RegenHealer, PartyRole.MeleeDpsA, PartyRole.MeleeDpsB];
+
+    private IAiMove SplitForDecisiveBattle()
+    {
+        if (state.Objects.Chaos is not { } chaos || state.Objects.Exdeath is not { } exdeath) return StackAtBosses();
+        var apart = Flat(chaos.Position - exdeath.Position);
+        var away = apart.LengthSquared() > 0.01f ? Vector2.Normalize(apart) : Flat(Geometry.OnCircle(Hold + MathF.PI / 2f, 1f));
+        var across = new Vector2(-away.Y, away.X);
+        var coords = new Vector2?[8];
+        var atChaos = 0;
+        var atExdeath = 0;
+        for (var slot = 0; slot < 8; slot++)
+        {
+            var epic = Array.IndexOf(EpicHeroes, (PartyRole)slot) >= 0;
+            var n = epic ? atChaos++ : atExdeath++;
+            var beside = epic ? Flat(chaos.Position) + away * 3f : Flat(exdeath.Position) - away * 3f;
+            coords[slot] = beside + across * (n - 1.5f);
+        }
         return AiMove.Create(coords).NaturalOrder();
     }
 

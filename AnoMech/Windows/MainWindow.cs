@@ -982,7 +982,7 @@ public unsafe class MainWindow : Window, IDisposable
         }
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Practice: bots press the party mitigation sheet for the comp you're in, and your own planned presses are graded in chat when the run ends.\n"
-                             + "Hits lower HP bars where the damage is known (P1, P2 Forsaken); a hit that would kill only warns and names what was missing.\n"
+                             + "Hits lower HP bars; a hit that would kill only warns and names what was missing.\n"
                              + "Grading needs \"Resolve your own actions\" on. Takes effect from the next start.");
     }
 

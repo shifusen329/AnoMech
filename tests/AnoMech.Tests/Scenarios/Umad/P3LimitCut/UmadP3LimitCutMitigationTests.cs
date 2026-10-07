@@ -7,12 +7,13 @@ public class UmadP3LimitCutMitigationTests
     [Test]
     public void ThePlanHoldsForEveryComp()
     {
-        MitigationPlanAssert.IsSound(UmadP3LimitCutMitigation.Plan(), "Limit Cut");
+        MitigationPlanAssert.IsSound(UmadP3LimitCutMitigation.Plan(), "Limit Cut",
+            UmadP3LimitCutConstants.Timing.UmbraCastAt + UmadP3LimitCutConstants.Timing.KefkaReappearAfterUmbra);
     }
 
     [Test]
-    public void NoHitHasKnownDamageYet()
+    public void EveryHitHasDamage()
     {
-        Assert.That(UmadP3LimitCutMitigation.Hits.All(h => h.Raw == null), "HP would start moving and the scenario's own damage numbers would stop showing");
+        Assert.That(UmadP3LimitCutMitigation.Hits.All(h => h.Raw > 0f));
     }
 }

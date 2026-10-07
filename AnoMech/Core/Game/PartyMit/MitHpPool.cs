@@ -1,10 +1,13 @@
+using System;
+
 namespace AnoMech.Core.Game.PartyMit;
 
-// One member's simulated HP. Nothing heals; instead a hit more than topUpGap seconds after the last
-// lands on full HP, and hits closer together than that pile up.
-public sealed class MitHpPool(float max, float topUpGap)
+// One member's simulated HP. Healing stands in as a steady refill of healPerSecond of max HP from
+// the last hit on, and a hit more than topUpGap seconds after the last lands on full HP.
+public sealed class MitHpPool(float max, float topUpGap, float healPerSecond = 0f)
 {
     private float? lastHit;
+    private float afterLastHit;
 
     public float Max { get; } = max;
     public float Hp { get; private set; } = max;
@@ -12,17 +15,25 @@ public sealed class MitHpPool(float max, float topUpGap)
     // Returns the HP left, which may be below zero: the caller warns, nobody dies of it.
     public float Land(float now, float loss, bool fresh = false)
     {
-        if (fresh || lastHit is not { } last || now - last > topUpGap) Hp = Max;
-        Hp -= loss;
+        var left = (fresh ? Max : HpAt(now)) - loss;
+        afterLastHit = MathF.Max(0f, left);
+        Hp = left;
         lastHit = now;
-        return Hp;
+        return left;
     }
 
-    // True when the pool just refilled.
+    // True when the pool just healed.
     public bool TopUp(float now)
     {
-        if (Hp >= Max || lastHit is not { } last || now - last <= topUpGap) return false;
-        Hp = Max;
+        var hp = HpAt(now);
+        if (hp <= Hp) return false;
+        Hp = hp;
         return true;
+    }
+
+    private float HpAt(float now)
+    {
+        if (lastHit is not { } last || now - last > topUpGap) return Max;
+        return MathF.Min(Max, afterLastHit + healPerSecond * Max * (now - last));
     }
 }

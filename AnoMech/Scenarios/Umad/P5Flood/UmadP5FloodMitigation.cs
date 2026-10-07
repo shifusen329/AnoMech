@@ -6,15 +6,15 @@ using static AnoMech.Core.Game.PartyMit.SheetColumn;
 namespace AnoMech.Scenarios.Umad.P5Flood;
 
 // The P5 mitigation sheet's Chaotic Flood row on this scenario's clock; Holos goes out for the
-// Ultima Repeater before the scenario starts and carries into it. No damage is known yet, so HP
-// doesn't move.
+// Ultima Repeater before the scenario starts and carries into it.
 internal static class UmadP5FloodMitigation
 {
     public const string ChaoticFlood = "chaotic_flood";
 
+    // Raw on a physical DPS, per player in the stack.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(ChaoticFlood, "Chaotic Flood", null, UmadMitigation.Kefka),
+        new(ChaoticFlood, "Chaotic Flood", 74000f, null),
     ];
 
     private const float Flood1 = 6.33f;

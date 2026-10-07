@@ -37,7 +37,8 @@ internal static class MitigationPlanAssert
                 yield return ($"{job} in {slot}", new Dictionary<PartyRole, JobId>(Bots) { [slot] = job });
     }
 
-    public static void IsSound(MitPlanData data, string scenario)
+    // endsAt is the scenario's end, when a press with nothing to cover there can come after its last hit.
+    public static void IsSound(MitPlanData data, string scenario, float? endsAt = null)
     {
         var scheduled = data.Schedule.Select(s => s.At).ToList();
         var lastHit = scheduled.Max();
@@ -49,7 +50,7 @@ internal static class MitigationPlanAssert
             var context = $"{scenario}: {e.Column} {e.ActionId} at {e.At} ({e.Label})";
             if (e.ActionId is not (MitPlanEntry.PartyMit or MitPlanEntry.TankLb3))
                 Assert.That(MitCatalogue.Find(e.ActionId), Is.Not.Null, context);
-            Assert.That(e.At, Is.LessThanOrEqualTo(lastHit), context);
+            Assert.That(e.At, Is.LessThanOrEqualTo(endsAt ?? lastHit), context);
             if (!e.IsPreStart) Assert.That(e.At, Is.GreaterThanOrEqualTo(0f), context);
             foreach (var cover in e.Covers)
             {

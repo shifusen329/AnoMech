@@ -11,8 +11,8 @@ public class UmadP4KefkaSaysMitigationTests
     }
 
     [Test]
-    public void NoHitHasKnownDamageYet()
+    public void EveryHitHasDamage()
     {
-        Assert.That(UmadP4KefkaSaysMitigation.Hits.All(h => h.Raw == null), "HP would start moving and the scenario's own damage numbers would stop showing");
+        Assert.That(UmadP4KefkaSaysMitigation.Hits.All(h => h.Raw > 0f));
     }
 }

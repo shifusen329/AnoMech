@@ -71,7 +71,8 @@ public sealed class MitPractice
             foreach (var member in world.Party.AllMembers())
                 if (member is ISimPartyMember slot)
                 {
-                    var pool = new MitHpPool(planData.Profile.MaxHp(MitProfile.ClassOf((JobId)slot.ClassJob)), planData.Profile.TopUpGap);
+                    var pool = new MitHpPool(planData.Profile.MaxHp(MitProfile.ClassOf((JobId)slot.ClassJob)), planData.Profile.TopUpGap,
+                        planData.Profile.HealPerSecond);
                     pools[member] = pool;
                     Write(member, pool);
                 }

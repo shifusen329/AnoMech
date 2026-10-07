@@ -174,7 +174,7 @@ internal static class UmadP4KefkaSaysPlaybook
     public static StratCue StrayFlames(UmadP4KefkaSaysState state) => StratCue.ForAll(
         "Stray Flames",
         state.InfernoMystery.SolutionIsChariot
-            ? "Inferno was real, so Entropy's AoE is a point-blank circle: run out of the middle to 11y, one direction each."
+            ? "Inferno was real, so Entropy's AoE is a point-blank circle: run straight out to your stack or spread spot for the next round."
             : "Inferno was fake, so Entropy's AoE is a donut: stay in the middle, inside its 6y hole.",
         $"NAUR §4.12 (0:58:13) · {Strat}");
 

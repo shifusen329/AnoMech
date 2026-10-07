@@ -58,11 +58,11 @@ public sealed class UmadP5ForsakenNull : IScenario
     {
         world.Events.Add(13.21f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.Forsaken));
         world.Events.Add(18.32f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
-        world.Events.Add(21.39f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.Forsaken));
+        world.Events.Add(21.39f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenRepeat));
         world.Events.Add(26.47f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
-        world.Events.Add(29.55f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.Forsaken));
+        world.Events.Add(29.55f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenRepeat));
         world.Events.Add(34.62f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
-        world.Events.Add(37.69f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.Forsaken));
+        world.Events.Add(37.69f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenRepeat));
         world.Events.Add(42.78f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
     }
 
@@ -139,6 +139,7 @@ public sealed class UmadP5ForsakenNull : IScenario
         world.Events.Add(21.39f, () => kefka_4001DE6B?.Cast(Constants.ActionId.Forsaken_BB36));
         world.Events.Add(29.55f, () => kefka_4001DE6B?.Cast(Constants.ActionId.Forsaken_BB36));
         world.Events.Add(37.69f, () => kefka_4001DE6B?.Cast(Constants.ActionId.Forsaken_BB36));
+        world.Events.Add(47.84f, () => kefka_4001DE6B?.Cast(Constants.ActionId.ForsakenNull));
     }
 
     private void Run_Kefka_4001D7AD()

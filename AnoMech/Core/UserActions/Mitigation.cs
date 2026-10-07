@@ -90,8 +90,8 @@ public readonly record struct Mitigation(
 
         // Caster
         [2707] = new(Magic: 0.10f),    // Magick Barrier
-        [3686] = new(ShieldHp: 0.20f), // Tempera Coat (UNVERIFIED id; 4114 is the other)
-        [3687] = new(ShieldHp: 0.10f), // Tempera Grassa (UNVERIFIED id; 4115 is the other)
+        [3686] = new(ShieldHp: 0.20f), // Tempera Coat
+        [3687] = new(ShieldHp: 0.10f), // Tempera Grassa
 
         // Healers. A healing-potency barrier is the same HP on everyone, sized for DMU gear.
         [1873] = new(Damage: 0.10f),   // Temperance, on the party (UNVERIFIED id; 1872 is the WHM's own)
@@ -108,7 +108,7 @@ public readonly record struct Mitigation(
         [2618] = new(Damage: 0.10f),   // Kerachole
         [3003] = new(Damage: 0.10f),   // Holos
         [3365] = new(ShieldAbsolute: 26792f),   // Holosakos
-        [2609] = new(ShieldAbsolute: 31516f),   // Eukrasian Prognosis (UNVERIFIED id; 2866 is the other)
+        [2609] = new(ShieldAbsolute: 31516f),   // Eukrasian Prognosis
         [2613] = new(ShieldAbsolute: 19111f, ShieldHits: 5),   // Panhaima
     };
 

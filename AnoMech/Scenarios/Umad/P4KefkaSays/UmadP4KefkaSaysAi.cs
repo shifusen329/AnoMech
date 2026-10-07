@@ -49,7 +49,7 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
         var ai = new AiManager(world);
 
         // Gather near centre before the first Mystery Magic resolves (~16s).
-        ai.Move(2f, () => Stack(new Vector2(0f, 0f)), jitter: 2f, arrivalTime: 9f, cue: UmadP4KefkaSaysPlaybook.Gather);
+        ai.Move(2f, () => Stack(new Vector2(0f, 4f)), jitter: 2f, arrivalTime: 9f, cue: UmadP4KefkaSaysPlaybook.Gather);
         ai.Move(11.6f, () => Stack(SafeSpot(state.Mystery[0])), jitter: 0.8f, arrivalTime: 15.4f, cue: UmadP4KefkaSaysPlaybook.MysteryMagic(state, 0));
         ai.Move(26.4f, () => Stack(SafeSpot(state.Mystery[1])), jitter: 0.8f, arrivalTime: 30.3f, cue: UmadP4KefkaSaysPlaybook.MysteryMagic(state, 1));
         ai.Move(41.5f, () => Stack(SafeSpot(state.Mystery[2])), jitter: 0.8f, arrivalTime: 45.4f, cue: UmadP4KefkaSaysPlaybook.MysteryMagic(state, 2));
@@ -61,7 +61,7 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
         // Stray Flames: bait the fire stacked in the middle (scenario locks each bait
         // at ~87.3s), then react to the resolved shape, which lands ~92.4s.
         ai.Move(81f, () => Stack(new Vector2(0f, 0f)), jitter: 1f, arrivalTime: 86.5f, cue: UmadP4KefkaSaysPlaybook.FireBait);
-        ai.Move(88f, () => StrayFlames(state.InfernoMystery), jitter: 0.5f, arrivalTime: 92f, cue: UmadP4KefkaSaysPlaybook.StrayFlames(state));
+        ai.Move(88f, () => StrayFlames(state), jitter: 0.5f, arrivalTime: 92f, cue: UmadP4KefkaSaysPlaybook.StrayFlames(state));
 
         // Elemental wave 2 (~96.5s) folded into Mystery[3]'s Blizzard-safe wedges (~97.4s);
         // arrival at 96.0 also clears the Acceleration Bomb check at 96.28.
@@ -329,8 +329,8 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
     // coords[0..2] = stack (3) N, coords[3] = solo W; coords[4..6] = stack (3) S, coords[7] = solo E.
     private static readonly Vector2?[] ElementCardinals =
     {
-        new(0f, -12f), new(0f, -12f), new(0f, -12f), new(-12f, 0f),
-        new(0f, 12f), new(0f, 12f), new(0f, 12f), new(12f, 0f),
+        new(0f, -10f), new(0f, -10f), new(0f, -10f), new(-12f, 0f),
+        new(0f, 10f), new(0f, 10f), new(0f, 10f), new(12f, 0f),
     };
 
     // Every slot to the same destination.
@@ -343,23 +343,13 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
     // player's position at ~87.3s, then resolves InfernoMystery.Solution ~5s later).
     // The whole party baits stacked in the arena centre so the AOEs land on top of
     // each other, and the resolved shape decides the safe spot:
-    //   real -> StrayFlames_Chariot (circle r=6 on the bait) -> everyone runs out
+    //   real -> StrayFlames_Chariot (circle r=6 on the bait) -> everyone runs out to the next
+    //           round's stack/spread spot, already clear of r=6
     //   lie  -> StrayFlames_Donut   (safe inside r=6)         -> everyone stays in
-    private static IAiMove StrayFlames(ChaosMystery inferno)
-    {
-        if (!inferno.SolutionIsChariot) // Donut: the middle (inside r=6) is safe — stay stacked.
-            return AiMove.All(new Vector2(0f, 0f));
-
-        // Chariot: the circle covers the centre; fan straight out well past r=6.
-        const float radius = 11f;
-        var coords = new Vector2?[8];
-        for (var i = 0; i < 8; i++)
-        {
-            var th = i * MathF.PI / 4f;
-            coords[i] = new Vector2(MathF.Sin(th) * radius, MathF.Cos(th) * radius);
-        }
-        return AiMove.Create(coords).NaturalOrder();
-    }
+    private IAiMove StrayFlames(UmadP4KefkaSaysState state) =>
+        state.InfernoMystery.SolutionIsChariot
+            ? ResolveElementsUnderBlizzard(state.ElemRoles[1], state.ElemTrue[1], state.Mystery[3])
+            : AiMove.All(new Vector2(0f, 0f));
 
     // --- Stray Spray bait (Tsunami "Mana Release") + last Mystery Magic -----------
     //

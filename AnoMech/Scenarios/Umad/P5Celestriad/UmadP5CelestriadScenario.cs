@@ -111,7 +111,6 @@ public sealed class UmadP5CelestriadScenario : IMultiplayerReplayable
     // Silent: no cast or animation on the player when the initial debuff lands, just the status.
     private void ApplyDebuffs()
     {
-        world.MitPractice.HitParty(UmadP5CelestriadMitigation.Celestriad);
         foreach (var (role, element) in state.PlayerDebuffElement)
         {
             if (element is not { } e) continue;

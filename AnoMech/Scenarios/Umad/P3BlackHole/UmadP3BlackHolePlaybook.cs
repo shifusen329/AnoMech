@@ -116,8 +116,8 @@ internal static class UmadP3BlackHolePlaybook
 
     public static StratCue Pull(UmadP3BlackHoleState state, TetherOrder order) => new(
         "Black Hole: pull your tether",
-        role => "Take your tether to the wall 60° clockwise of its black hole, 14y out (just past the intercardinal), "
-                + $"so its laser runs along the edge, clear of the stack in the middle. {Turn(state, order, role)}",
+        role => "Stretch your tether 60° clockwise of its black hole and hold it about 10y out, near Chaos's max melee "
+                + $"rather than at the wall, so its laser passes clear of the stack in the middle. {Turn(state, order, role)}",
         $"{Rotation} · {Strat(order)}");
 
     public static StratCue ReturnToMiddle(UmadP3BlackHoleState state, TetherOrder order) => new(
@@ -240,7 +240,7 @@ internal static class UmadP3BlackHolePlaybook
     public static StratCue StompPreposition(UmadP3BlackHoleState state) => new(
         "Blizzard III + Stomp a Mole: start",
         role => $"Kefka's last teleport ({Compass(state.KefkaPosition[4])}) is now relative north. "
-                + $"{(role.IsDps() ? "DPS wait 5y relative south" : "Supports wait 5y relative north")} of the middle, just outside the hitbox, where the first Blizzard III puddles drop.",
+                + $"{(role.IsDps() ? "DPS wait 9y relative south" : "Supports wait 9y relative north")} of the middle, so the first Blizzard III puddles drop clear of it.",
         Stomps);
 
     public static StratCue StompCorners(UmadP3BlackHoleState state) => new(

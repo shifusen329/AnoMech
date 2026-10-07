@@ -7,11 +7,12 @@ public enum MitClass { Tank, Physical, Magical }
 
 // A fight's HP model: each class's max HP and the share of a raw hit it takes (tanks and magical
 // jobs have more defence). TankCooldowns stands in for a bot tank's own cooldowns on a buster;
-// between hits HP refills after TopUpGap seconds, standing in for healing.
+// healing stands in as HealPerSecond of max HP back each second after a hit, and full HP once
+// TopUpGap seconds pass without one.
 public sealed record MitProfile(
     float TankMaxHp, float PhysicalMaxHp, float MagicalMaxHp,
     float TankTaken, float PhysicalTaken, float MagicalTaken,
-    float TankCooldowns, float TopUpGap)
+    float TankCooldowns, float TopUpGap, float HealPerSecond = 0f)
 {
     public static MitClass ClassOf(JobId job) => job switch
     {

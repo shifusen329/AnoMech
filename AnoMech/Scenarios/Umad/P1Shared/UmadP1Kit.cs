@@ -291,9 +291,9 @@ internal sealed class UmadP1Kit
         World.MitPractice.Hit(tank, UmadP1Hits.Hyperdrive);
     }
 
-    // Revolting Ruin III: a 90-degree cone at the aggro tank, lethal to anyone else in it (the
-    // width is kefkasim's, not measured).
-    public const float RevoltingRuinHalfAngle = MathF.PI / 4f;
+    // Revolting Ruin III: a 120-degree cone at the aggro tank, lethal to anyone else in it. The
+    // width is the strategy diagrams'; UNVERIFIED (no log has anyone between 45 and 90 degrees).
+    public const float RevoltingRuinHalfAngle = MathF.PI / 3f;
 
     public void ResolveRevoltingRuin(uint actionId, bool instantCast)
     {

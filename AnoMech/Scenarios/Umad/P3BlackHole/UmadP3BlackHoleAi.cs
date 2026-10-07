@@ -135,7 +135,7 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
     private static IAiMove StackCentreTanksHoldBossesCentred() =>
         AiMove.Create(
             new(6.0f, 0f),
-            new(-3.8f, 0f),
+            new(3.8f, 0f),
             new(0f, 0f),
             new(0f, 0f),
             new(0f, 0f),
@@ -563,9 +563,7 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
             ? null
             : state.ScenarioObjects.Tethers.FirstOrDefault(t => ReferenceEquals(t.B, player));
 
-    // Non-tether players hold centre for the whole wave, so a pulled hole must clear
-    // Nothingness's radius from there; 8y still tagged the stack.
-    private const float TetherPullRadius = 14f;
+    private const float TetherPullRadius = 10f;
 
     private static Vector2 CardinalClockwise(Vector2 cardinal)
     {
@@ -592,8 +590,8 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
 
     // Supports gather north of centre, DPS south, ready for the first spread.
     private IAiMove PrepositionForStomp() =>
-        AiMove.Create(new(0, -5), new (0, -5), new (0, -5), new (0, -5),
-                    new (0, 5), new(0, 5), new (0, 5), new (0, 5))
+        AiMove.Create(new(0, -9), new (0, -9), new (0, -9), new (0, -9),
+                    new (0, 9), new(0, 9), new (0, 9), new (0, 9))
               .NaturalOrder()
               .ApplyPositions(state.KefkaPosition[4].Apply);
 

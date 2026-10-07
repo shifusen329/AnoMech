@@ -31,9 +31,11 @@ public sealed class UmadP3BlackHoleScenarioObjects
              .OrderBy(t => ClockwiseFrom(TetherSortFrom.RadiansFromNorth, t.A!.Position))
              .ToList();
 
+    // A hole on Kefka's own bearing counts as the first clockwise; the bias keeps float noise
+    // from sorting it last.
     private static float ClockwiseFrom(float north, Vector3 p)
     {
-        var d = (MathF.Atan2(p.X, -p.Z) - north) % MathF.Tau;
+        var d = (MathF.Atan2(p.X, -p.Z) - north + 0.01f) % MathF.Tau;
         return d < 0f ? d + MathF.Tau : d;
     }
 }

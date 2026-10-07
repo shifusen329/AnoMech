@@ -100,6 +100,13 @@ internal static class UmadP3LimitCutPlaybook
 
     public static StratCue ThunderSwap(UmadP3LimitCutState state) => UmadP3BlackHolePlaybook.ThunderSwap(state.ThunderPlan, Thunder);
 
+    public static StratCue DecisiveBattleSplit => new(
+        "The Decisive Battle (second)",
+        role => role is PartyRole.MainTank or PartyRole.RegenHealer or PartyRole.MeleeDpsA or PartyRole.MeleeDpsB
+            ? "Split to Chaos before it resolves: MT, H1 and both melee take Epic Hero, which locks you to him."
+            : "Split to Exdeath before it resolves: OT, H2 and both ranged take Fated Hero, which locks you to him.",
+        "NAUR §3.10 (0:39:41)");
+
     public static StratCue Uptime(UmadP3LimitCutState state) => new(
         "The Decisive Battle (second)",
         role => $"Back to the bosses on the {Spot(state.BossSpot)} intercardinal: "

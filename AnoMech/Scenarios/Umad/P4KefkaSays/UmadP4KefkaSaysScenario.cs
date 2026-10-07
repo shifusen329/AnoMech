@@ -92,7 +92,6 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
         world.Events.Add(35.30f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.GrandCross));
         world.Events.Add(40.43f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.InfernoTsunami));
         world.Events.Add(50.26f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.GrandCross));
-        world.Events.Add(62.39f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.FloodOfNaught));
         world.Events.Add(89.60f, () => world.MitPractice.HitParty(UmadP4KefkaSaysMitigation.UltimaUpsurge));
     }
 
@@ -456,6 +455,7 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
             
             SimEnemy? neo_Exdeath_400040E9_5 = null;
             var actionId = i % 2 == 0 ? ActionId.DeathBolt : ActionId.DeathWave;
+            var hitKey = i % 2 == 0 ? UmadP4KefkaSaysMitigation.DeathBolt : UmadP4KefkaSaysMitigation.DeathWave;
             var minTargets1 = (i % 2 == 0) ^ state.ElemTrue[0] ? 3 : 1;
             var minTargets2 = (i % 2 == 0) ^ state.ElemTrue[1] ? 3 : 1;
             
@@ -465,7 +465,7 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
             world.Events.Add(71.37f, () => neo_Exdeath_400040E9_5?.Cast(actionId));
             world.Events.Add(71.37f, () => world.MitPractice.Hit(
                 damage.Resolve(neo_Exdeath_400040E9_5, actionId, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: minTargets1),
-                UmadP4KefkaSaysMitigation.DeathBoltWave));
+                hitKey));
             
             if (i < 2)
             {
@@ -478,7 +478,7 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
             world.Events.Add(96.48f, () => neo_Exdeath_400040E9_5?.Cast(actionId));
             world.Events.Add(96.48f, () => world.MitPractice.Hit(
                 damage.Resolve(neo_Exdeath_400040E9_5, actionId, [DamageType.Magic], [(StatusId.MagicVulnerabilityUp, 1.96f)], stackMinTargets: minTargets2),
-                UmadP4KefkaSaysMitigation.DeathBoltWave));
+                hitKey));
         
             if (i < 2)
             {

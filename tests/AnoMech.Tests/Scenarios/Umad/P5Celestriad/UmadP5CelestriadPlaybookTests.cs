@@ -61,10 +61,11 @@ public class UmadP5CelestriadPlaybookTests
     }
 
     [Test]
-    public void CelestriadChoiceSendsAeroOutAndEarthIn()
+    public void CelestriadChoiceSendsAeroInAndEarthOut()
     {
-        var state = States().First(s => s.State.AeroVariant[0] == CatastrophicChoice.Aero).State;
-        Assert.That(UmadP5CelestriadPlaybook.CatastrophicChoiceHalf(state, 0).Why(PartyRole.MainTank), Does.Contain("outer half of your"));
-        Assert.That(UmadP5CelestriadPlaybook.CatastrophicChoiceHalf(state, 2).Why(PartyRole.MainTank), Does.Contain("inner half of your"));
+        var aero = States().First(s => s.State.AeroVariant[0] == CatastrophicChoice.Aero).State;
+        Assert.That(UmadP5CelestriadPlaybook.CatastrophicChoiceHalf(aero, 0).Why(PartyRole.MainTank), Does.Contain("inner half of your"));
+        var earth = States().First(s => s.State.AeroVariant[0] == CatastrophicChoice.Earth).State;
+        Assert.That(UmadP5CelestriadPlaybook.CatastrophicChoiceHalf(earth, 0).Why(PartyRole.MainTank), Does.Contain("outer half of your"));
     }
 }
