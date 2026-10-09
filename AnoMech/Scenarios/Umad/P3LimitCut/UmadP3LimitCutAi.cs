@@ -173,9 +173,15 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
             var epic = Array.IndexOf(EpicHeroes, (PartyRole)slot) >= 0;
             var n = epic ? atChaos++ : atExdeath++;
             var beside = epic ? Flat(chaos.Position) + away * 3f : Flat(exdeath.Position) - away * 3f;
-            coords[slot] = beside + across * (n - 1.5f);
+            coords[slot] = InsideArena(beside + across * (n - 1.5f));
         }
         return AiMove.Create(coords).NaturalOrder();
+    }
+
+    private static Vector2 InsideArena(Vector2 spot)
+    {
+        var limit = Geometry.ArenaRadius - 1f;
+        return spot.LengthSquared() > limit * limit ? Vector2.Normalize(spot) * limit : spot;
     }
 
     private IAiMove TanksIntoStack()

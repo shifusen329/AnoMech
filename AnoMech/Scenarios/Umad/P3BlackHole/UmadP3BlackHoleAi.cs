@@ -58,7 +58,7 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
             world.Events.Add(28.2f, () => PullTether(playerIndex: 0));
             world.Events.Add(32.4f, () => ReturnToMiddle(playerIndex: 0));
             world.Events.Add(32.4f, () => GrabTether(tetherIndex: 0, playerIndex: 4));
-            ai.Move(32.6f, DragExdeathTowardFirstTether, cue: UmadP3BlackHolePlaybook.ExdeathToFirstTether);
+            ai.Move(32.6f, HoldExdeathClockwiseOfFirstTether, cue: UmadP3BlackHolePlaybook.ExdeathToFirstTether);
             world.Events.Add(33.6f, () => GrabOtherTether(playerIndex: 4));
             world.Events.Add(35f, () => HoldBothTethers(playerIndex: 4));
         }
@@ -349,25 +349,27 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
 
         var bossPos = new Vector2(boss.Position.X, boss.Position.Z);
         var fwd = new Vector2(MathF.Sin(boss.Rotation), MathF.Cos(boss.Rotation));
-        var denom = Vector2.Dot(axis, fwd);
+        return AiMove.All(NearestSpotBehindBossBesideLine(bossPos, fwd, axis, lookRight, lookSafe, behind)
+                          ?? NearestSpotBehindBossBesideLine(bossPos, fwd, axis, lookRight, lookSafe, 0f)
+                          ?? lookRight * lookSafe);
+    }
 
-        // A corridor edge offset by sign*lookSafe (always clear of Look-Upon), slid
-        // along the line to sit `behind` the boss. Falls back to the edge midpoint when
-        // the boss faces across the line (sliding can't change how far behind it sits).
-        Vector2 Seat(float sign)
-        {
-            var edge = lookRight * (sign * lookSafe);
-            if (MathF.Abs(denom) < 0.1f) return edge;
-            var t = (-behind - Vector2.Dot(edge - bossPos, fwd)) / denom;
-            return edge + axis * t;
-        }
+    private const float SpotSearchStep = 0.5f;
 
-        var a = Seat(1f);
-        var b = Seat(-1f);
-        float Fwd(Vector2 p) => Vector2.Dot(p - bossPos, fwd);   // < 0 = behind the boss
-        bool aOk = Fwd(a) < -1f, bOk = Fwd(b) < -1f;
-        if (aOk == bOk) return AiMove.All(a.LengthSquared() <= b.LengthSquared() ? a : b);
-        return AiMove.All(aOk ? a : b);
+    private static Vector2? NearestSpotBehindBossBesideLine(Vector2 bossPos, Vector2 bossForward, Vector2 lineAxis, Vector2 lineSide, float sideClearance, float behindBoss)
+    {
+        var reach = ArenaRadius - 2f;
+        Vector2? best = null;
+        for (var side = sideClearance; side <= reach; side += SpotSearchStep)
+            for (var along = -reach; along <= reach; along += SpotSearchStep)
+                foreach (var sign in (ReadOnlySpan<float>)[1f, -1f])
+                {
+                    var spot = lineSide * (sign * side) + lineAxis * along;
+                    if (spot.LengthSquared() > reach * reach) continue;
+                    if (Vector2.Dot(spot - bossPos, bossForward) > -behindBoss) continue;
+                    if (best is null || spot.LengthSquared() < best.Value.LengthSquared()) best = spot;
+                }
+        return best;
     }
 
     // Implosion fires two +-45deg Shockwave cones from Chaos, the axis rotating 90deg between
@@ -596,7 +598,8 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
     private readonly Dictionary<int, SimCharacter?> pairedHole = new();
 
     private const int HoldBothTethersMaxRetries = 6;
-    private const float ExdeathDragDistance = 6f;
+    private const float DoubleTetherHoldRadius = 12f;
+    private const float ExdeathTankRadius = 14.5f;
 
     private SimTether? TetherFrom(SimCharacter? hole) =>
         hole is null ? null : state.ScenarioObjects.Tethers.FirstOrDefault(t => ReferenceEquals(t.A, hole));
@@ -650,21 +653,21 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
         var between = Vector2.Normalize(new Vector2(holeA.Position.X, holeA.Position.Z))
                       + Vector2.Normalize(new Vector2(holeB.Position.X, holeB.Position.Z));
         if (between.LengthSquared() < 1e-3f) return;
-        var rawSpot = Vector2.Normalize(between) * TetherPullRadius;
+        var rawSpot = Vector2.Normalize(between) * DoubleTetherHoldRadius;
         var spot = world.Obstacles.ClampOutside(rawSpot, margin: 2f);
         AnoMech.Core.DiagnosticLog.Info($"[UmadP3BlackHoleAi] HoldBothTethers: {role} holds both -- moving to ({spot.X:F1},{spot.Y:F1}){(spot != rawSpot ? $" [nudged from ({rawSpot.X:F1},{rawSpot.Y:F1}) to clear a black hole]" : "")}.");
         world.Strat.Note(state.Roles[seat], spot, UmadP3BlackHolePlaybook.HoldBoth(state, tetherOrder), deadline: null);
         player.MoveTo(new Vector3(spot.X, 0f, spot.Y));
     }
 
-    private IAiMove DragExdeathTowardFirstTether()
+    private IAiMove HoldExdeathClockwiseOfFirstTether()
     {
         var coords = new Vector2?[8];
         if (assignedHole.GetValueOrDefault(TetherSeat(0)) is { } hole)
         {
             var bearing = new Vector2(hole.Position.X, hole.Position.Z);
             if (bearing.LengthSquared() > 1e-4f)
-                coords[(int)PartyRole.OffTank] = Vector2.Normalize(bearing) * ExdeathDragDistance;
+                coords[(int)PartyRole.OffTank] = RotateVec(Vector2.Normalize(bearing), MathF.PI / 4f) * ExdeathTankRadius;
         }
         return AiMove.Create(coords).NaturalOrder();
     }

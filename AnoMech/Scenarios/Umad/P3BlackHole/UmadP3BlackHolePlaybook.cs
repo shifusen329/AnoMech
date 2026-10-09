@@ -142,15 +142,17 @@ internal static class UmadP3BlackHolePlaybook
 
     public static StratCue HoldBoth(UmadP3BlackHoleState state, TetherOrder order) => new(
         "Black Hole: hold both tethers",
-        role => "Hold both tethers about 10y out on the intercardinal between their two black holes, stepping clear of any small black hole there, "
+        role => "Hold both tethers about 12y out on the intercardinal between their two black holes, stepping clear of any small black hole there, "
                 + $"so both lasers point past the edge, away from the stack in the middle. {Turn(state, order, role)}",
         $"{ModifiedDeck} · {Strat(order)}");
 
     public static readonly StratCue ExdeathToFirstTether = new(
         "Exdeath toward the first tether",
         role => role == PartyRole.OffTank
-            ? "Drag Exdeath about 6y out toward the first tether's black hole, so Thunder III lands on that side, away from the second pair's lasers."
-            : "Stay in the middle: the off-tank drags Exdeath toward the first tether's black hole for Thunder III, away from the second pair's lasers.",
+            ? "Take Exdeath to the intercardinal just clockwise of the first tether's black hole, standing about 14y out so he sits about 11y out, "
+              + "and take Thunder III there, across the arena from the second pair's lasers."
+            : "Stay in the middle: the off-tank holds Exdeath on the intercardinal just clockwise of the first tether's black hole for Thunder III, "
+              + "across the arena from the second pair's lasers.",
         ModifiedDeck);
 
     public static StratCue Pull(UmadP3BlackHoleState state, TetherOrder order) => new(
