@@ -2,7 +2,15 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
-## [Unreleased]
+## [0.4.4.0] - 2026-10-08
+
+### Added
+
+- **Black Hole: Modified DSA (double tethers).** A third bot strat for Phase 3 Black Hole, from the "P3: Modified DSA (Double Tethers)" deck:
+  - Black Hole 1: Support 1st in Line takes the lone first tether. DPS 1st in Line takes both tethers of the next pair and holds them between the two black holes. The off-tank drags Exdeath toward the first tether for Thunder III.
+  - Black Holes 2 and 3 play out as in D>S>A.
+  - Black Hole 4: Support 3rd in Line takes both tethers of the first pair, and DPS 3rd in Line takes the last tether.
+  - The death recap explains each player's laser sets under this strat.
 
 ### Changed
 
@@ -35,6 +43,7 @@ Placement in the Dancing Mad scenarios now matches the strategy diagrams and rea
   - A black hole on Kefka's own bearing always counts as the first tether.
   - A stray second Knock Down that hit four fixed roles is gone.
   - Bots wait 9 y out before Stomp-a-Mole.
+  - A bot whose tether's line moved while it was stepping in now steps back into it. Before, it gave up and the laser could hit the whole stack.
   - Exdeath starts on the west side, as in real pulls.
 - **Phase 4 (Kefka Says):**
   - When Inferno is real, bots run straight to their next stack or spread spot instead of across the arena.
