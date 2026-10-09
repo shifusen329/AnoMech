@@ -2,6 +2,19 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.4.4.1] - 2026-10-08
+
+### Changed
+
+- **Black Hole: Modified DSA now matches a logged run of the strat:**
+  - The players holding both tethers of a pair (DPS 1st in Line in Black Hole 1, Support 3rd in Line in Black Hole 4) stand about 12 y out.
+  - For Thunder III, the off-tank holds Exdeath about 11 y out on the intercardinal just clockwise of the first tether's black hole.
+
+### Fixed
+
+- **Black Hole:** at the second Damning Edict and Kefka's body slam, the bots could run far off the platform, taking Chaos with the main tank. They now stand behind Chaos, outside the body slam's line and inside the arena. Every Black Hole strat had this.
+- **Limit Cut:** before the second Decisive Battle, bots no longer follow a boss off the edge of the arena.
+
 ## [0.4.4.0] - 2026-10-08
 
 ### Added
