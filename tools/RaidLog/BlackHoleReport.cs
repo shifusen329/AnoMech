@@ -136,19 +136,38 @@ internal static class BlackHoleReport
         o.WriteLine();
         o.WriteLine("-- one player holding two black-hole tethers at once:");
         var any = false;
-        foreach (var player in tethers.Select(t => t.Target).Distinct())
+        // raid-replay ends a tether when the same target gets another one; a black hole's tether
+        // only ends when that hole's tether moves or the hole stops firing, so rebuild per hole.
+        var spans = new List<(Actor Hole, Actor Holder, int From, int To)>();
+        foreach (var hole in tethers.Select(t => t.Source).Distinct())
         {
-            var spans = tethers.Where(t => t.Target == player).Select(t => (t.Source, t.StartMs, End: t.EndMs > t.StartMs ? t.EndMs : t.Source.DespawnMs)).ToList();
-            foreach (var a in spans)
-                foreach (var b in spans)
+            var events = tethers.Where(t => t.Source == hole).OrderBy(t => t.StartMs).ToList();
+            var lastShot = nothingness.Where(a => a.Source == hole).Select(a => a.T + 100).DefaultIfEmpty(hole.DespawnMs).Max();
+            for (var i = 0; i < events.Count; i++)
+                spans.Add((hole, events[i].Target, events[i].StartMs, i + 1 < events.Count ? events[i + 1].StartMs : lastShot));
+        }
+
+        foreach (var player in spans.Select(s => s.Holder).Distinct())
+        {
+            var own = spans.Where(s => s.Holder == player).ToList();
+            for (var i = 0; i < own.Count; i++)
+                for (var j = i + 1; j < own.Count; j++)
                 {
-                    if (a.Source == b.Source || a.StartMs > b.StartMs || (a.StartMs == b.StartMs && a.Source.Index > b.Source.Index)) continue;
-                    var from = Math.Max(a.StartMs, b.StartMs);
-                    var to = Math.Min(a.End, b.End);
-                    if (to <= from) continue;
+                    if (own[i].Hole == own[j].Hole) continue;
+                    var from = Math.Max(own[i].From, own[j].From);
+                    var to = Math.Min(own[i].To, own[j].To);
+                    if (to - from < 100) continue;
                     any = true;
-                    o.WriteLine($"   {Who(player)} {Local(from):0.00}-{Local(to):0.00} ({(to - from) / 1000f:0.00}s): {Compass(Bearing(At(a.Source, from) ?? Vector2.Zero))} and {Compass(Bearing(At(b.Source, from) ?? Vector2.Zero))}");
+                    o.WriteLine($"   {Who(player)} {Local(from):0.00}-{Local(to):0.00} ({(to - from) / 1000f:0.00}s): {Compass(Bearing(At(own[i].Hole, from) ?? Vector2.Zero))} and {Compass(Bearing(At(own[j].Hole, from) ?? Vector2.Zero))}");
                 }
+        }
+
+        foreach (var hit in nothingness.SelectMany(a => a.Hits.Select(h => (a.T, h.Target)))
+                     .GroupBy(x => (T: x.T / 200, x.Target)).Where(g => g.Count() > 1))
+        {
+            any = true;
+            var p = At(hit.Key.Target, hit.First().T) ?? Vector2.Zero;
+            o.WriteLine($"   {Who(hit.Key.Target)} hit by {hit.Count()} lasers at {Local(hit.First().T):0.00} at ({p.X:0.0},{p.Y:0.0}) r={p.Length():0.0}");
         }
 
         if (!any) o.WriteLine("   none");
