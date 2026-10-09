@@ -18,6 +18,7 @@ internal static class UmadP3BlackHolePlaybook
     public const string ThunderRuleSource = "NAUR §3.4 (0:35:00)";
     public const string Thunder1 = "NAUR §3.14 (0:42:40) · §3.4 (0:35:00)";
     public const string Thunder2 = "NAUR §3.17 (0:45:08) · §3.4 (0:35:00)";
+    private const string ModifiedDeck = "P3 Modified DSA (Double Tethers) deck";
 
     private static readonly string[] WaveSources =
         ["NAUR §3.14 (0:41:49)", "NAUR §3.16 (0:44:00)", "NAUR §3.18 (0:45:55)", "NAUR §3.20 (0:48:19)"];
@@ -28,6 +29,11 @@ internal static class UmadP3BlackHolePlaybook
     // By D>S>A seat: the set whose laser is a seat's first. Each seat then takes the next two.
     private static readonly int[] FirstSet = [2, 5, 8, 3, 1, 4, 7, 6];
 
+    // By D>S>A seat, Modified DSA's lasers: one player takes both of set 2, and one both of set 9.
+    private static readonly string[] ModifiedSets =
+        ["sets 1, 3 and 4", "sets 5, 6 and 7", "set 8, then both of set 9", "sets 3, 4 and 5",
+         "both of set 2, then set 3", "sets 4, 5 and 6", "sets 7, 8 and 10", "sets 6, 7 and 8"];
+
     private static string Label(PartyRole role) => SettingsGrid.RoleLabel(role);
 
     private static string Compass(Vector3 offset) => DeathRecap.Compass(Vector3.Zero, offset);
@@ -37,8 +43,16 @@ internal static class UmadP3BlackHolePlaybook
     // A direction with Kefka as relative north (frame -Z), on the real compass.
     private static string Relative(Direction kefka, float x, float z) => Compass(kefka.Apply(new Vector3(x, 0f, z)));
 
-    private static string Strat(TetherOrder order)
-        => order == TetherOrder.SupportDpsAccretion ? "Black Hole: S>D>A" : "old bh (DSA, single tethers, n/s stomps)";
+    private static string Strat(TetherOrder order) => order switch
+    {
+        TetherOrder.SupportDpsAccretion => "Black Hole: S>D>A",
+        TetherOrder.ModifiedDsa => "Modified DSA (double tethers, n/s stomps)",
+        _ => "old bh (DSA, single tethers, n/s stomps)",
+    };
+
+    // Modified DSA only changes the first and last waves; the middle two follow NAUR.
+    private static string WaveSource(TetherOrder order, int wave)
+        => order == TetherOrder.ModifiedDsa && wave is 0 or 3 ? ModifiedDeck : WaveSources[wave];
 
     // ---- Earthquake and the Black Hole tethers ----
 
@@ -75,19 +89,25 @@ internal static class UmadP3BlackHolePlaybook
         var line = UmadP3BlackHoleState.SlotLine[seat] switch { 1 => "First", 2 => "Second", _ => "Third" };
         var kind = seat is 3 or 7 ? "Accretion" : seat < 3 ? "Support" : "DPS";
         var first = FirstSet[DsaSeat(order, seat)];
-        return $"You're {line} in Line ({kind}): your lasers are sets {first}, {first + 1} and {first + 2}; "
+        var sets = order == TetherOrder.ModifiedDsa ? ModifiedSets[seat] : $"sets {first}, {first + 1} and {first + 2}";
+        return $"You're {line} in Line ({kind}): your lasers are {sets}; "
                + "the first two stack Unbecoming and Meanest Existence, the third cleanses your Primordial Crust.";
     }
 
-    private static string OrderText(TetherOrder order) => order == TetherOrder.SupportDpsAccretion
-        ? "non-Accretion Supports take the first tether, non-Accretion DPS the second, Accretion the third (NAUR puts the DPS first)"
-        : "non-Accretion DPS take the first tether, non-Accretion Supports the second, Accretion the third";
+    private static string OrderText(TetherOrder order) => order switch
+    {
+        TetherOrder.SupportDpsAccretion => "non-Accretion Supports take the first tether, non-Accretion DPS the second, Accretion the third (NAUR puts the DPS first)",
+        TetherOrder.ModifiedDsa => "non-Accretion DPS take the first tether, non-Accretion Supports the second, Accretion the third, "
+                                   + "except that Support 1st in Line takes set 1's lone tether, DPS 1st in Line both of set 2's, "
+                                   + "Support 3rd in Line both of set 9's and DPS 3rd in Line set 10's",
+        _ => "non-Accretion DPS take the first tether, non-Accretion Supports the second, Accretion the third",
+    };
 
     public static StratCue BlackHoleWave(UmadP3BlackHoleState state, TetherOrder order, int wave) => new(
         $"Black Hole wave {wave + 1}",
         role => "Wait in the middle, clear of the black holes: only the players whose turn it is go out, and they pull their lasers along the wall. "
                 + Turn(state, order, role),
-        $"{WaveSources[wave]} · {Strat(order)}");
+        $"{WaveSource(order, wave)} · {Strat(order)}");
 
     public static StratCue Grab(UmadP3BlackHoleState state, TetherOrder order, int tetherIndex) => new(
         "Black Hole: take your tether",
@@ -114,6 +134,25 @@ internal static class UmadP3BlackHolePlaybook
         return hole + line * Math.Clamp(Vector2.Dot(at - hole, line) / (length * length), min, max);
     }
 
+    public static StratCue GrabBoth(UmadP3BlackHoleState state, TetherOrder order) => new(
+        "Black Hole: take both tethers",
+        role => "This pair of tethers is yours alone: you've stepped into one tether's line, now step into the other's, "
+                + $"so both black holes are tethered to you. {Turn(state, order, role)}",
+        $"{ModifiedDeck} · {Strat(order)}");
+
+    public static StratCue HoldBoth(UmadP3BlackHoleState state, TetherOrder order) => new(
+        "Black Hole: hold both tethers",
+        role => "Hold both tethers about 10y out on the intercardinal between their two black holes, stepping clear of any small black hole there, "
+                + $"so both lasers point past the edge, away from the stack in the middle. {Turn(state, order, role)}",
+        $"{ModifiedDeck} · {Strat(order)}");
+
+    public static readonly StratCue ExdeathToFirstTether = new(
+        "Exdeath toward the first tether",
+        role => role == PartyRole.OffTank
+            ? "Drag Exdeath about 6y out toward the first tether's black hole, so Thunder III lands on that side, away from the second pair's lasers."
+            : "Stay in the middle: the off-tank drags Exdeath toward the first tether's black hole for Thunder III, away from the second pair's lasers.",
+        ModifiedDeck);
+
     public static StratCue Pull(UmadP3BlackHoleState state, TetherOrder order) => new(
         "Black Hole: pull your tether",
         role => "Stretch your tether 60° clockwise of its black hole and hold it about 10y out, near Chaos's max melee "
@@ -129,13 +168,13 @@ internal static class UmadP3BlackHolePlaybook
         "Black Hole set 10 + Kefka's body slam",
         role =>
         {
-            var holder = state.Roles[order == TetherOrder.SupportDpsAccretion ? 6 : 2];
+            var holder = state.Roles[order is TetherOrder.SupportDpsAccretion or TetherOrder.ModifiedDsa ? 6 : 2];
             var line = $"Kefka's body slam cuts a 16y line through the middle from the {Compass(state.KefkaPosition[4])} wall";
             return role == holder
                 ? $"{line}. You hold the last tether: ride it out to the wall 45° to whichever side of its black hole clears the line, so the final laser points at the wall, away from everyone."
                 : $"{line}: go to the wall opposite {Label(holder)}, who holds the last tether, clear of both the line and the final laser.";
         },
-        $"NAUR §3.20 (0:48:19) · {Strat(order)}");
+        $"{(order == TetherOrder.ModifiedDsa ? ModifiedDeck : "NAUR §3.20 (0:48:19)")} · {Strat(order)}");
 
     // ---- Kefka, Chaos and Exdeath around the tethers ----
 
