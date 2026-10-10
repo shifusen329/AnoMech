@@ -2,6 +2,14 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.4.4.2] - 2026-10-10
+
+The plugin itself is unchanged from 0.4.4.1.
+
+### Fixed
+
+- **Developer tool (`tools/RaidLog`):** the Black Hole report now names Kefka's side of the arena (relative north). It used to print the way he faces, which is the opposite direction, so its "clockwise of Kefka" bearings were mirrored.
+
 ## [0.4.4.1] - 2026-10-08
 
 ### Changed
