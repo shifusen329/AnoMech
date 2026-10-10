@@ -9,7 +9,7 @@ dotnet run --project tools/RaidLog -- blackhole docs/logs/Network_30301_20261005
 
 - `pulls` lists the pulls in a log.
 - `blackhole` reports every DMU pull that reaches P3 Black Hole, wave by wave. Times count from the scenario's start, with Exdeath's Black Hole cast at 22.18 s. Positions are the log's minus the arena centre (100, 100), so north is -Z. The report covers:
-  - Kefka's facing, which is relative north.
+  - Kefka's side of the arena (relative north), which is opposite the way he faces when he casts.
   - The active black holes, as single, pair or set of three.
   - Every tether pass.
   - Each Nothingness: who it hit, the Unbecoming / Meanest Existence / crust result, and the nearest bystander to the beam.

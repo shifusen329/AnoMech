@@ -61,9 +61,10 @@ internal static class BlackHoleReport
                 .Where(c => c.Source.BNpcBaseId == KefkaP3Base && c.StartMs <= waveStart)
                 .OrderBy(c => c.StartMs)
                 .LastOrDefault();
-            var kefkaDeg = kefkaFacing is null ? float.NaN : HeadingBearing(kefkaFacing.Heading);
+            // Kefka sits in the middle facing away from his side of the arena, which is relative north.
+            var kefkaDeg = kefkaFacing is null ? float.NaN : Wrap360(HeadingBearing(kefkaFacing.Heading) + 180f);
             o.WriteLine();
-            o.WriteLine($"-- wave {w + 1}: Kefka faces (relative north) {(float.IsNaN(kefkaDeg) ? "unknown" : $"{Compass(kefkaDeg)} ({kefkaDeg:0}°)")}");
+            o.WriteLine($"-- wave {w + 1}: Kefka's side (relative north) {(float.IsNaN(kefkaDeg) ? "unknown" : $"{Compass(kefkaDeg)} ({kefkaDeg:0}°)")}");
 
             var firstTether = wave.ToDictionary(h => h, h => tethers.First(t => t.Source == h).StartMs);
             var firstShot = wave.ToDictionary(h => h, h => nothingness.FirstOrDefault(a => a.Source == h)?.T ?? int.MaxValue);
