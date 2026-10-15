@@ -7,6 +7,9 @@ namespace AnoMech.Core.Native.Implementations.Interop;
 
 internal static unsafe class EventObjectHelper
 {
+    // Below BattleCharas' 0x4000FE00 packet-spawn ids; one per slot of the 40-slot pool.
+    private const uint EntityIdBase = 0x4000FD00u;
+
     public static bool Create(SpawnObjectPacket* packet, out int slot, out GameObject* eventObject)
     {
         var manager = EventObjectManager.Instance();
@@ -34,6 +37,11 @@ internal static unsafe class EventObjectHelper
 
             packet->ObjectIndex = (byte)freeId;
         }
+
+        // A real EObj always has its own id. With 0 the object is nobody: BossMod's world state
+        // can't look it up and throws on it every frame, skipping every actor after it.
+        if (packet->EntityId == 0)
+            packet->EntityId = EntityIdBase + packet->ObjectIndex;
 
         PacketDispatcher.HandleSpawnObjectPacket(0, packet);
         slot = packet->ObjectIndex;

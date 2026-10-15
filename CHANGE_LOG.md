@@ -2,6 +2,13 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.4.5.1] - 2026-10-14
+
+### Fixed
+
+- **BossMod Reborn errors during scenarios with crystals or props.** Bowels of Agony's crystals, Limit Cut's wind crystal, Black Hole's earth core and similar props made BossMod throw every frame while they were up (`WorldStateGameSync.UpdateActor`), which could freeze its overlays. They now spawn the way the game's own do, and BossMod reads them normally.
+- **Crystals fade out when their element resolves,** in Bowels of Agony and Limit Cut. Before, the fade never reached them.
+
 ## [0.4.5.0] - 2026-10-14
 
 ### Added
