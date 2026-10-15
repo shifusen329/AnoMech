@@ -2,6 +2,17 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.4.5.0] - 2026-10-14
+
+### Added
+
+- **Phase 3: Bowels of Agony.** A new scenario from Chaos and Exdeath's arrival to where Limit Cut begins:
+  - The Decisive Battle, Bowels of Agony's wind and element debuffs, the three crystals, Thunder III's large AoE and its first tank buster, then Latitudinal or Longitudinal Implosion.
+  - Two bot strats. **LB3** (the default) is NAUR's and the logged clears': the ranged take the crystals' shots and every wind waits for Limit Cut's Vacuum Wave. **SG3K** is Icy Veins': the crystals' knockbacks take the other element pair's winds, and the four players without an element soak the Cyclone pairs.
+  - Settings for the crystal layout, which element runs out first, the Implosion and the Thunder III plan, plus each player's element and wind.
+  - The death recap explains every bot move, and mitigation practice covers the raidwide, the element hits and the buster.
+  - A crystal's knockback follows Vacuum Wave's rule: face the right way and it only takes your wind; face the wrong way and it throws you off the platform. No log shows these pushes yet, so their distances, the Cyclones' timing and the SG3K spots are best guesses.
+
 ## [0.4.4.2] - 2026-10-10
 
 The plugin itself is unchanged from 0.4.4.1.

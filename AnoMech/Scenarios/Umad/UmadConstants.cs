@@ -71,6 +71,7 @@ public static class UmadConstants
         public const uint PastSEnd_CloneResolve        = 0xBAD9U; // circle r=5, instant
         public const uint AllThingsEnding_Future       = 0xBADCU; // cone r=100, cast 5.0s
         public const uint AllThingsEnding_Past         = 0xBADDU; // cone r=100, cast 5.0s
+        public const uint DefinitionOfInsanity         = 0xBAE2U; // single-target, cast 4.0s; Kefka as the bosses arrive
         public const uint SlapHappy_Left                    = 0xBAE6U; // single-target, cast 5.0s
         public const uint SlapHappy_Right               = 0xBAE7U; // single-target, cast 5.0s
         public const uint SlapHappy_Slap               = 0xBAE8U; // circle r=13, instant
@@ -83,6 +84,11 @@ public static class UmadConstants
         public const uint StompAMole_Cast              = 0xBAEFU; // single-target, cast 5.0s (cf. StompAMole 0xBAF0)
         public const uint StompAMole                   = 0xBAF0U; // circle r=5, cast 1.5s
         public const uint UnmitigatedImpact            = 0xBAF1U; // circle r=100, instant; StompAMole (0xBAF0) failure resolution
+        public const uint BowelsOfAgony                = 0xBAF2U; // circle r=100, cast 5.0s
+        public const uint StrayFlames_P3               = 0xBAF3U; // circle r=5, instant; Entropy (0x640) running out
+        public const uint Inferno_P3                   = 0xBAF4U; // donut r=10, instant; the fire crystal
+        public const uint Tsunami_P3                   = 0xBAF5U; // circle r=5, instant; the water crystal
+        public const uint StraySpray_P3                = 0xBAF6U; // donut r=10, instant; Dynamic Fluid (0x641) running out
         public const uint Cyclone                      = 0xBAF8U; // circle r=6, instant
         public const uint Earthquake_Cleanse           = 0xBAFAU; // circle r=100, instant (cf. Earthquake 0xC571)
         public const uint BlackHole                    = 0xBAFBU; // single-target, cast 3.0s
@@ -100,6 +106,7 @@ public static class UmadConstants
         public const uint BlizzardIII                  = 0xBB0DU; // circle r=6, cast 3.0s
         public const uint BlizzardIII_Cast             = 0xBB0FU; // single-target, cast 3.0s (cf. BlizzardIII 0xBB0D)
         public const uint BlizzardIII_Raidwide         = 0xBB11U; // circle r=100, cast 4.0s
+        public const uint ThunderIII_Aoe               = 0xBB12U; // circle r=11 around Exdeath, cast 7.0s
         public const uint GrandCross                   = 0xBB14U; // circle r=100, cast 9.0s
         public const uint DeathBomb                    = 0xBB15U; // single-target, instant
         public const uint DeathShriek                  = 0xBB16U; // circle r=100, instant
@@ -129,6 +136,7 @@ public static class UmadConstants
         public const uint UltimateEmbrace              = 0xC24CU; // circle r=5, cast 5.0s
         public const uint AutoAttack2                  = 0xC250U; // single-target, instant
         public const uint AutoAttack1                    = 0xC252U; // single-target, instant
+        public const uint Trance                       = 0xC2D6U; // single-target, cast 3.9s
         public const uint KefkaSays                    = 0xC2DCU; // single-target, cast 5.0s
         public const uint Aetherlink_Chaos                   = 0xC2E4U; // single-target, instant
         public const uint Aetherlink_Exdeath              = 0xC2E5U; // single-target, instant
@@ -157,6 +165,8 @@ public static class UmadConstants
         public const ushort ManaCharge                = (ushort)0x5CA;
         public const ushort BlizzardCharged           = (ushort)0x5CC;
         public const ushort ThunderCharged            = (ushort)0x5CD;
+        public const ushort EntropyP3                 = (ushort)0x640;
+        public const ushort DynamicFluidP3            = (ushort)0x641;
         public const ushort Accretion                 = (ushort)0x644;
         public const ushort KefkaLiesVfx              = (ushort)0x808;
         public const ushort Max                       = (ushort)0x9E8;
@@ -208,6 +218,7 @@ public static class UmadConstants
 
     public static class TetherId
     {
+        public const ushort ExdeathToGravenImage = (ushort)0x40;
         public const ushort GrabbyTether = (ushort)0x54;
     }
 
