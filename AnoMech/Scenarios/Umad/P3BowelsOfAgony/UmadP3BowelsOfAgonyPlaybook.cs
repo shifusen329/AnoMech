@@ -124,7 +124,7 @@ internal static class UmadP3BowelsOfAgonyPlaybook
             if (strat == UmadP3BowelsOfAgonyAi.Strat.Lb3)
                 return IsRanged(role)
                     ? $"{rule}, on the side toward the long {CrystalName(state.LongElement)} crystal, where you take its shots next."
-                    : $"{rule}, close to Chaos on the side toward the long {CrystalName(state.LongElement)} crystal.";
+                    : $"{rule}, close to Chaos: supports on his left, DPS on his right (facing him from the wall), the sides you take the long {CrystalName(state.LongElement)} on.";
             return state.ElementOf(role) != null
                 ? $"{rule}: element players dodge toward the long {CrystalName(state.LongElement)} crystal ({Spot(state.LongSpot)})."
                 : $"{rule}: players without an element dodge toward the wind crystal ({Spot(state.WindSpot)}).";

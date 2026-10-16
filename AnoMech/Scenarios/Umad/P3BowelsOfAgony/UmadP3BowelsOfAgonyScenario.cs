@@ -299,14 +299,15 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
 
     private static ushort StatusOf(Element element) => element == Element.Water ? StatusId.DynamicFluidP3 : StatusId.EntropyP3;
 
-    // Where each holder stood when their debuff ran out is where its spread lands.
+    // Where each holder stood when their debuff ran out is where its spread lands. The status
+    // itself runs out a beat earlier, so it can't be what says who holds the element.
     private void SnapshotElement(Element element)
     {
         var holders = state.HoldersOf(element);
         for (var i = 0; i < 2; i++)
         {
             elementSnapshots[i] = null;
-            if (party.Get(holders[i]) is not { } member || !member.IsAlive() || !member.HasStatus(StatusOf(element))) continue;
+            if (party.Get(holders[i]) is not { } member || !member.IsAlive()) continue;
             elementSnapshots[i] = member.Position;
             member.RemoveStatus(StatusOf(element));
         }

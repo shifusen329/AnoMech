@@ -206,10 +206,14 @@ public sealed class UmadP3BowelsOfAgonyAi(UmadP3BowelsOfAgonyAi.Strat strat) : I
         var (chaos, facing) = ChaosPlacementOr(Polar(Hw, ChaosHoldRadius), Hw);
         var sidesHit = SidesHit(firstHit);
         var coords = new Vector2?[8];
-        for (var i = 0; i < WallSix.Length; i++)
+        foreach (var support in new[] { true, false })
         {
-            var near = chaos + Polar(facing + LongSide * 45f * Deg, ImplosionMeleeDistance + i * 0.6f);
-            coords[(int)WallSix[i]] = DodgeAround(chaos, facing, near, sidesHit);
+            var group = WallSix.Where(r => IsSupport(r) == support).ToList();
+            for (var i = 0; i < group.Count; i++)
+            {
+                var near = chaos + Polar(facing + (support ? -45f : 45f) * Deg, ImplosionMeleeDistance + i * 0.6f);
+                coords[(int)group[i]] = DodgeAround(chaos, facing, near, sidesHit);
+            }
         }
         foreach (var role in Ranged)
         {

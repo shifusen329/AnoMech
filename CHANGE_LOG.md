@@ -2,6 +2,13 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.4.5.2] - 2026-10-16
+
+### Fixed
+
+- **Bowels of Agony: Entropy and Dynamic Fluid now go off.** When either debuff ran out, nothing happened: no Stray Flames on the Entropy holders and no Stray Spray on the Dynamic Fluid holders, for both the short and the long element.
+- **Bowels of Agony (LB3):** for Implosion, supports dodge on Chaos's left and DPS on his right (facing him from the wall), the sides they take the long element on. Before, everyone dodged on one side, and a long Entropy holder couldn't get clear of the group in time.
+
 ## [0.4.5.1] - 2026-10-14
 
 ### Fixed

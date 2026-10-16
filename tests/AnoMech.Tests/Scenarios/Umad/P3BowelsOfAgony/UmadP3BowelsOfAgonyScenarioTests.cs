@@ -69,13 +69,13 @@ public class UmadP3BowelsOfAgonyScenarioTests
 
         Assert.That(log.Where(l => l.Contains("[Game] Kill:") && l.Contains(" died ")), Is.Empty);
         Assert.That(farthest, Is.LessThan(19.6f));
-        Assert.That(Hits(log, ActionId.Shockwave), Is.All.EqualTo(0), "Shockwave");
-        Assert.That(Hits(log, ActionId.StraySpray_P3), Is.All.EqualTo(0), "Stray Spray");
-        Assert.That(Hits(log, ActionId.StrayFlames_P3), Is.All.EqualTo(1), "Stray Flames");
+        Assert.That(Hits(log, ActionId.Shockwave), Is.EqualTo(new[] { 0, 0, 0, 0 }), "Shockwave");
+        Assert.That(Hits(log, ActionId.StraySpray_P3), Is.EqualTo(new[] { 0, 0 }), "Stray Spray");
+        Assert.That(Hits(log, ActionId.StrayFlames_P3), Is.EqualTo(new[] { 1, 1 }), "Stray Flames");
         if (strat == Lb3)
         {
-            Assert.That(Hits(log, ActionId.Tsunami_P3), Is.All.EqualTo(1), "Tsunami");
-            Assert.That(Hits(log, ActionId.Inferno_P3), Is.All.EqualTo(0), "Inferno");
+            Assert.That(Hits(log, ActionId.Tsunami_P3), Is.EqualTo(new[] { 1, 1 }), "Tsunami");
+            Assert.That(Hits(log, ActionId.Inferno_P3), Is.EqualTo(new[] { 0, 0 }), "Inferno");
             Assert.That(Hits(log, ActionId.Cyclone), Is.Empty, "Cyclone");
         }
         else
