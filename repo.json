@@ -27,5 +27,35 @@
         "DownloadLinkTesting": "https://github.com/shifusen329/AnoMech/releases/latest/download/latest.zip",
         "DownloadLinkUpdate": "https://github.com/shifusen329/AnoMech/releases/latest/download/latest.zip",
         "LastUpdate": "1792163144"
+    },
+    {
+        "Author": "shifusen329",
+        "Name": "PF Notification",
+        "InternalName": "PfNotification",
+        "AssemblyVersion": "0.1.0.0",
+        "TestingAssemblyVersion": "0.1.0.0",
+        "Punchline": "Phone alerts when your Party Finder party fills, members join or leave, or a duty pops. Optional remote party chat from your phone.",
+        "Description": "Watches your party and sends a notification to your phone through a self-hosted ntfy server when it reaches full size, when members join or leave, and when a Duty Finder queue or roulette pops, so you can step away while recruiting or queueing.\nPassive by default: it only observes your own client and never sends anything to the game servers. The one exception is remote party chat, off by default, which posts messages you publish from your phone to party chat on your behalf.\nNeeds an ntfy topic and access token; set them with /pfnotify. Alpha, for FC members; not intended for the official repository.",
+        "ApplicableVersion": "any",
+        "RepoUrl": "https://github.com/shifusen329/pf-notification",
+        "Tags": [
+            "party",
+            "partyfinder",
+            "notification",
+            "dutyfinder",
+            "chat"
+        ],
+        "DalamudApiLevel": 15,
+        "TestingDalamudApiLevel": 15,
+        "LoadPriority": 0,
+        "IsHide": false,
+        "IsTestingExclusive": false,
+        "AcceptsFeedback": true,
+        "DownloadCount": 0,
+        "LastUpdate": 1792533600,
+        "Changelog": "0.1.0 (alpha): duty-ready alert when a Duty Finder queue or roulette pops (priority 5 by default, /pfnotify duty on|off), and opt-in remote party chat: messages you publish to your chat topic from your phone are posted to party chat as /p, with guards (no commands, one line, 500 bytes, one every 2 s and 10 a minute, nothing older than 60 s) and a confirmation back to your phone (/pfnotify chat on|off; the plugin token needs read access to the chat topic). The plugin is passive by default; remote chat is the one exception and stays off until you enable it. 0.0.1 (alpha): first test build. A phone notification through ntfy when your party fills (Party Finder and same-world parties), plus join and leave alerts by job (never names). It never fires on entering or leaving a duty, or when you join a full party. Needs an ntfy topic and access token: /pfnotify.",
+        "DownloadLinkInstall": "https://github.com/shifusen329/pf-notification/releases/download/v0.1.0/latest.zip",
+        "DownloadLinkTesting": "https://github.com/shifusen329/pf-notification/releases/download/v0.1.0/latest.zip",
+        "DownloadLinkUpdate": "https://github.com/shifusen329/pf-notification/releases/download/v0.1.0/latest.zip"
     }
 ]
