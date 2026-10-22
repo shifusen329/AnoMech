@@ -1,3 +1,4 @@
+using System.Globalization;
 using AnoMech.RaidLog;
 using RaidReplay.Core.Encounters;
 using RaidReplay.Core.Indexing;
@@ -6,9 +7,10 @@ using RaidReplay.Core.Loading;
 const string Usage = """
     usage: raidlog pulls <log>
            raidlog blackhole <log> [--pull N]
+           raidlog p3bosses <log> [--pull N] [--every SECONDS]
     """;
 
-if (args.Length < 2 || args[0] is not ("pulls" or "blackhole"))
+if (args.Length < 2 || args[0] is not ("pulls" or "blackhole" or "p3bosses"))
 {
     Console.Error.WriteLine(Usage);
     return 2;
@@ -16,9 +18,14 @@ if (args.Length < 2 || args[0] is not ("pulls" or "blackhole"))
 
 var path = Path.GetFullPath(args[1]);
 int? onlyPull = null;
+var every = 0f;
 for (var i = 2; i < args.Length - 1; i++)
+{
     if (args[i] == "--pull")
         onlyPull = int.Parse(args[i + 1]);
+    if (args[i] == "--every")
+        every = float.Parse(args[i + 1], CultureInfo.InvariantCulture);
+}
 
 var registry = EncounterRegistry.Load();
 var index = IndexStore.IndexFile(path, null, new EncounterObserverFactory(registry), registry.HashFor);
@@ -31,15 +38,16 @@ if (args[0] == "pulls")
     return 0;
 }
 
+var bosses = args[0] == "p3bosses";
 var found = false;
 foreach (var p in index.Pulls)
 {
     if (onlyPull is { } n && p.Ordinal != n) continue;
     if (p.DurationMs < 60_000 && onlyPull is null) continue;
     var replay = PullLoader.Load(p, null, registry);
-    found |= BlackHoleReport.Print(replay, Console.Out);
+    found |= bosses ? P3BossReport.Print(replay, Console.Out, every) : BlackHoleReport.Print(replay, Console.Out);
 }
 
 if (!found)
-    Console.WriteLine($"{index.FileName}: no pull reaches Black Hole");
+    Console.WriteLine($"{index.FileName}: no pull reaches {(bosses ? "P3" : "Black Hole")}");
 return 0;

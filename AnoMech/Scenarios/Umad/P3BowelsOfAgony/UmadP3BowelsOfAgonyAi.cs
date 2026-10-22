@@ -74,8 +74,7 @@ public sealed class UmadP3BowelsOfAgonyAi(UmadP3BowelsOfAgonyAi.Strat strat) : I
     private const float RangedCrystalRadius = 17.5f;
     private const float ChaosHoldRadius = 10.4f;
     private const float MainTankHoldRadius = 16.8f;
-    private const float ExdeathParkRadius = 15.5f;
-    private const float ExdeathParkAngle = 12f * MathF.PI / 180f;
+    private const float ExdeathParkRadius = 14.6f;
     private const float ImplosionMeleeDistance = 6.8f;
     private const float ImplosionFarRangedDistance = 22.5f;
     private const float ImplosionNearRangedDistance = 11f;
@@ -191,7 +190,7 @@ public sealed class UmadP3BowelsOfAgonyAi(UmadP3BowelsOfAgonyAi.Strat strat) : I
     {
         var coords = new Vector2?[8];
         coords[(int)PartyRole.MainTank] = Polar(Hw, MainTankHoldRadius);
-        coords[(int)PartyRole.OffTank] = Polar(Hw + ShortSide * ExdeathParkAngle, ExdeathParkRadius);
+        coords[(int)PartyRole.OffTank] = Polar(Hw, ExdeathParkRadius);
         foreach (var role in Ranged) coords[(int)role] = Lb3LongRangedSpot(role);
         return AiMove.Create(coords).NaturalOrder();
     }

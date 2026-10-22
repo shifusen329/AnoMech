@@ -37,7 +37,7 @@ public class UmadP3LimitCutPlaybookTests
                 UmadP3LimitCutPlaybook.Charges(state), UmadP3LimitCutPlaybook.ClearForThunder(state),
                 UmadP3LimitCutPlaybook.ThunderTank(state), UmadP3LimitCutPlaybook.ThunderClearance(first, second),
                 UmadP3LimitCutPlaybook.ThunderClearance(second ?? first, null), UmadP3LimitCutPlaybook.ThunderSwap(state),
-                UmadP3LimitCutPlaybook.Uptime(state),
+                UmadP3LimitCutPlaybook.Uptime,
             })
                 PlaybookAssert.ExplainsEveryRole(cue, context);
         }

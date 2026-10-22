@@ -5,6 +5,7 @@ A developer tool that reads ACT network logs (`Network_*.log`) with raid-replay'
 ```
 dotnet run --project tools/RaidLog -- pulls docs/logs/Network_30301_20261005.log
 dotnet run --project tools/RaidLog -- blackhole docs/logs/Network_30301_20261005.log [--pull N]
+dotnet run --project tools/RaidLog -- p3bosses docs/logs/Network_30301_20261005.log [--pull N] [--every SECONDS]
 ```
 
 - `pulls` lists the pulls in a log.
@@ -17,6 +18,13 @@ dotnet run --project tools/RaidLog -- blackhole docs/logs/Network_30301_20261005
   - Exdeath's position at each Thunder III.
 
 The log writes some tether lines late, so a hole can appear to fire before its first tether line.
+
+- `p3bosses` reports where Chaos, Exdeath, Kefka and both tanks stand in every DMU pull that reaches P3, on each P3 scenario's clock:
+  - Bowels of Agony counts from its start, with the Bowels of Agony cast at 25.00.
+  - Limit Cut counts from its start, with Umbra Smash at 8.00.
+  - Black Hole counts from its start, with the Black Hole cast at 22.18.
+
+  There is a row at every boss cast and at the hits that matter (Thunder III, Shockwave, the crystals, Umbra Smash, Vacuum Wave, Damning Edict, Knock Down, Big Bang). `--every 2` adds a row every 2 s. Positions are the log's minus the arena centre. In Bowels of Agony and Limit Cut, `w` is the bearing clockwise from the wind crystal, the corner both scenarios hold the bosses on. In Black Hole, `k` is the bearing clockwise from Kefka's side of the arena.
 
 ## `RaidReplay.Core/` is a copy
 

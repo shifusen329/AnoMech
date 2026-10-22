@@ -25,8 +25,8 @@ internal static class UmadP3LimitCutPlaybook
             var corner = Spot(state.BossSpot);
             return role switch
             {
-                PartyRole.MainTank => $"Hold Chaos on the {corner} intercardinal with Exdeath beside him and the party stacked just inside: Umbra Smash goes to whoever is farthest from Chaos, and that must be the bait alone.",
-                PartyRole.OffTank => $"Hold Exdeath beside Chaos on the {corner} intercardinal, the party stacked just inside: Umbra Smash goes to whoever is farthest from Chaos, and that must be the bait alone.",
+                PartyRole.MainTank => $"Hold Chaos about 10y out on the {corner} intercardinal, Exdeath just behind him and the party stacked just inside: Umbra Smash goes to whoever is farthest from Chaos, and that must be the bait alone.",
+                PartyRole.OffTank => $"Hold Exdeath just behind Chaos on the {corner} intercardinal, the party stacked just inside: Umbra Smash goes to whoever is farthest from Chaos, and that must be the bait alone.",
                 _ when role == state.BaitRole => $"Stack with the party 5.5y out toward the bosses on the {corner} intercardinal for now: you run across the arena to bait Umbra Smash next.",
                 _ => $"Stack 5.5y out toward the bosses on the {corner} intercardinal: Umbra Smash goes to whoever is farthest from Chaos, and that must be {Label(state.BaitRole)}, the bait, alone.",
             };
@@ -107,15 +107,15 @@ internal static class UmadP3LimitCutPlaybook
             : "Split to Exdeath before it resolves: OT, H2 and both ranged take Fated Hero, which locks you to him.",
         "NAUR §3.10 (0:39:41)");
 
-    public static StratCue Uptime(UmadP3LimitCutState state) => new(
+    public static StratCue Uptime => new(
         "The Decisive Battle (second)",
-        role => $"Back to the bosses on the {Spot(state.BossSpot)} intercardinal: "
-                + (role switch
+        role => (role switch
                 {
-                    PartyRole.MainTank => "you hold Chaos",
-                    PartyRole.OffTank => "you hold Exdeath",
-                    _ => "stack 5.5y out beside them",
+                    PartyRole.MainTank => "Hold Chaos where he stands",
+                    PartyRole.OffTank => "Hold Exdeath where Thunder III left him",
+                    PartyRole.RegenHealer or PartyRole.MeleeDpsA or PartyRole.MeleeDpsB => "Stay by Chaos where he stands",
+                    _ => "Stay by Exdeath where Thunder III left him",
                 })
-                + ". The Decisive Battle locks MT, H1 and both melee to Chaos and the rest to Exdeath.",
+                + ": leave the bosses where they are, Black Hole starts by pulling them into the middle. The Decisive Battle locks MT, H1 and both melee to Chaos and the rest to Exdeath.",
         "NAUR §3.10 (0:39:41)");
 }

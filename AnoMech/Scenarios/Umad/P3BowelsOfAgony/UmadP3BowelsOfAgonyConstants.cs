@@ -32,7 +32,8 @@ public static class UmadP3BowelsOfAgonyConstants
         public static string SpotName(int spot) => SpotNames[((spot % 8) + 8) % 8];
         private static readonly string[] SpotNames = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"];
 
-        // The bosses arrive either side of the centre; the tanks cross over to pull both onto it.
+        // The bosses arrive either side of the centre facing south; the tanks cross over to pull
+        // both onto it.
         public static readonly Vector3 ChaosArrival = new(-8f, 0f, 0f);
         public static readonly Vector3 ExdeathArrival = new(8f, 0f, 0f);
         public static readonly Vector3 KefkaPerch = new(0f, 0f, -10f);

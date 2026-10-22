@@ -62,7 +62,7 @@ public class UmadP3BlackHolePlaybookTests
                 UmadP3BlackHolePlaybook.Pull(state, order), UmadP3BlackHolePlaybook.ReturnToMiddle(state, order),
                 UmadP3BlackHolePlaybook.LookUponSplit(state, order),
                 UmadP3BlackHolePlaybook.GrabBoth(state, order), UmadP3BlackHolePlaybook.HoldBoth(state, order),
-                UmadP3BlackHolePlaybook.ExdeathToFirstTether,
+                UmadP3BlackHolePlaybook.ExdeathToFirstTether, UmadP3BlackHolePlaybook.ExdeathToOpenCardinal,
                 UmadP3BlackHolePlaybook.Slap(state, 0, 0), UmadP3BlackHolePlaybook.Slap(state, 1, 1), UmadP3BlackHolePlaybook.Slap(state, 2, 3),
                 UmadP3BlackHolePlaybook.Edict, UmadP3BlackHolePlaybook.EdictAndBodySlam(state),
                 UmadP3BlackHolePlaybook.ImplosionAnchor(state),

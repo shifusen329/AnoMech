@@ -146,6 +146,14 @@ internal static class UmadP3BlackHolePlaybook
                 + $"so both lasers point past the edge, away from the stack in the middle. {Turn(state, order, role)}",
         $"{ModifiedDeck} · {Strat(order)}");
 
+    public static readonly StratCue ExdeathToOpenCardinal = new(
+        "Exdeath to the open cardinal",
+        role => role == PartyRole.OffTank
+            ? "Take Exdeath to the cardinal just clockwise of the first tether's black hole, the one with no black hole this wave, standing about 14y out so he sits about 10y out, "
+              + "and take Thunder III there, behind the second pair's black holes."
+            : "Stay in the middle: the off-tank holds Exdeath on the open cardinal, just clockwise of the first tether's black hole, for Thunder III.",
+        Thunder1);
+
     public static readonly StratCue ExdeathToFirstTether = new(
         "Exdeath toward the first tether",
         role => role == PartyRole.OffTank
@@ -281,7 +289,10 @@ internal static class UmadP3BlackHolePlaybook
     public static StratCue StompPreposition(UmadP3BlackHoleState state) => new(
         "Blizzard III + Stomp a Mole: start",
         role => $"Kefka's last teleport ({Compass(state.KefkaPosition[4])}) is now relative north. "
-                + $"{(role.IsDps() ? "DPS wait 9y relative south" : "Supports wait 9y relative north")} of the middle, so the first Blizzard III puddles drop clear of it.",
+                + (role.IsTank()
+                    ? $"First walk {(role == PartyRole.MainTank ? "Chaos" : "Exdeath")} back into the middle, then leave him there and wait 9y relative north of it with the supports, "
+                      + "so the first Blizzard III puddles drop clear of it."
+                    : $"{(role.IsDps() ? "DPS wait 9y relative south" : "Supports wait 9y relative north")} of the middle, so the first Blizzard III puddles drop clear of it."),
         Stomps);
 
     public static StratCue StompCorners(UmadP3BlackHoleState state) => new(

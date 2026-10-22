@@ -42,9 +42,10 @@ public sealed class UmadP3BlackHoleStateOverrides
     // --- Fight-wide: one roll the whole sim shares -------------------------------------
     public uint? FirstSlap { get; set; }            // null = random; else ActionId.SlapHappy_Left / .SlapHappy_Right (debug-only UI)
 
-    // Defaults: MT solo-tanks Set 1 behind an invuln, Set 2 is shared MT-first.
-    public ThunderIIIAssignment ThunderSet1 { get; set; } = ThunderIIIAssignment.MtInvulnsBoth;
-    public ThunderIIIAssignment ThunderSet2 { get; set; } = ThunderIIIAssignment.ShareMtFirst;
+    // Defaults: OT solo-tanks Set 1 behind an invuln, since the MT spent theirs on Limit Cut's
+    // Thunder III, and Set 2 is shared OT-first.
+    public ThunderIIIAssignment ThunderSet1 { get; set; } = ThunderIIIAssignment.OtInvulnsBoth;
+    public ThunderIIIAssignment ThunderSet2 { get; set; } = ThunderIIIAssignment.ShareOtFirst;
 
     // --- Per player: everyone has their own ---------------------------------------------
     // 1/2/3 = First/Second/Third in line. Line and Accretion are solved together against the

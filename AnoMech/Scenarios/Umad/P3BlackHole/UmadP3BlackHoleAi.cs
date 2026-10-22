@@ -37,6 +37,7 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
         world = worldParam;
         assignedHole.Clear();
         pairedHole.Clear();
+        firstTetherHole = null;
         var ai = new AiManager(world);
 
         // Kept here so a peer's debug-bot replay gets it from the same Run.
@@ -65,9 +66,11 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
         else
         {
             world.Events.Add(26.2f, () => GrabTether(tetherIndex: 0, playerIndex: 4));
+            world.Events.Add(26.3f, () => firstTetherHole = assignedHole.GetValueOrDefault(TetherSeat(4)));
             world.Events.Add(28.2f, () => PullTether(playerIndex: 4));
             world.Events.Add(32.4f, () => GrabTether(tetherIndex: 0, playerIndex: 4));
             world.Events.Add(32.4f, () => GrabTether(tetherIndex: 1, playerIndex: 0));
+            ai.Move(32.6f, HoldExdeathOnTheOpenCardinal, cue: UmadP3BlackHolePlaybook.ExdeathToOpenCardinal);
             world.Events.Add(34.4f, () => PullTether(playerIndex: 4));
             world.Events.Add(34.4f, () => PullTether(playerIndex: 0));
         }
@@ -153,7 +156,8 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
             ai.Move(134f, () => DodgeLookUponSplitHolder(tetherPlayerIndex: 2, lookKefkaIndex: 4), sprint: true, cue: UmadP3BlackHolePlaybook.LookUponSplit(state, tetherOrder));
             ai.Move(134f, () => DodgeLookUponSplitOthers(tetherPlayerIndex: 2, lookKefkaIndex: 4), sprint: true, cue: UmadP3BlackHolePlaybook.LookUponSplit(state, tetherOrder));
         }
-        ai.Move(139f, PrepositionForStomp, cue: UmadP3BlackHolePlaybook.StompPreposition(state));
+        ai.Move(139f, PrepositionForStompWithTheBossesPulledIn, cue: UmadP3BlackHolePlaybook.StompPreposition(state));
+        ai.Move(143.4f, TanksToTheirStompPreposition, cue: UmadP3BlackHolePlaybook.StompPreposition(state));
         ai.Move(147f, StompBlizzardCorners, cue: UmadP3BlackHolePlaybook.StompCorners(state));
         ai.Move(149.8f, StompStackAndTowers, cue: UmadP3BlackHolePlaybook.StompStackAndTowers(state));
         ai.Move(152.4f, StompSwapWest, cue: UmadP3BlackHolePlaybook.StompSwap(state, west: true));
@@ -672,6 +676,21 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
         return AiMove.Create(coords).NaturalOrder();
     }
 
+    private SimCharacter? firstTetherHole;
+
+    private IAiMove HoldExdeathOnTheOpenCardinal()
+    {
+        var coords = new Vector2?[8];
+        var offTankHoldsAWaveOneTether = state.Roles[TetherSeat(0)] == PartyRole.OffTank || state.Roles[TetherSeat(4)] == PartyRole.OffTank;
+        if (!offTankHoldsAWaveOneTether && firstTetherHole is { } hole)
+        {
+            var bearing = new Vector2(hole.Position.X, hole.Position.Z);
+            if (bearing.LengthSquared() > 1e-4f)
+                coords[(int)PartyRole.OffTank] = RotateVec(Vector2.Normalize(bearing), MathF.PI / 2f) * ExdeathTankRadius;
+        }
+        return AiMove.Create(coords).NaturalOrder();
+    }
+
     private const float TetherPullRadius = 10f;
 
     private static Vector2 CardinalClockwise(Vector2 cardinal)
@@ -703,6 +722,33 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
                     new (0, 9), new(0, 9), new (0, 9), new (0, 9))
               .NaturalOrder()
               .ApplyPositions(state.KefkaPosition[4].Apply);
+
+    private IAiMove PrepositionForStompWithTheBossesPulledIn()
+    {
+        var preposition = PrepositionForStomp();
+        var coords = new Vector2?[8];
+        for (var i = 0; i < 8; i++) coords[i] = preposition[i];
+        coords[(int)PartyRole.MainTank] = AcrossTheMiddleFrom(state.ScenarioObjects.Chaos, PartyRole.MainTank) ?? coords[(int)PartyRole.MainTank];
+        coords[(int)PartyRole.OffTank] = AcrossTheMiddleFrom(state.ScenarioObjects.Exdeath, PartyRole.OffTank) ?? coords[(int)PartyRole.OffTank];
+        return AiMove.Create(coords).NaturalOrder();
+    }
+
+    private Vector2? AcrossTheMiddleFrom(SimCharacter? boss, PartyRole tank)
+    {
+        if (boss is null || world.Party.Get(tank) is not { } member) return null;
+        var at = new Vector2(boss.Position.X, boss.Position.Z);
+        var across = at.LengthSquared() > 1e-4f ? -Vector2.Normalize(at) : new Vector2(0f, -1f);
+        return across * (boss.HitboxRadius + member.HitboxRadius);
+    }
+
+    private IAiMove TanksToTheirStompPreposition()
+    {
+        var preposition = PrepositionForStomp();
+        var coords = new Vector2?[8];
+        coords[(int)PartyRole.MainTank] = preposition[(int)PartyRole.MainTank];
+        coords[(int)PartyRole.OffTank] = preposition[(int)PartyRole.OffTank];
+        return AiMove.Create(coords).NaturalOrder();
+    }
 
     // First BlizzardIII spreads drop on the prepositioned spots; step out to the four
     // intercardinal corners two-per-corner (supports north, DPS south, west pair vs east).

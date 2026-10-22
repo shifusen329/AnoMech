@@ -34,7 +34,7 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         ai.Move(38.9f, SwapThunderTanks, arrivalTime: 41.2f, cue: UmadP3LimitCutPlaybook.ThunderSwap(state));
         ScheduleThunderClearance(36.5f, 38.9f, 42.2f);
         ai.Move(43.6f, SplitForDecisiveBattle, arrivalTime: 46.3f, cue: UmadP3LimitCutPlaybook.DecisiveBattleSplit);
-        ai.Move(47.0f, StackAtBosses, cue: UmadP3LimitCutPlaybook.Uptime(state));
+        ai.Move(47.0f, SplitForDecisiveBattle, cue: UmadP3LimitCutPlaybook.Uptime);
     }
 
     private (PartyRole First, PartyRole? Second) ThunderRoles => ThunderIIIPlanning.Roles(state.ThunderPlan);
@@ -138,6 +138,9 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         return new Vector2(v.X * cos - v.Y * sin, v.X * sin + v.Y * cos);
     }
 
+    private const float MainTankStackRadius = 7.4f;
+    private const float OffTankStackRadius = 6.5f;
+
     private float Hold => Geometry.SpotHeading(state.BossSpot);
 
     private Vector2 Flat(Vector3 v) => new(v.X, v.Z);
@@ -151,8 +154,8 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
     private IAiMove StackAtBosses()
     {
         var coords = new Vector2?[8];
-        coords[(int)PartyRole.MainTank] = Flat(Geometry.OnCircle(Hold, Geometry.ChaosHoldRadius - 1.5f));
-        coords[(int)PartyRole.OffTank] = Flat(Geometry.OnCircle(Hold, Geometry.ExdeathHoldRadius - 1.5f) + Geometry.OnCircle(Hold + MathF.PI / 2f, 2.5f));
+        coords[(int)PartyRole.MainTank] = Flat(Geometry.OnCircle(Hold, MainTankStackRadius));
+        coords[(int)PartyRole.OffTank] = Flat(Geometry.OnCircle(Hold, OffTankStackRadius));
         for (var slot = 2; slot < 8; slot++) coords[slot] = StackSpot(slot);
         return AiMove.Create(coords).NaturalOrder();
     }

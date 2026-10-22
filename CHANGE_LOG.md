@@ -2,6 +2,33 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.4.5.3] - 2026-10-22
+
+### Changed
+
+- **Black Hole: the off-tank now takes the first Thunder III set by default,** behind an invuln, and the second set is shared with the off-tank going first. Every logged pull played it this way, since the main tank's invuln goes on Limit Cut's Thunder III. Chaos now stays in the middle for both sets. The old plan is still in the Thunder III settings.
+
+### Fixed
+
+Chaos and Exdeath now stand where they did in 11 logged pulls that cleared Phase 3:
+
+- **Bowels of Agony:**
+  - Both bosses arrive facing south.
+  - LB3: the off-tank parks Exdeath about 10y out on the wind crystal's line, with Chaos, and he stays there through Implosion. Before, he sat off to one side, and the off-tank's Implosion dodge dragged him 14y out.
+- **Limit Cut:**
+  - Chaos starts about 10y out with Exdeath just behind him on the same line. The tanks stack on that line without pulling either boss in.
+  - The Umbra Smash bait stands about 18.6y out, so Chaos lands there.
+  - Exdeath stays where Thunder III left him. After the Decisive Battle, both bosses stay where they are instead of walking back to the corner.
+- **Black Hole:**
+  - D>S>A and S>D>A: for the first Thunder III, the off-tank takes Exdeath about 10y out to the cardinal with no black hole, just clockwise of the first tether's. If the off-tank holds a first-wave tether, Exdeath stays in the middle.
+  - After the second Look upon Me and Despair, the tanks walk both bosses back into the middle and leave them there through Blizzard III, Stomp-a-Mole and Big Bang. Before, Exdeath followed the off-tank 10y out.
+
+### Added
+
+- **Developer tools:**
+  - `tools/RaidLog` has a `p3bosses` report: where the Phase 3 bosses and tanks stand in each logged pull, on each scenario's clock.
+  - `tools/FindP3Clears` is a PowerShell script that finds the ACT logs with a Dancing Mad pull that cleared Phase 3, and can copy them out.
+
 ## [0.4.5.2] - 2026-10-16
 
 ### Fixed

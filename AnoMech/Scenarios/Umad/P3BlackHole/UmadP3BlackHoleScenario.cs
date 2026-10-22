@@ -263,6 +263,8 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(121.30f, () => chaos_4000414D?.Follow(party.Get(PartyRole.MainTank)));
         world.Events.Add(124.41f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(141.47f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
+        // Both bosses hold the middle from here: the tanks leave them to preposition for Stomp-a-Mole.
+        world.Events.Add(143.40f, () => chaos_4000414D?.Follow());
         world.Events.Add(144.50f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
         world.Events.Add(147.09f, () => chaos_4000414D?.Cast(ActionId.KnockDown_Cast));
         world.Events.Add(152.53f, () => chaos_4000414D?.Cast(ActionId.AutoAttack1, castSeconds: 0f, targetId: party.Get(PartyRole.MainTank)?.GameObjectId));
@@ -341,6 +343,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(122.45f, () => exdeath_4000414C?.Cast(ActionId.AutoAttack2, castSeconds: 0f, targetId: party.Get(PartyRole.OffTank)?.GameObjectId));
         world.Events.Add(125.48f, () => exdeath_4000414C?.Cast(ActionId.AutoAttack2, castSeconds: 0f, targetId: party.Get(PartyRole.OffTank)?.GameObjectId));
         world.Events.Add(141.51f, () => exdeath_4000414C?.Cast(ActionId.AutoAttack2, castSeconds: 0f, targetId: party.Get(PartyRole.OffTank)?.GameObjectId));
+        world.Events.Add(143.40f, () => exdeath_4000414C?.Follow());
         world.Events.Add(143.61f, () => exdeath_4000414C?.Cast(ActionId.BlizzardIII_Cast));
         world.Events.Add(150.66f, () => exdeath_4000414C?.Cast(ActionId.AutoAttack2, castSeconds: 0f, targetId: party.Get(PartyRole.RegenHealer)?.GameObjectId));
         world.Events.Add(153.69f, () => exdeath_4000414C?.Cast(ActionId.AutoAttack2, castSeconds: 0f, targetId: party.Get(PartyRole.RegenHealer)?.GameObjectId));

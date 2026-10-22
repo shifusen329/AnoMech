@@ -83,15 +83,16 @@ public static class UmadP3LimitCutConstants
         public static float WindCrystalRotation(int bossSpot) => SpotHeading(bossSpot) + MathF.PI;
         // (100,90) world, facing south.
         public static readonly Vector3 KefkaPerch = new(0f, 0f, -10f);
-        // Every pull: Chaos held at an intercardinal ~9y out with Exdeath beside him, the party
-        // ~5.5y out on the same diagonal, the bait at the opposite intercardinal.
-        public const float ChaosHoldRadius = 9f;
-        public const float ExdeathHoldRadius = 10.6f;
+        // Every pull: both bosses held on one intercardinal line, Chaos ~10y out and Exdeath just
+        // behind him, the party ~5.5y out on that diagonal, the bait at the opposite intercardinal.
+        public const float ChaosHoldRadius = 10.1f;
+        public const float ExdeathHoldRadius = 10.5f;
         public const float StackRadius = 5.5f;
         // Where the eight stood at every real cyclone: 4.3y past the centre away from Exdeath,
         // within 2.3y of one another.
         public const float CycloneStackRadius = 4.3f;
-        public const float BaitRadius = 17.7f;
+        // Where the bait stands at the cast, and so where Chaos lands.
+        public const float BaitRadius = 18.6f;
         // BossMod's ProximityAOEs(UmbraSmash, 20); the one real hit inside it was 312k at 17y.
         public const float UmbraLethalRadius = 20f;
         // Within 45 deg of the wind's direction is the 10y push (BossMod's cone; real players sat

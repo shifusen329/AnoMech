@@ -81,7 +81,8 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         });
 
         var u = Constants.Timing.UmbraCastAt;
-        world.Events.Add(1.0f, () =>
+        // Once the tanks are in the stack, so the bosses don't chase them in from the corner.
+        world.Events.Add(3.0f, () =>
         {
             state.Objects.Chaos?.Follow(party.Get(PartyRole.MainTank));
             state.Objects.Exdeath?.Follow(party.Get(PartyRole.OffTank));
@@ -139,8 +140,8 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
             fireDelay: Constants.Timing.ThunderHit1AfterUmbra - Constants.Timing.ThunderCastAfterUmbra - Constants.Timing.ThunderShownCast,
             animationLock: Constants.AnimationLock.ThunderCast));
         world.Events.Add(u + Constants.Timing.ThunderHit1AfterUmbra, () => ResolveThunder(1));
+        // Exdeath stays where Thunder III left him until the Decisive Battle re-hands the sides.
         world.Events.Add(u + Constants.Timing.ThunderHit2AfterUmbra, () => ResolveThunder(2));
-        world.Events.Add(u + Constants.Timing.ThunderHit2AfterUmbra + 0.5f, () => state.Objects.Exdeath?.Follow(party.Get(PartyRole.OffTank)));
         world.Events.Add(u + Constants.Timing.DecisiveBattleCastAfterUmbra - 0.2f, () =>
         {
             state.Objects.Chaos?.Follow();
@@ -218,9 +219,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         objects.Exdeath = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: UmadConstants.BNpcBaseId.Exdeath, NameId: UmadConstants.BNpcNameId.Exdeath, Level: 100,
             Targetable: true, EnemyList: EnemyListMode.Always, IsVisible: true,
-            Placement: new Placement(
-                Constants.Geometry.OnCircle(hold, Constants.Geometry.ExdeathHoldRadius) + Constants.Geometry.OnCircle(hold + MathF.PI / 2f, 1.6f),
-                hold + MathF.PI)));
+            Placement: new Placement(Constants.Geometry.OnCircle(hold, Constants.Geometry.ExdeathHoldRadius), hold + MathF.PI)));
         // Built from a real clone's NpcSpawn packet: visible at the centre, hidden only by
         // animation state (0,1), as the real ones sit for 86s. Spawning them invisible and
         // flipping RenderFlags at placement showed a washed-out white Kefka.

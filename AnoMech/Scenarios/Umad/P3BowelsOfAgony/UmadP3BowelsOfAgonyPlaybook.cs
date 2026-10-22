@@ -106,7 +106,7 @@ internal static class UmadP3BowelsOfAgonyPlaybook
         role =>
         {
             if (role == PartyRole.MainTank) return $"Back to the {Spot(state.WindSpot)} wall, so Chaos faces it when he casts Implosion.";
-            if (role == PartyRole.OffTank) return $"Drag Exdeath to the {Spot(state.WindSpot)} wind crystal beside Chaos, where Limit Cut needs both bosses.";
+            if (role == PartyRole.OffTank) return $"Drag Exdeath to the {Spot(state.WindSpot)} wind crystal, onto Chaos's spot about 10y out, and leave him there through Implosion: Limit Cut starts with both bosses on that corner.";
             if (IsRanged(role)) return $"Cross to the long {CrystalName(state.LongElement)} crystal ({Spot(state.LongSpot)}): you dodge Implosion there and then take its shots.";
             return "Stay at the wall by Chaos: you dodge Implosion close to him.";
         },

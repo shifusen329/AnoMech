@@ -159,7 +159,13 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
         world.Events.Add(63.50f, () => objects.Chaos?.Follow(party.Get(PartyRole.MainTank)));
         world.Events.Add(64.05f, () => objects.Kefka?.Cast(ActionId.KefkaUnrest, castSeconds: 0f, animationLock: Constants.AnimationLock.Instant));
         world.Events.Add(64.85f, () => objects.Kefka?.SetModelState(0x00));
-        world.Events.Add(66.03f, () => objects.Chaos?.Follow());
+        // Neither boss moves again before Limit Cut: the off-tank's Implosion dodge stays in
+        // Exdeath's reach.
+        world.Events.Add(66.03f, () =>
+        {
+            objects.Chaos?.Follow();
+            objects.Exdeath?.Follow();
+        });
         world.Events.Add(66.14f, () => objects.Kefka?.Cast(ActionId.Trance, castSeconds: 3.6f, fireDelay: 0.3f, animationLock: Constants.AnimationLock.BossCast));
         world.Events.Add(66.23f, () => objects.Chaos?.Cast(state.Latitudinal ? ActionId.LatitudinalImplosion : ActionId.LongitudinalImplosion,
             castSeconds: 4.7f, fireDelay: 0.29f, animationLock: Constants.AnimationLock.BossCast));
@@ -217,11 +223,11 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
         objects.Chaos = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.ChaosP3, NameId: BNpcNameId.Chaos, Level: 100,
             Targetable: false, EnemyList: EnemyListMode.Always, IsVisible: false,
-            Placement: new Placement(Geometry.ChaosArrival, MathF.PI / 2f)));
+            Placement: new Placement(Geometry.ChaosArrival, 0f)));
         objects.Exdeath = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100,
             Targetable: false, EnemyList: EnemyListMode.Always, IsVisible: false,
-            Placement: new Placement(Geometry.ExdeathArrival, -MathF.PI / 2f)));
+            Placement: new Placement(Geometry.ExdeathArrival, 0f)));
         gravenImage = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.GravenImage, NameId: BNpcNameId.GravenImage, Level: 100,
             Targetable: false, EnemyList: EnemyListMode.Never,
