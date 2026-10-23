@@ -29,8 +29,7 @@ public class UmadP2TrinesScenarioTests
             }
     }
 
-    [TestCaseSource(nameof(Layouts))]
-    public void TheBotsClearIt(int first, int second, bool centreEast, bool wingsRight, int seed)
+    private static (FakeGame Fake, SimWorld World) Start(int first, int second, bool centreEast, bool wingsRight, int seed)
     {
         var fake = FakeGame.Install();
         fake.BattleCharas.Player.ClassJob = (byte)JobId.Sage;
@@ -50,6 +49,35 @@ public class UmadP2TrinesScenarioTests
         overrides.WingsRight = wingsRight;
         world.Reseed(seed);
         scenario.Run(world, 0);
+        return (fake, world);
+    }
+
+    // Like the P1 statues: bound to the director, spawned hidden, beats through ActorControl 413.
+    [Test]
+    public void TheTrianglesSpawnLikeTheRealProps()
+    {
+        var (fake, world) = Start(first: 0, second: 4, centreEast: true, wingsRight: false, seed: 1);
+        var spawned = new List<SimEventObject>();
+        for (var t = 0f; t < 27f; t += 0.05f)
+        {
+            fake.Frame(0.05f, d => { world.Events.Tick(d); world.Tick(d); });
+            spawned.AddRange(world.Children.OfType<SimEventObject>().Except(spawned));
+        }
+        world.Despawn();
+
+        var triangles = spawned.Where(o => o.EObjRowId is EObjId.TriangleEast or EObjId.TriangleWest).ToList();
+        Assert.That(triangles, Has.Count.EqualTo(7));
+        Assert.That(triangles.Select(o => (uint)o.SpawnConfig!.EventId), Is.All.EqualTo(EObjId.PropEventId));
+        Assert.That(triangles.Select(o => o.SpawnConfig!.TimelineState), Is.All.EqualTo(UmadP2TrinesConstants.TriangleSpawnState));
+        Assert.That(triangles.Select(o => o.SpawnConfig!.Arg2 & 0xFFFF), Is.All.EqualTo(0x3U));
+        Assert.That(triangles.Select(o => o.LastAnimation), Is.All.EqualTo(UmadP2TrinesConstants.TriangleLands));
+        Assert.That(triangles.Select(o => o.LastBeatMode), Is.All.EqualTo(PropBeatMode.ActorControl));
+    }
+
+    [TestCaseSource(nameof(Layouts))]
+    public void TheBotsClearIt(int first, int second, bool centreEast, bool wingsRight, int seed)
+    {
+        var (fake, world) = Start(first, second, centreEast, wingsRight, seed);
 
         var farthest = 0f;
         for (var t = 0f; t < 46f; t += 0.05f)

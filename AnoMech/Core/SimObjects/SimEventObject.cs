@@ -209,9 +209,9 @@ public class SimEventObject : ISimObject, IPositioned
     // ActorControl 607 has no state of its own to sample, so peers follow the counter.
     public int FadeOutSeq { get; private set; }
 
-    // Client-side equivalent of ActorControl 413 (EObjAnimation): `state` becomes the new
-    // SharedTimelineState, `bitmask` picks which SG timelines play. No-ops before the SG
-    // instance is attached; the engine re-applies once it loads.
+    // The member function guessed to be ActorControl 413's (EObjAnimation) handler: `state`
+    // becomes the new SharedTimelineState, `bitmask` picks which SG timelines play. UNVERIFIED in
+    // game; the props known to render take their beats through PlayBeat(..., PropBeatMode.ActorControl).
     public void PlayAnimation(uint state, uint bitmask) => PlayBeat(state, bitmask, PropBeatMode.PlayAnimation);
 
     // ActorControl 607 (self, 1, 0, 100): the prop fades out, as sent to spent boulders and

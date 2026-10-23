@@ -42,6 +42,11 @@ public static class UmadConstants
         public const uint TriangleEast = 2015154;
         public const uint TriangleWest = 2015155;
         public const uint EarthCore = 2015293;
+
+        // The InstanceContentDirector for content 30162, the EventId the real prop spawns carry.
+        // The props whose EObj row has Invisibility=7 (the triangles, the P1 statues) are bound to
+        // it; UNVERIFIED that they need it to render.
+        public const uint PropEventId = 0x800375D2U;
     }
 
     public static class ActionId

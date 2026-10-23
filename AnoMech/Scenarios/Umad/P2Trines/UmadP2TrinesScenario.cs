@@ -148,6 +148,8 @@ public sealed class UmadP2TrinesScenario : IMultiplayerReplayable
         Targetable: false, EnemyList: EnemyListMode.Never, IsVisible: false,
         Placement: new Placement(Vector3.Zero, 0f)));
 
+    // Spawned like the real ones and like the P1 statues, which share their Invisibility=7 rows
+    // and do render.
     private void SpawnTriangles(int drop)
     {
         foreach (var t in state.Set(drop))
@@ -155,13 +157,17 @@ public sealed class UmadP2TrinesScenario : IMultiplayerReplayable
             {
                 EObjId = state.PointsEast(t) ? EObjId.TriangleEast : EObjId.TriangleWest,
                 Placement = new Placement(Geometry.Centroids[t], 0f),
+                EventId = EObjId.PropEventId,
+                TargetableStatus = 5,
+                Arg2 = ((Constants.TriangleArg2Serial + (uint)t) << 16) | 0x3U,
+                TimelineState = Constants.TriangleSpawnState,
             });
     }
 
     private void Animate(int drop, (uint State, uint Bitmask) beat)
     {
         foreach (var t in state.Set(drop))
-            triangles[t]?.PlayAnimation(beat.State, beat.Bitmask);
+            triangles[t]?.PlayBeat(beat.State, beat.Bitmask, PropBeatMode.ActorControl);
     }
 
     private void DespawnTriangles(int drop)

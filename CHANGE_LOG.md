@@ -2,6 +2,12 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.4.6.1] - 2026-10-23
+
+### Fixed
+
+- **Trines: the triangles now spawn and animate the way the game's own do,** so they should show on the floor. In 0.4.6.0 they didn't appear, though their corners still hit. Not yet confirmed in game.
+
 ## [0.4.6.0] - 2026-10-23
 
 ### Added

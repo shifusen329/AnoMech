@@ -63,7 +63,10 @@ public static class UmadP2TrinesConstants
         public const float UltimateEmbraceSoloTankMitigation = 0.80f;
     }
 
-    // EObjAnimation beats on each triangle prop.
+    // Each triangle spawns hidden in the state the explosion ends in, and the EObjAnimation beats
+    // (ActorControl 413) bring it up. The real spawns' Arg2 is 3 plus a serial in the high word.
+    public const ushort TriangleSpawnState = 0x4;
+    public const uint TriangleArg2Serial = 0x41;
     public static readonly (uint State, uint Bitmask) TriangleFliesDown = (0x10, 0x20);
     public static readonly (uint State, uint Bitmask) TriangleLands = (0x40, 0x80);
     public static readonly (uint State, uint Bitmask) TriangleExplodes = (0x4, 0x8);
