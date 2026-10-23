@@ -39,6 +39,8 @@ public static class UmadConstants
 
     public static class EObjId
     {
+        public const uint TriangleEast = 2015154;
+        public const uint TriangleWest = 2015155;
         public const uint EarthCore = 2015293;
     }
 
@@ -63,6 +65,9 @@ public static class UmadConstants
         public const uint Spelldriver                  = 0xBAC0U; // circle r=5, instant
         public const uint Spellscatter                 = 0xBAC1U; // circle r=5, instant
         public const uint Spellwave                    = 0xBAC2U; // cone r=40, instant
+        public const uint WingsOfDestructionLeft       = 0xBACDU; // rect 80x40 from 20y to Kefka's left and 40y behind him: his left half, cast 4.0s
+        public const uint WingsOfDestructionRight      = 0xBACEU; // rect 80x40, his right half, cast 4.0s
+        public const uint WingsOfDestructionBuster     = 0xBACFU; // circle r=7 on a target, instant; the nearest and the farthest player
         public const uint FutureSEnd                   = 0xBAD2U; // single-target, cast 6.4s
         public const uint PastSEnd                     = 0xBAD3U; // single-target, cast 6.4s
         public const uint FutureSEnd_Resolve           = 0xBAD6U; // circle r=5, instant
@@ -71,6 +76,8 @@ public static class UmadConstants
         public const uint PastSEnd_CloneResolve        = 0xBAD9U; // circle r=5, instant
         public const uint AllThingsEnding_Future       = 0xBADCU; // cone r=100, cast 5.0s
         public const uint AllThingsEnding_Past         = 0xBADDU; // cone r=100, cast 5.0s
+        public const uint Trine                        = 0xBADFU; // single-target, cast 3.0s
+        public const uint TrinePoint                   = 0xBAE0U; // circle r=6 on a triangle corner, instant
         public const uint DefinitionOfInsanity         = 0xBAE2U; // single-target, cast 4.0s; Kefka as the bosses arrive
         public const uint SlapHappy_Left                    = 0xBAE6U; // single-target, cast 5.0s
         public const uint SlapHappy_Right               = 0xBAE7U; // single-target, cast 5.0s
@@ -148,6 +155,7 @@ public static class UmadConstants
         public const uint FloodOfNaught_WhiteFake      = 0xC3A1U; // single-target, cast 5.0s
         public const uint FloodOfNaught_BlackFake      = 0xC3A2U; // single-target, cast 5.0s
         public const uint KefkaPoof                    = 0xC3FDU; // single-target, instant
+        public const uint WingsOfDestruction           = 0xC487U; // single-target, cast 4.0s; the near and far busters
         public const uint StandUp_ToWall                  = 0xC4BAU; // single-target, instant
         public const uint StandUp_Levitate                  = 0xC533U; // single-target, instant
         public const uint KefkaRest                    = 0xC554U; // single-target, cast 3.0s
@@ -225,6 +233,7 @@ public static class UmadConstants
     public static class LockonId
     {
         public const uint Stack           = 161;
+        public const uint UltimateEmbrace = 259;
         public const uint ColdFalse       = 675;
         public const uint ColdTrue        = 676;
         public const uint LightningFalse  = 677;

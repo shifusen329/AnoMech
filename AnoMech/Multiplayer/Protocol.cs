@@ -6,6 +6,7 @@ using AnoMech.Core.SimObjects;
 using AnoMech.Scenarios.Top;
 using AnoMech.Scenarios.Umad.P1TeleTrouncing;
 using AnoMech.Scenarios.Umad.P2Forsaken;
+using AnoMech.Scenarios.Umad.P2Trines;
 using AnoMech.Scenarios.Umad.P3BlackHole;
 using AnoMech.Scenarios.Umad.P3BowelsOfAgony;
 
@@ -56,6 +57,7 @@ namespace AnoMech.Multiplayer;
 [JsonDerivedType(typeof(UltimatePredationAiReplayStateMessage), "ultimatePredationAiReplayState")]
 [JsonDerivedType(typeof(TopP5DeltaAiReplayStateMessage), "topP5DeltaAiReplayState")]
 [JsonDerivedType(typeof(UmadP3LimitCutAiReplayStateMessage), "umadP3LimitCutAiReplayState")]
+[JsonDerivedType(typeof(UmadP2TrinesAiReplayStateMessage), "umadP2TrinesAiReplayState")]
 [JsonDerivedType(typeof(UmadP3BowelsOfAgonyAiReplayStateMessage), "umadP3BowelsOfAgonyAiReplayState")]
 [JsonDerivedType(typeof(UmadP1TeleTrouncingAiReplayStateMessage), "umadP1TeleTrouncingAiReplayState")]
 [JsonDerivedType(typeof(UmadP1GravenImage1AiReplayStateMessage), "umadP1GravenImage1AiReplayState")]
@@ -314,6 +316,11 @@ public sealed record P5AiReplayStateMessage(int[] LeftOrder, int[] RightOrder) :
 public sealed record UmadP3LimitCutAiReplayStateMessage(
     int StartSpot, bool Clockwise, PartyRole[] Numbers, PartyRole[] Headwinds, int BossSpot, PartyRole BaitRole,
     ThunderIIIAssignment ThunderPlan) : MpMessage, IScenarioReplayStateMessage;
+
+// The whole UmadP2TrinesState roll: the first set of triangles, the lone second one, which way the
+// centre points and which half the first Wings of Destruction takes.
+public sealed record UmadP2TrinesAiReplayStateMessage(
+    int[] FirstSet, int SecondSet, bool CentrePointsEast, bool WingsRight) : MpMessage, IScenarioReplayStateMessage;
 
 // The whole UmadP3BowelsOfAgonyState roll: the crystals' corners, the short element, who carries
 // each element and Headwind, the Implosion and the host's Thunder III plan.

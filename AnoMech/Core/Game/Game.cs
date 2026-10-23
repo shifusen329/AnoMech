@@ -19,6 +19,7 @@ using AnoMech.Scenarios.Umad.P1GravenImage1;
 using AnoMech.Scenarios.Umad.P1GravenImage2;
 using AnoMech.Scenarios.Umad.P1TeleTrouncing;
 using AnoMech.Scenarios.Umad.P2Forsaken;
+using AnoMech.Scenarios.Umad.P2Trines;
 using AnoMech.Scenarios.Umad.P3BlackHole;
 using AnoMech.Scenarios.Umad.P3BowelsOfAgony;
 using AnoMech.Scenarios.Umad.P3LimitCut;
@@ -158,6 +159,7 @@ public sealed class Game : IDisposable
             new UmadP1GravenImage2Scenario(),
             new UmadP1TeleTrouncingScenario(),
             new UmadP2ForsakenScenario(),
+            new UmadP2TrinesScenario(),
             new UmadP3BowelsOfAgonyScenario(),
             new UmadP3LimitCutScenario(),
             new UmadP3BlackHoleScenario(),

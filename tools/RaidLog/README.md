@@ -6,6 +6,7 @@ A developer tool that reads ACT network logs (`Network_*.log`) with raid-replay'
 dotnet run --project tools/RaidLog -- pulls docs/logs/Network_30301_20261005.log
 dotnet run --project tools/RaidLog -- blackhole docs/logs/Network_30301_20261005.log [--pull N]
 dotnet run --project tools/RaidLog -- p3bosses docs/logs/Network_30301_20261005.log [--pull N] [--every SECONDS]
+dotnet run --project tools/RaidLog -- trines docs/logs/Network_30301_20261005.log [--pull N]
 ```
 
 - `pulls` lists the pulls in a log.
@@ -25,6 +26,15 @@ The log writes some tether lines late, so a hole can appear to fire before its f
   - Black Hole counts from its start, with the Black Hole cast at 22.18.
 
   There is a row at every boss cast and at the hits that matter (Thunder III, Shockwave, the crystals, Umbra Smash, Vacuum Wave, Damning Edict, Knock Down, Big Bang). `--every 2` adds a row every 2 s. Positions are the log's minus the arena centre. In Bowels of Agony and Limit Cut, `w` is the bearing clockwise from the wind crystal, the corner both scenarios hold the bosses on. In Black Hole, `k` is the bearing clockwise from Kefka's side of the arena.
+
+- `trines` reports every DMU pull that reaches P2 Trines, on a clock that counts from Kefka's Trine cast. The triangles are named by bearing: O is the centre, then A (11°), B (71°), C (131°), D (191°), E (251°) and F (311°). The report covers:
+  - when Light of Judgment II, the Wings of Destruction casts, the three triangle drops, the busters and Ultimate Embrace II land;
+  - Kefka's facing at each cast;
+  - each set of triangles, read both from the props as they spawn and from the corners the helpers fire from; the centre is tagged `Oe` or `Ow` for the way it points;
+  - where everyone stands at the third drop, at the busters and at Ultimate Embrace II;
+  - who each buster hit, how far apart the tanks stood, and any triangle or wing hits and deaths.
+
+  Each pull ends with a `SUMMARY` line, so `grep SUMMARY` over many logs gives the layouts seen.
 
 ## `RaidReplay.Core/` is a copy
 

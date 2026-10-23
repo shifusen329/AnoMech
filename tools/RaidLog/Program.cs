@@ -8,9 +8,10 @@ const string Usage = """
     usage: raidlog pulls <log>
            raidlog blackhole <log> [--pull N]
            raidlog p3bosses <log> [--pull N] [--every SECONDS]
+           raidlog trines <log> [--pull N]
     """;
 
-if (args.Length < 2 || args[0] is not ("pulls" or "blackhole" or "p3bosses"))
+if (args.Length < 2 || args[0] is not ("pulls" or "blackhole" or "p3bosses" or "trines"))
 {
     Console.Error.WriteLine(Usage);
     return 2;
@@ -38,16 +39,20 @@ if (args[0] == "pulls")
     return 0;
 }
 
-var bosses = args[0] == "p3bosses";
 var found = false;
 foreach (var p in index.Pulls)
 {
     if (onlyPull is { } n && p.Ordinal != n) continue;
     if (p.DurationMs < 60_000 && onlyPull is null) continue;
     var replay = PullLoader.Load(p, null, registry);
-    found |= bosses ? P3BossReport.Print(replay, Console.Out, every) : BlackHoleReport.Print(replay, Console.Out);
+    found |= args[0] switch
+    {
+        "p3bosses" => P3BossReport.Print(replay, Console.Out, every),
+        "trines" => TrinesReport.Print(replay, Console.Out),
+        _ => BlackHoleReport.Print(replay, Console.Out),
+    };
 }
 
 if (!found)
-    Console.WriteLine($"{index.FileName}: no pull reaches {(bosses ? "P3" : "Black Hole")}");
+    Console.WriteLine($"{index.FileName}: no pull reaches {args[0] switch { "p3bosses" => "P3", "trines" => "Trines", _ => "Black Hole" }}");
 return 0;

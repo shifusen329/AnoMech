@@ -2,6 +2,24 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.4.6.0] - 2026-10-23
+
+### Added
+
+- **Phase 2: Trines.** A new scenario from Light of Judgment II, where Forsaken ends, through Ultimate Embrace II:
+  - Light of Judgment II, a raidwide.
+  - Trine: seven triangles fly in, land and explode in three waves. Any three of the six outer ones go first, one more second, and the centre with the last two third. A corner leaves Damage Down; two at once kill.
+  - Wings of Destruction: Kefka lights a wing, and that half of the arena is hit. Then a tank buster lands on the nearest and the farthest player.
+  - Ultimate Embrace II, a tank buster the two tanks share.
+  - The bots play NAUR's strat, as in the logged pulls:
+    - the party takes the first first-wave triangle clockwise from north;
+    - the off-tank takes the far buster in the first one counter-clockwise from the north-west;
+    - the main tank takes the near buster about 9y out.
+  - Settings for each wave, which way the centre triangle points, and which wing lights.
+  - The death recap explains every bot move, and mitigation practice covers Light of Judgment II, the busters and Ultimate Embrace II.
+  - The busters' circle size, the mitigation they and Ultimate Embrace II need, and what each wing glow looks like are best guesses.
+- **Developer tool:** `tools/RaidLog` has a `trines` report: each logged pull's triangle waves, Wings side, buster targets and where everyone stood.
+
 ## [0.4.5.3] - 2026-10-22
 
 ### Changed
