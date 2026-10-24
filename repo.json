@@ -82,5 +82,33 @@
         "DownloadLinkInstall": "https://github.com/shifusen329/pf-notification/releases/download/v0.1.0/latest.zip",
         "DownloadLinkTesting": "https://github.com/shifusen329/pf-notification/releases/download/v0.1.0/latest.zip",
         "DownloadLinkUpdate": "https://github.com/shifusen329/pf-notification/releases/download/v0.1.0/latest.zip"
+    },
+    {
+        "Author": "shifusen329",
+        "Name": "XIV Stat Sheet",
+        "InternalName": "XIVStatSheet",
+        "AssemblyVersion": "0.0.1.0",
+        "TestingAssemblyVersion": "0.0.1.0",
+        "Punchline": "Export your character's current stats and gear to JSON and Markdown.",
+        "Description": "Takes a snapshot of your character's current stats and equipped gear (item level, HQ, item stats, materia, glamour, condition, spiritbond) and saves it as a JSON file for tools and a Markdown file for sharing.\nStats are the live Character window values, so food and level sync are included. /statsheet opens a window with a preview; /statsheet export saves straight away. Alpha.",
+        "ApplicableVersion": "any",
+        "RepoUrl": "https://github.com/shifusen329/XIVStatSheet",
+        "Tags": [
+            "stats",
+            "gear",
+            "export"
+        ],
+        "DalamudApiLevel": 15,
+        "TestingDalamudApiLevel": 15,
+        "LoadPriority": 0,
+        "IsHide": false,
+        "IsTestingExclusive": false,
+        "AcceptsFeedback": true,
+        "DownloadCount": 0,
+        "LastUpdate": 1792879623,
+        "Changelog": "0.0.1 (alpha): first test build. Exports your current stats (grouped as in the Character window, for combat jobs, crafters and gatherers) and every equipped item with item level, HQ, item stats, materia, glamour, condition and spiritbond, as JSON and Markdown. /statsheet, /statsheet export; output folder and formats in settings.",
+        "DownloadLinkInstall": "https://github.com/shifusen329/XIVStatSheet/releases/download/v0.0.1/latest.zip",
+        "DownloadLinkTesting": "https://github.com/shifusen329/XIVStatSheet/releases/download/v0.0.1/latest.zip",
+        "DownloadLinkUpdate": "https://github.com/shifusen329/XIVStatSheet/releases/download/v0.0.1/latest.zip"
     }
 ]
