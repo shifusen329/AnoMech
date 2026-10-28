@@ -2,6 +2,30 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.5.2.0] - 2026-10-28
+
+AnoMech now runs on anomek's AnoMech 0.5.1.0, with this fork's Dancing Mad scenarios and features carried over onto it.
+
+### Added
+
+- **Futures Rewritten (Ultimate), from upstream:** Diamond Dust, Light Rampant, Apocalypse, Ultimate Relativity, Crystallize Time, Darklit Dragonsong, Fulgent Blade and Paradise Regained.
+- **Forsaken: the Yan strat, from upstream.**
+- **Your cooldowns now reset at the start of every run,** so a wipe no longer leaves them on recast.
+
+### Changed
+
+- **Boss attacks run on upstream's new engine.** An attack now decides who it hits as its cast bar ends, about 0.3s before the hit shows, so a dodge that used to make it at the last moment may now be caught.
+- **Bots always pass mitigation checks,** as upstream has them, so the tank bots no longer use scripted invulns for Thunder III.
+- **Forsaken:**
+  - The clones fire All Things Ending from Kefka's centre again, as upstream has them. Stepping them out toward their End target (0.4.4.0) killed the Yan strat's pairs. They still aim it at the party, not at you.
+  - The two "[old positions]" strats are gone.
+- **Tele-trouncing: a player with two matching arrows puts the long one on the cardinal and the short one just counter-clockwise of it,** upstream's order. This undoes the 0.4.4.0 change.
+- **Black Hole: the off-tank opens 3.8y west of the middle,** as upstream has it, instead of east beside the main tank.
+- **Bowels of Agony:**
+  - Implosion's shockwaves are lethal, as in Black Hole. Before, they only left Damage Down.
+  - SG3K's bots keep out of Thunder III's area wherever Exdeath ends up.
+- **Graven Image 2: the Gravitas puddles are the game's own purple puddles** instead of a stand-in marker. They turn soakable after the second Double-trouble Trap and burst when popped. Not yet confirmed in game.
+
 ## [0.4.6.1] - 2026-10-23
 
 ### Fixed
