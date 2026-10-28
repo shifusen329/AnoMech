@@ -16,6 +16,7 @@ public sealed unsafe class UserActions : IUserActions, IDisposable
 {
     private readonly LocalPlayerInputHooks hooks;
     private readonly IUserActionHandler sprint = new SprintHandler();
+    private readonly CooldownResetHandler cooldowns = new();
 
     // Cast-time enablers. Runs when the cast BEGINS: enabler bookkeeping (Swiftcast/Dualcast/…) is
     // tied to starting the cast, and it does its own cast-completion tracking for the Dualcast grant.
@@ -99,6 +100,7 @@ public sealed unsafe class UserActions : IUserActions, IDisposable
     public void OnScenarioStart()
     {
         sprint.OnScenarioStart();
+        cooldowns.OnScenarioStart();
         if (!Enabled) return;
         castTime.OnScenarioStart();
         foreach (var handler in effectHandlers) handler.OnScenarioStart();
@@ -121,11 +123,13 @@ public sealed unsafe class UserActions : IUserActions, IDisposable
         hasGaugeSnapshot = true;
     }
 
-    // Called by Game when the player leaves the sim zone. Writes back the gauge captured at
-    // session start, undoing every client-side gauge write the run made. Skips the write if the
-    // player changed jobs mid-session — the snapshot bytes would decode as a different gauge.
+    // Called by Game when the player leaves the sim zone. Clears the recasts the sim started and
+    // writes back the gauge captured at session start, undoing every client-side gauge write the
+    // run made. Skips the gauge write if the player changed jobs mid-session — the snapshot bytes
+    // would decode as a different gauge.
     public void OnSessionEnd()
     {
+        cooldowns.ClearStartedRecasts();
         if (!hasGaugeSnapshot) return;
         hasGaugeSnapshot = false;
         var jgm = JobGaugeManager.Instance();
@@ -156,6 +160,7 @@ public sealed unsafe class UserActions : IUserActions, IDisposable
         processedSeq = seq;
 
         sprint.OnAction(actionType, actionId);
+        cooldowns.OnAction(actionType, actionId);
         if (!Enabled) return;
 
         // Enabler bookkeeping happens as the cast begins.
