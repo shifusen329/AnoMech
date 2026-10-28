@@ -21,19 +21,20 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         world = worldParam;
         var ai = new AiManager(world);
 
-        ai.Move(0.5f, StackAtBosses);
-        ai.Move(4.5f, BaitOut, arrivalTime: 7.5f);
-        ai.Move(8.3f, TanksIntoStack, arrivalTime: 12.0f);
-        ai.Move(8.4f, BaitBack, arrivalTime: 12.6f);
+        ai.Move(0.5f, StackAtBosses, cue: UmadP3LimitCutPlaybook.Stack(state));
+        ai.Move(4.5f, BaitOut, arrivalTime: 7.5f, cue: UmadP3LimitCutPlaybook.UmbraBait(state));
+        ai.Move(8.3f, TanksIntoStack, arrivalTime: 12.0f, cue: UmadP3LimitCutPlaybook.TanksIntoStack);
+        ai.Move(8.4f, BaitBack, arrivalTime: 12.6f, cue: UmadP3LimitCutPlaybook.BaitBack(state));
         world.Events.Add(14.94f, MainTankLimitBreakIfBothTanksAreBots);
         world.Events.Add(15.3f, FaceForVacuumWave);
-        ai.Move(17.5f, StackForCyclones, arrivalTime: 19.6f);
-        ai.Move(20.6f, ChargeSpots, arrivalTime: 30.2f);
-        ai.Move(32.7f, ClearForThunder, arrivalTime: 37.5f);
+        ai.Move(17.5f, StackForCyclones, arrivalTime: 19.6f, cue: UmadP3LimitCutPlaybook.Cyclones);
+        ai.Move(20.6f, ChargeSpots, arrivalTime: 30.2f, cue: UmadP3LimitCutPlaybook.Charges(state));
+        ai.Move(32.7f, ClearForThunder, arrivalTime: 37.5f, cue: UmadP3LimitCutPlaybook.ClearForThunder(state));
         world.Events.Add(33.6f, FirstTankOntoExdeath);
-        ai.Move(38.9f, SwapThunderTanks, arrivalTime: 41.2f);
+        ai.Move(38.9f, SwapThunderTanks, arrivalTime: 41.2f, cue: UmadP3LimitCutPlaybook.ThunderSwap(state));
         ScheduleThunderClearance(36.5f, 38.9f, 42.2f);
-        ai.Move(47.0f, StackAtBosses);
+        ai.Move(43.6f, SplitForDecisiveBattle, arrivalTime: 46.3f, cue: UmadP3LimitCutPlaybook.DecisiveBattleSplit);
+        ai.Move(47.0f, SplitForDecisiveBattle, cue: UmadP3LimitCutPlaybook.Uptime);
     }
 
     private (PartyRole First, PartyRole? Second) ThunderRoles => ThunderIIIPlanning.Roles(state.ThunderPlan);
@@ -51,7 +52,11 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
     private void FirstTankOntoExdeath()
     {
         if (state.Objects.Exdeath is not { } exdeath) return;
-        if (world.Party.Get(ThunderRoles.First) is { } first && first.IsAlive()) first.Follow(exdeath);
+        if (world.Party.Get(ThunderRoles.First) is { } first && first.IsAlive())
+        {
+            world.Strat.Note(ThunderRoles.First, Flat(exdeath.Position), UmadP3LimitCutPlaybook.ThunderTank(state), deadline: null);
+            first.Follow(exdeath);
+        }
     }
 
     private IAiMove SwapThunderTanks()
@@ -95,6 +100,7 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
                 var seatClearRadius = 19f;
                 if (seat.LengthSquared() > seatClearRadius * seatClearRadius)
                     seat = seat.LengthSquared() > 1e-4f ? Vector2.Normalize(seat) * seatClearRadius : seat;
+                world.Strat.Note(secondRole, seat, UmadP3LimitCutPlaybook.ThunderClearance(first, secondRole), deadline: null);
                 secondMember.MoveTo(new Vector3(seat.X, 0f, seat.Y));
             }
         }
@@ -113,6 +119,7 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
             var clearRadius = 19f;
             if (target.LengthSquared() > clearRadius * clearRadius)
                 target = target.LengthSquared() > 1e-4f ? Vector2.Normalize(target) * clearRadius : target;
+            world.Strat.Note(role, target, UmadP3LimitCutPlaybook.ThunderClearance(first, second), deadline: null);
             member.MoveTo(new Vector3(target.X, 0f, target.Y));
         }
     }
@@ -131,6 +138,11 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         world.Party.UseLimitBreak(PartyRole.MainTank);
     }
 
+    private const float MainTankStackRadius = 7.4f;
+    private const float OffTankStackRadius = 6.5f;
+    private const float BaitRadius = 18.6f;
+    private const float ArenaRadius = 20f;
+
     private float Hold => SpotHeading(state.BossSpot);
 
     private Vector2 Flat(Vector3 v) => new(v.X, v.Z);
@@ -144,10 +156,37 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
     private IAiMove StackAtBosses()
     {
         var coords = new Vector2?[8];
-        coords[(int)PartyRole.MainTank] = Flat(OnCircle(Hold, 7.5f));
-        coords[(int)PartyRole.OffTank] = Flat(OnCircle(Hold, 9.1f) + OnCircle(Hold + MathF.PI / 2f, 2.5f));
+        coords[(int)PartyRole.MainTank] = Flat(OnCircle(Hold, MainTankStackRadius));
+        coords[(int)PartyRole.OffTank] = Flat(OnCircle(Hold, OffTankStackRadius));
         for (var slot = 2; slot < 8; slot++) coords[slot] = StackSpot(slot);
         return AiMove.Create(coords).NaturalOrder();
+    }
+
+    private static readonly PartyRole[] EpicHeroes = [PartyRole.MainTank, PartyRole.RegenHealer, PartyRole.MeleeDpsA, PartyRole.MeleeDpsB];
+
+    private IAiMove SplitForDecisiveBattle()
+    {
+        if (state.Objects.Chaos is not { } chaos || state.Objects.Exdeath is not { } exdeath) return StackAtBosses();
+        var apart = Flat(chaos.Position - exdeath.Position);
+        var away = apart.LengthSquared() > 0.01f ? Vector2.Normalize(apart) : Flat(OnCircle(Hold + MathF.PI / 2f, 1f));
+        var across = new Vector2(-away.Y, away.X);
+        var coords = new Vector2?[8];
+        var atChaos = 0;
+        var atExdeath = 0;
+        for (var slot = 0; slot < 8; slot++)
+        {
+            var epic = Array.IndexOf(EpicHeroes, (PartyRole)slot) >= 0;
+            var n = epic ? atChaos++ : atExdeath++;
+            var beside = epic ? Flat(chaos.Position) + away * 3f : Flat(exdeath.Position) - away * 3f;
+            coords[slot] = InsideArena(beside + across * (n - 1.5f));
+        }
+        return AiMove.Create(coords).NaturalOrder();
+    }
+
+    private static Vector2 InsideArena(Vector2 spot)
+    {
+        var limit = ArenaRadius - 1f;
+        return spot.LengthSquared() > limit * limit ? Vector2.Normalize(spot) * limit : spot;
     }
 
     private IAiMove TanksIntoStack()
@@ -170,7 +209,7 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         return AiMove.Create(coords).NaturalOrder();
     }
 
-    private IAiMove BaitOut() => AiMove.Single(state.BaitRole, Flat(OnCircle(Hold + MathF.PI, 17.7f)));
+    private IAiMove BaitOut() => AiMove.Single(state.BaitRole, Flat(OnCircle(Hold + MathF.PI, BaitRadius)));
 
     private IAiMove BaitBack() => AiMove.Single(state.BaitRole, StackSpot((int)state.BaitRole));
 
@@ -185,10 +224,12 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
     private void FaceForVacuumWave()
     {
         if (state.Objects.Exdeath is not { } exdeath) return;
+        var cue = UmadP3LimitCutPlaybook.VacuumWave(state);
         for (var slot = 0; slot < 8; slot++)
         {
             var member = world.Party.Get(slot);
             if (member is null || !member.IsAlive() || member is not ISimPartyMember pm) continue;
+            world.Strat.Note(pm.Role, StackSpot(slot), cue, deadline: null);
             if (member is SimPlayer && !DebugBotControl.Enabled) continue;
             var away = member.Position - exdeath.Position;
             member.Face(state.Winds[pm.Role] == Wind.Headwind ? member.Position + away : exdeath.Position);

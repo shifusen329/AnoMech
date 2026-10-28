@@ -8,6 +8,7 @@ using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Geometry;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -30,6 +31,7 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
     public float BgmSecondsAtStart => 17.73f;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP1TeleTrouncingAi()];
     public object SettingsOverrides => settingsWindow.Overrides;
 
@@ -122,6 +124,8 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
+        world.MitPractice.Begin(UmadP1TeleTrouncingMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         party = world.Party;
         state = new UmadP1TeleTrouncingState(world.Rng, settingsWindow.Overrides);
         LastState = state;

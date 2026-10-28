@@ -21,10 +21,10 @@ internal static class UmadP2TrinesMitigation
     // land on few players.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(LightOfJudgment, "Light of Judgment", 360000f, UmadMitigation.Kefka),
-        new(TrinePoint, "Trine", 200000f, null),
-        new(WingsBuster, "Wings of Destruction", 900000f, null, TankBuster: true),
-        new(UltimateEmbrace, "Ultimate Embrace", 850000f, UmadMitigation.Kefka, TankBuster: true),
+        new(LightOfJudgment, "Light of Judgment", 360000f, UmadMitigation.Kefka, ActionIds: [UmadConstants.ActionId.LightOfJudgment]),
+        new(TrinePoint, "Trine", 200000f, null, ActionIds: [UmadConstants.ActionId.TrinePoint]),
+        new(WingsBuster, "Wings of Destruction", 900000f, null, TankBuster: true, ActionIds: [UmadConstants.ActionId.WingsOfDestructionBuster]),
+        new(UltimateEmbrace, "Ultimate Embrace", 850000f, UmadMitigation.Kefka, TankBuster: true, ActionIds: [UmadConstants.ActionId.UltimateEmbrace]),
     ];
 
     private const float LightOfJudgmentHit = 6.97f;

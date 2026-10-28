@@ -9,8 +9,6 @@ public static class UmadP2TrinesConstants
     public static class AnimationLock
     {
         public const float BossCast = 3.1f;
-        public const float Instant = 1.1f;
-        public const float AutoAttack = 0.1f;
     }
 
     public static class Geometry
@@ -51,17 +49,6 @@ public static class UmadP2TrinesConstants
     // The P2 track starts on the 0x4F44 music beat as Kefka arrives; Light of Judgment II is cast
     // 136.6s into it, 2s after this scenario starts.
     public const float BgmSecondsAtStart = 134.60f;
-
-    public static class Damage
-    {
-        public const float MagicVulnerabilityUpSeconds = 0.96f;
-        public const float DamageDownSeconds = 180f;
-        // UNVERIFIED: a non-tank took 0.66-1.1M from one buster, against a ~325k tank.
-        public const float WingsBusterRequiredMitigation = 0.55f;
-        // UNVERIFIED: shared, each tank took 330-430k; alone, 1.7M, which only an invuln lives through.
-        public const float UltimateEmbraceRequiredMitigation = 0.30f;
-        public const float UltimateEmbraceSoloTankMitigation = 0.80f;
-    }
 
     // Each triangle spawns hidden in the state the explosion ends in, and the EObjAnimation beats
     // (ActorControl 413) bring it up. The real spawns' Arg2 is 3 plus a serial in the high word.

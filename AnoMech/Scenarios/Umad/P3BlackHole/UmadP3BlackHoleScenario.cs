@@ -13,6 +13,7 @@ using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Geometry;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -25,6 +26,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     public string Name => "Black Hole";
     public IPhase Phase => UmadZone.P3;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
 
     public void DrawSettings() => settingsWindow.Draw();
     public bool HasPerPlayerSettings => true;
@@ -38,6 +40,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     [
         new UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder.DpsSupportAccretion),
         new UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder.SupportDpsAccretion),
+        new UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder.ModifiedDsa),
     ];
 
     private UmadP3BlackHoleState state = null!;
@@ -53,6 +56,9 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     private const float EarthResistanceDownDuration = 1.960f;
 
     private int PrimodialCrustsToResolve;
+    // Events dispatch after the tick, so two shots landing together on one player (Modified DSA's
+    // double tether) both read the crust as spent; each player has only the one.
+    private readonly HashSet<SimCharacter> spentCrusts = [];
     private float CleanseCooldown;
     SimEnemy? CleanseHelper;
 
@@ -70,6 +76,12 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
             ((IScenarioAi<UmadP3BlackHoleState>)AiStrats[idx]).Run(state, world);
 
         PrimodialCrustsToResolve = 0;
+        spentCrusts.Clear();
+        world.MitPractice.Begin(UmadP3BlackHoleMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+        {
+            [UmadMitigation.Chaos] = () => state.ScenarioObjects.Chaos,
+            [UmadMitigation.Exdeath] = () => state.ScenarioObjects.Exdeath,
+        });
 
        
         BlackHolePositions = Enumerable.Range(0, 4).Select(GenerateBlackHolePositions).ToArray();
@@ -247,14 +259,18 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(99.18f, () => chaos_4000414D?.Cast(ActionId.Aetherlink_Chaos, animationLock: 3.1f));
         // The shockwaves keep the facing Chaos casts Implosion with, not wherever it turns after.
         var implosionFrom = new Placement();
+        world.Events.Add(113.18f, () => chaos_4000414D?.Follow());
         world.Events.Add(113.38f, () =>
         {
             if (chaos_4000414D is null) return;
             implosionFrom = chaos_4000414D.Placement();
             chaos_4000414D.Cast(state.ImplosionAttack, animationLock: 6.1f);
         });
+        world.Events.Add(121.30f, () => chaos_4000414D?.Follow(party.Get(PartyRole.MainTank)));
         world.Events.Add(124.41f, () => chaos_4000414D?.Cast(UmadActions.AutoAttack, party.Get(PartyRole.MainTank)));
         world.Events.Add(141.47f, () => chaos_4000414D?.Cast(UmadActions.AutoAttack, party.Get(PartyRole.MainTank)));
+        // Both bosses hold the middle from here: the tanks leave them to preposition for Stomp-a-Mole.
+        world.Events.Add(143.40f, () => chaos_4000414D?.Follow());
         world.Events.Add(144.50f, () => chaos_4000414D?.Cast(UmadActions.AutoAttack, party.Get(PartyRole.MainTank)));
         world.Events.Add(147.09f, () => chaos_4000414D?.Cast(ActionId.KnockDown_Cast, animationLock: 3.1f));
         world.Events.Add(152.53f, () => chaos_4000414D?.Cast(UmadActions.AutoAttack, party.Get(PartyRole.MainTank)));
@@ -284,7 +300,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     private void Run_Exdeath_4000414C()
     {
         SimEnemy? thunderHelper = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.KefkaHelper, NameId: BNpcNameId.Exdeath, Level: 1, Targetable: false, EnemyList: EnemyListMode.Never, Visibility: SpawnVisibility.InvisibleHelper, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), -2.190f)));
-        SimEnemy? exdeath_4000414C = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible, LayoutId: BNpcLayoutId.Exdeath, Placement: new Placement(new Vector3(8.000f, 0.000f, 0.000f), 0.000f)));
+        SimEnemy? exdeath_4000414C = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible, LayoutId: BNpcLayoutId.Exdeath, Placement: new Placement(new Vector3(-11.540f, 0.000f, 4.880f), 0.000f)));
         state.ScenarioObjects.Exdeath = exdeath_4000414C;
         world.Events.Add(0.1f, () => exdeath_4000414C?.AddStatus(StatusId.FatedVillain));
         world.Events.Add(1f, () => exdeath_4000414C?.Follow(party.Get(PartyRole.OffTank)));
@@ -315,6 +331,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(122.45f, () => exdeath_4000414C?.Cast(UmadActions.ExdeathAutoAttack, party.Get(PartyRole.OffTank)));
         world.Events.Add(125.48f, () => exdeath_4000414C?.Cast(UmadActions.ExdeathAutoAttack, party.Get(PartyRole.OffTank)));
         world.Events.Add(141.51f, () => exdeath_4000414C?.Cast(UmadActions.ExdeathAutoAttack, party.Get(PartyRole.OffTank)));
+        world.Events.Add(143.40f, () => exdeath_4000414C?.Follow());
         world.Events.Add(143.61f, () => exdeath_4000414C?.Cast(ActionId.BlizzardIII_Cast, animationLock: 3.1f));
         world.Events.Add(150.66f, () => exdeath_4000414C?.Cast(UmadActions.ExdeathAutoAttack, party.Get(PartyRole.RegenHealer)));
         world.Events.Add(153.69f, () => exdeath_4000414C?.Cast(UmadActions.ExdeathAutoAttack, party.Get(PartyRole.RegenHealer)));
@@ -542,7 +559,8 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         if (resolved.Action.ActionId != ActionId.Nothingness) return;
         var spent = resolved.Hits.Count(h => h.HasStatus(StatusId.MeanestExistence)
                                              && !h.HasStatus(StatusId.PrimordialCrust)
-                                             && !resolved.Killed.Contains(h));
+                                             && !resolved.Killed.Contains(h)
+                                             && spentCrusts.Add(h));
         if (spent > 0)
             world.Events.Add(CleanseDelayAfterSpentCrust, () => PrimodialCrustsToResolve += spent);
     }

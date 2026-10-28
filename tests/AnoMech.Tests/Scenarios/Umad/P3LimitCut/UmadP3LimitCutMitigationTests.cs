@@ -4,11 +4,12 @@ namespace AnoMech.Tests;
 
 public class UmadP3LimitCutMitigationTests
 {
+    private const float KefkaReappearsAt = 50.581f;
+
     [Test]
     public void ThePlanHoldsForEveryComp()
     {
-        MitigationPlanAssert.IsSound(UmadP3LimitCutMitigation.Plan(), "Limit Cut",
-            UmadP3LimitCutConstants.Timing.UmbraCastAt + UmadP3LimitCutConstants.Timing.KefkaReappearAfterUmbra);
+        MitigationPlanAssert.IsSound(UmadP3LimitCutMitigation.Plan(), "Limit Cut", KefkaReappearsAt);
     }
 
     [Test]

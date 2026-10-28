@@ -54,4 +54,11 @@
             CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
   </Target>
+  <!-- Tests of the fork's scenarios not yet ported to the EnemyActions engine. -->
+  <ItemGroup>
+    <Compile Remove="Scenarios/Umad/P1GravenImage1/**" />
+    <Compile Remove="Scenarios/Umad/P1GravenImage2/**" />
+    <Compile Remove="Scenarios/Umad/P1Shared/UmadP1GravenConstantsTests.cs" />
+    <Compile Remove="Scenarios/Umad/P3BowelsOfAgony/**" />
+  </ItemGroup>
 </Project>

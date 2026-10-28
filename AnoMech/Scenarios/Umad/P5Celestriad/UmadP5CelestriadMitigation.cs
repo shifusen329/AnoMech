@@ -16,7 +16,7 @@ internal static class UmadP5CelestriadMitigation
     // Raw on a physical DPS, per soaker.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(Tower, "Tower", 165000f, null),
+        new(Tower, "Tower", 165000f, null, ActionIds: [UmadConstants.ActionId.CelestriadFireIII, UmadConstants.ActionId.CelestriadBlizzardIII, UmadConstants.ActionId.CelestriadThunderIII]),
     ];
 
     private const float Towers1 = 15.13f;

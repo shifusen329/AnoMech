@@ -5,7 +5,7 @@ namespace AnoMech.Tests;
 
 public class MitCatalogueTests
 {
-    private static readonly DataminingGameData Data = new();
+    private static readonly DataminingGameData Data = new(new FakeRsvFunctions());
 
     [Test]
     public void EveryButtonIsTheGamesAction()
@@ -41,7 +41,7 @@ public class MitCatalogueTests
     {
         foreach (var def in MitCatalogue.All.Where(d => d.Requires != 0))
         {
-            Assert.That(Data.StatusName(def.Requires), Is.Not.Null, def.Name);
+            Assert.That(Data.Status(def.Requires), Is.Not.Null, def.Name);
             Assert.That(MitCatalogue.All.Any(g => JobActions.GrantsOf(g.ActionId).Any(s => s.StatusId == def.Requires)), def.Name);
             Assert.That(JobActions.StatusesSpentBy(def.ActionId), Does.Contain(def.Requires), def.Name);
         }

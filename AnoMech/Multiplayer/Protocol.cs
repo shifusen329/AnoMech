@@ -54,6 +54,7 @@ namespace AnoMech.Multiplayer;
 [JsonDerivedType(typeof(UltimatePredationAiReplayStateMessage), "ultimatePredationAiReplayState")]
 [JsonDerivedType(typeof(TopP5DeltaAiReplayStateMessage), "topP5DeltaAiReplayState")]
 [JsonDerivedType(typeof(UmadP3LimitCutAiReplayStateMessage), "umadP3LimitCutAiReplayState")]
+[JsonDerivedType(typeof(UmadP2TrinesAiReplayStateMessage), "umadP2TrinesAiReplayState")]
 [JsonDerivedType(typeof(UmadP1TeleTrouncingAiReplayStateMessage), "umadP1TeleTrouncingAiReplayState")]
 [JsonDerivedType(typeof(UmadP5FloodAiReplayStateMessage), "umadP5FloodAiReplayState")]
 [JsonDerivedType(typeof(UcobP5ExaflaresAiReplayStateMessage), "ucobP5ExaflaresAiReplayState")]
@@ -185,8 +186,14 @@ public sealed record RoleState(PartyRole Role, float X, float Y, float Z, float 
 
 public sealed record RolesSnapshotMessage(List<RoleState> Roles) : MpMessage, IHostOnlyMessage, IUnsequencedMessage;
 
-// One per Game.PartyMemberKilled; the recipient kills whatever holds that role locally.
-public sealed record RoleKilledMessage(PartyRole Role, string Cause) : MpMessage, IHostOnlyMessage;
+// One per Game.PartyMemberKilled; the recipient kills whatever holds that role locally. Recap is
+// the dead role's strat spot, killing AoE (scenario-local) and run progress, which only the host
+// worked out.
+public sealed record RoleKilledMessage(PartyRole Role, string Cause, DeathRecapState? Recap = null) : MpMessage, IHostOnlyMessage;
+
+public sealed record DeathRecapState(
+    bool HasSpot, float SpotX, float SpotZ, float IssuedAt, float? Deadline, string? Mechanic, string? Why, string? Source,
+    uint AoeActionId, float AoeX, float AoeZ, float AoeRotation, float AoeOmenRotate, float? AoeSize, string? Progress = null);
 
 // One per knockback on a SimNetworkPuppet, applied to whoever holds that role locally. Row: the
 // Knockback sheet row, whose ActionEffect entry that seat's own client applies itself.
@@ -257,6 +264,11 @@ public sealed record P4AiReplayStateMessage(
 
 // LeftOrder/RightOrder is the whole meaningful state; Timeline/SpreadTick are rebuilt locally.
 public sealed record P5AiReplayStateMessage(int[] LeftOrder, int[] RightOrder) : MpMessage, IScenarioReplayStateMessage;
+
+// The whole UmadP2TrinesState roll: the first set of triangles, the lone second one, which way the
+// centre points and which half the first Wings of Destruction takes.
+public sealed record UmadP2TrinesAiReplayStateMessage(
+    int[] FirstSet, int SecondSet, bool CentrePointsEast, bool WingsRight) : MpMessage, IScenarioReplayStateMessage;
 
 // The whole UmadP3LimitCutState roll: first clone spot and walk direction, the eight numbers,
 // who carries Headwind, the intercardinal the bosses are held at, and the Umbra Smash bait.

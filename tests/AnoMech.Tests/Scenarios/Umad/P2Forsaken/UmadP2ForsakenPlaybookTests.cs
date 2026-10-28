@@ -23,17 +23,9 @@ public class UmadP2ForsakenPlaybookTests
         () => new UmadP2ForsakenRinonAiHelper(UmadP2ForsakenRinonAiHelper.StandardOdd, UmadP2ForsakenRinonAiHelper.DiamonMarkersEven,
             UmadP2ForsakenRinonAiHelper.KroxyReorder, UmadP2ForsakenPlaybook.KroxyRinon));
 
-    private static readonly Strat KroxyRinonOld = new("Kroxy-Rinon old", UmadP2ForsakenPlaybook.KroxyRinonOld,
-        () => new UmadP2ForsakenRinonAiHelper(UmadP2ForsakenRinonAiHelper.StandardOdd, UmadP2ForsakenRinonAiHelper.OldEven,
-            UmadP2ForsakenRinonAiHelper.KroxyReorder, UmadP2ForsakenPlaybook.KroxyRinonOld));
-
     private static readonly Strat SouthFlex = new("South Flex", UmadP2ForsakenPlaybook.SouthFlex,
         () => new UmadP2ForsakenRinonAiHelper(UmadP2ForsakenRinonAiHelper.StandardOdd, UmadP2ForsakenRinonAiHelper.DiamonMarkersEven,
             UmadP2ForsakenRinonAiHelper.SouthFlexReorder, UmadP2ForsakenPlaybook.SouthFlex));
-
-    private static readonly Strat SouthFlexOld = new("South Flex old", UmadP2ForsakenPlaybook.SouthFlexOld,
-        () => new UmadP2ForsakenRinonAiHelper(UmadP2ForsakenRinonAiHelper.StandardOdd, UmadP2ForsakenRinonAiHelper.OldEven,
-            UmadP2ForsakenRinonAiHelper.SouthFlexReorder, UmadP2ForsakenPlaybook.SouthFlexOld));
 
     private static readonly Strat LpduBuddies = new("LPDU Buddies", UmadP2ForsakenPlaybook.LpduBuddies,
         () => new UmadP2ForsakenLpduBuddiesAiHelper(UmadP2ForsakenLpduBuddiesAiHelper.StandardOdd, UmadP2ForsakenLpduBuddiesAiHelper.DiamonMarkersEven,
@@ -47,7 +39,7 @@ public class UmadP2ForsakenPlaybookTests
         () => new UmadP2ForsakenZP6SouthAdjustAiHelper(UmadP2ForsakenZP6SouthAdjustAiHelper.StandardOdd, UmadP2ForsakenZP6SouthAdjustAiHelper.DiamonMarkersEven,
             UmadP2ForsakenZP6SouthAdjustAiHelper.SouthFlexReorder, UmadP2ForsakenPlaybook.ZP6SouthAdjust));
 
-    private static readonly Strat[] All = [KroxyRinon, KroxyRinonOld, SouthFlex, SouthFlexOld, LpduBuddies, P3ZBuddyMeow, ZP6SouthAdjust];
+    private static readonly Strat[] All = [KroxyRinon, SouthFlex, LpduBuddies, P3ZBuddyMeow, ZP6SouthAdjust];
 
     private static readonly EndAttack[][] EndRolls =
     [
@@ -192,7 +184,7 @@ public class UmadP2ForsakenPlaybookTests
     [Test]
     public void KroxyRinonAndTheBuddyStratsFlexLikeNaur()
     {
-        foreach (var strat in new[] { KroxyRinon, KroxyRinonOld, LpduBuddies, P3ZBuddyMeow })
+        foreach (var strat in new[] { KroxyRinon, LpduBuddies, P3ZBuddyMeow })
             foreach (var (context, set) in Play(strat))
             {
                 if (strat == P3ZBuddyMeow && set.Index == 0) continue;
@@ -217,7 +209,7 @@ public class UmadP2ForsakenPlaybookTests
     [Test]
     public void SouthStratsKeepTheTowerAndFlexTheSouthPlayer()
     {
-        foreach (var strat in new[] { SouthFlex, SouthFlexOld, ZP6SouthAdjust })
+        foreach (var strat in new[] { SouthFlex, ZP6SouthAdjust })
         {
             var last = new Dictionary<PartyRole, Vector2>();
             foreach (var (context, set) in Play(strat))

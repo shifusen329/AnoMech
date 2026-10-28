@@ -19,13 +19,13 @@ namespace AnoMech.Tests;
 //          Antilight; Allagan Field on OT SH M2 C, west at (-8,0) under the White. 66.34 an
 //          uncleansed Beyond Death kills.
 //   71.28  C's Acceleration Bomb (lying); 71.36 MT's (real).
-//   71.38  Wave 1 (true): Death Wave on SH stacked N (0,-12) with MT OT, Death Bolt on RH alone
-//          W (-12,0); Wave on C stacked S (0,12) with M1 M2, Bolt on R alone E (12,0).
+//   71.38  Wave 1 (true): Death Wave on SH stacked N (0,-10) with MT OT, Death Bolt on RH alone
+//          W (-12,0); Wave on C stacked S (0,10) with M1 M2, Bolt on R alone E (12,0).
 //   80.49  Death Shriek (true, look away) from MT (2.9,-1.1) and M1 (-1.1,2.9); the rest line up
 //          on that diagonal, C furthest SW at (-6.5,8.3).
 //   87.28  Stray Flames baits lock on the party stacked in the middle; the chariots land 92.06
-//          with everyone out at r=11, MT at (0,11).
-//   96.49  Wave 2 (lying): Death Bolt on MT stacked N (0.8,-12) with SH RH, Death Wave on OT
+//          with everyone already out on their wave 2 spots.
+//   96.49  Wave 2 (lying): Death Bolt on MT stacked N (0.8,-10) with SH RH, Death Wave on OT
 //          alone W (-12.2,1.1); Bolt on M1 stacked S with R C, Wave on M2 alone E (12.1,-1.2).
 //  104.39  Death Shriek (lying, look at) from RH (0,-1.4) and R (0,1.4); C at (1.2,6.9).
 //  109.98  Stray Spray baits lock in the middle; the donuts land 114.77 with the party at (4.1,-1.6).
@@ -145,8 +145,8 @@ public class UmadP4KefkaSaysScenarioTests
             .ShouldKill(stack, stackers);
 
     // The solo's own hit applies the vuln; the stack's hit, resolving after it, kills.
-    [TestCase(70.9f, RegenHealer, 0f, -12f, ActionId.DeathWave)]
-    [TestCase(96.0f, OffTank, 0.8f, -12f, ActionId.DeathWave_Lie)]
+    [TestCase(70.9f, RegenHealer, 0f, -10f, ActionId.DeathWave)]
+    [TestCase(96.0f, OffTank, 0.8f, -10f, ActionId.DeathWave_Lie)]
     public void SoloMarkerJoiningStackKillsStack(float at, PartyRole solo, float x, float z, uint killer)
         => KefkaSays(solo)
             .TeleportAt(at, to: new(x, z))
@@ -202,8 +202,8 @@ public class UmadP4KefkaSaysScenarioTests
     [Test]
     public void BaitingStrayFlamesOnARunOutSpotKillsTheRunner()
         => KefkaSays(CasterDps)
-            .TeleportAt(87.0f, to: new(0, 11))
-            .ShouldKill(ActionId.StrayFlames_Chariot, CasterDps, MainTank);
+            .TeleportAt(87.0f, to: new(12, 0))
+            .ShouldKill(ActionId.StrayFlames_Chariot, CasterDps, MeleeDpsB);
 
     [Test]
     public void MovingThroughRealAccelerationBombDies()

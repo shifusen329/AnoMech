@@ -14,8 +14,6 @@ public sealed class UmadP2ForsakenPlaybook
 {
     private enum OddSpots { Na, Eu }
 
-    private enum EvenSpots { DiamondMarkers, WeekOne }
-
     private enum FirstSetStacks { RoleOrder, SupportLeft, ConeRoleLeft }
 
     private enum Flex { Partner, South }
@@ -24,39 +22,31 @@ public sealed class UmadP2ForsakenPlaybook
     private const string SouthAdjustPlan = "raidplan.io/plan/uq7zdjvuu7uuw8fj";
 
     public static readonly UmadP2ForsakenPlaybook KroxyRinon =
-        new("Kroxy-Rinon", KroxyRinonPlan, OddSpots.Na, EvenSpots.DiamondMarkers, FirstSetStacks.RoleOrder, Flex.Partner);
-
-    public static readonly UmadP2ForsakenPlaybook KroxyRinonOld =
-        new("Kroxy-Rinon", KroxyRinonPlan, OddSpots.Na, EvenSpots.WeekOne, FirstSetStacks.RoleOrder, Flex.Partner);
+        new("Kroxy-Rinon", KroxyRinonPlan, OddSpots.Na, FirstSetStacks.RoleOrder, Flex.Partner);
 
     public static readonly UmadP2ForsakenPlaybook SouthFlex =
-        new("South Flex", SouthAdjustPlan, OddSpots.Na, EvenSpots.DiamondMarkers, FirstSetStacks.RoleOrder, Flex.South);
-
-    public static readonly UmadP2ForsakenPlaybook SouthFlexOld =
-        new("South Flex", SouthAdjustPlan, OddSpots.Na, EvenSpots.WeekOne, FirstSetStacks.RoleOrder, Flex.South);
+        new("South Flex", SouthAdjustPlan, OddSpots.Na, FirstSetStacks.RoleOrder, Flex.South);
 
     public static readonly UmadP2ForsakenPlaybook LpduBuddies =
-        new("LPDU Buddies", "raidplan.io/plan/142oXOZpPc_jh3dd", OddSpots.Eu, EvenSpots.DiamondMarkers, FirstSetStacks.SupportLeft, Flex.Partner);
+        new("LPDU Buddies", "raidplan.io/plan/142oXOZpPc_jh3dd", OddSpots.Eu, FirstSetStacks.SupportLeft, Flex.Partner);
 
     public static readonly UmadP2ForsakenPlaybook P3ZBuddyMeow =
-        new("p3Z Buddy Meow", "raidplan.io/plan/lZWqxfxvyhF9sp3Z", OddSpots.Eu, EvenSpots.DiamondMarkers, FirstSetStacks.ConeRoleLeft, Flex.Partner);
+        new("p3Z Buddy Meow", "raidplan.io/plan/lZWqxfxvyhF9sp3Z", OddSpots.Eu, FirstSetStacks.ConeRoleLeft, Flex.Partner);
 
     public static readonly UmadP2ForsakenPlaybook ZP6SouthAdjust =
-        new("zP6 South adjust", "raidplan.io/plan/rtc1FcuZFMuyBzP6", OddSpots.Eu, EvenSpots.DiamondMarkers, FirstSetStacks.RoleOrder, Flex.South);
+        new("zP6 South adjust", "raidplan.io/plan/rtc1FcuZFMuyBzP6", OddSpots.Eu, FirstSetStacks.RoleOrder, Flex.South);
 
     private readonly string name;
     private readonly string plan;
     private readonly OddSpots odd;
-    private readonly EvenSpots even;
     private readonly FirstSetStacks firstSetStacks;
     private readonly Flex flex;
 
-    private UmadP2ForsakenPlaybook(string name, string plan, OddSpots odd, EvenSpots even, FirstSetStacks firstSetStacks, Flex flex)
+    private UmadP2ForsakenPlaybook(string name, string plan, OddSpots odd, FirstSetStacks firstSetStacks, Flex flex)
     {
         this.name = name;
         this.plan = plan;
         this.odd = odd;
-        this.even = even;
         this.firstSetStacks = firstSetStacks;
         this.flex = flex;
     }
@@ -189,10 +179,8 @@ public sealed class UmadP2ForsakenPlaybook
         var baiter = left ? "healer" : "ranged";
         var compass = left ? "west" : "east";
         if (marker == LockonId.ForsakenChariot)
-            return $"With a spread, take the {side} tower's {(even == EvenSpots.WeekOne ? "outer" : "south")} edge, as far back as possible, so your circle misses the cone soaker and the baiters.";
-        return even == EvenSpots.WeekOne
-            ? $"With a cone, take the {side} tower's inner edge, closest to Kefka: as one of the four nearest him you bait a {EndName(end)} hit, and your cone fires out at the outside {baiter} to the relative {compass}."
-            : $"With a cone, take the {side} tower's north edge, where it crosses Kefka's inner hitbox ring: as one of the four nearest him you bait a {EndName(end)} hit, and your cone fires out at the outside {baiter} on the relative {compass} waymark.";
+            return $"With a spread, take the {side} tower's south edge, as far back as possible, so your circle misses the cone soaker and the baiters.";
+        return $"With a cone, take the {side} tower's north edge, where it crosses Kefka's inner hitbox ring: as one of the four nearest him you bait a {EndName(end)} hit, and your cone fires out at the outside {baiter} on the relative {compass} waymark.";
     }
 
     private string SideReason(UmadP2ForsakenState state, int index, IReadOnlyList<PartyRole> soakers, PartyRole role, uint marker)
@@ -244,19 +232,16 @@ public sealed class UmadP2ForsakenPlaybook
 
     private string EvenOutsideSpot(EndAttack end, PartyRole role)
     {
-        var weekOne = even == EvenSpots.WeekOne;
         switch (Kind(role))
         {
             case "healer":
             case "ranged":
                 var left = Kind(role) == "healer";
                 var compass = left ? "west" : "east";
-                return weekOne
-                    ? $"Stand out to the relative {compass}, a little toward the {(left ? "left" : "right")} tower: you're nearest its cone soaker, so the cone fires out at you; NAUR stands on the waymark instead."
-                    : $"Stand on the relative {compass} waymark (outer corner of a numbered one, inner edge of a lettered one): you're nearest the {(left ? "left" : "right")} tower's cone soaker, so its cone fires out at you, clear of the {EndName(end)} baits.";
+                return $"Stand on the relative {compass} waymark (outer corner of a numbered one, inner edge of a lettered one): you're nearest the {(left ? "left" : "right")} tower's cone soaker, so its cone fires out at you, clear of the {EndName(end)} baits.";
             default:
                 var tank = Kind(role) == "tank";
-                return $"Stand relative {(tank ? "north-west" : "north-east")} {(weekOne ? "close to Kefka" : "on Kefka's hitbox")}: with the {(tank ? "melee" : "tank")} and the two cone soakers you're one of the four nearest him, so you bait a {EndName(end)} hit.";
+                return $"Stand relative {(tank ? "north-west" : "north-east")} on Kefka's hitbox: with the {(tank ? "melee" : "tank")} and the two cone soakers you're one of the four nearest him, so you bait a {EndName(end)} hit.";
         }
     }
 
@@ -271,10 +256,10 @@ public sealed class UmadP2ForsakenPlaybook
             7 => "NAUR §2.10 (0:24:17)",
             _ => "NAUR §2.9 (0:23:43)",
         };
-        var image = (index % 2 == 0, odd, even) switch
+        var image = (index % 2 == 0, odd) switch
         {
-            (true, OddSpots.Na, _) => " · wtfdig kefka_p2/3_odd_towers",
-            (false, _, EvenSpots.DiamondMarkers) => " · wtfdig kefka_p2/6_even_towers_diamond_box_markers",
+            (true, OddSpots.Na) => " · wtfdig kefka_p2/3_odd_towers",
+            (false, _) => " · wtfdig kefka_p2/6_even_towers_diamond_box_markers",
             _ => "",
         };
         return $"{section}{image} · {plan}";

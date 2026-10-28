@@ -82,7 +82,8 @@ public sealed class UmadP2ForsakenState
         this.rng = rng;
         EndAttacks = overrides.EndAttacks.Select(e => e ?? NextEnd()).ToArray();
         NewNorth = overrides.NewNorth ?? rng.NextDirection();
-        Rotation = overrides.Rotation ?? rng.NextSign();
+        // Each set steps clockwise in every logged pull; UNVERIFIED that the game never goes the other way.
+        Rotation = overrides.Rotation ?? 1;
 
         var supportLockon = overrides.SupportLockon ?? rng.NextObj(LockonId.ForsakenChariot, LockonId.ForsakenCone);
         var dpsLockon = supportLockon == LockonId.ForsakenChariot ? LockonId.ForsakenCone : LockonId.ForsakenChariot;

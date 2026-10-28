@@ -21,6 +21,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -34,6 +35,7 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     public string Name => "Forsaken";
     public IPhase Phase => UmadZone.P2;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
 
     public void DrawSettings() => settingsWindow.Draw();
     public object SettingsOverrides => settingsWindow.Overrides;
@@ -67,6 +69,10 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     // Edge-triggers BuildMidRunUpdateMessage -- see IMultiplayerReplayable.BuildMidRunUpdateMessage.
     private string? lastBroadcastLockonsKey;
 
+    private SimEnemy? kefka;
+    private int towersSoaked;
+    public string? RunProgress => $"You cleared {towersSoaked / 2} of 8 tower sets.";
+
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
@@ -74,6 +80,9 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
         state = new UmadP2ForsakenState(world.Rng, party, settingsWindow.Overrides);
         LastState = state;
         lastBroadcastLockonsKey = null;
+        towersSoaked = 0;
+        world.MitPractice.Begin(UmadP2ForsakenMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         if (selectedAi is { } idx && idx >= 0 && idx < AiStrats.Count)
             ((IScenarioAi<UmadP2ForsakenState>)AiStrats[idx]).Run(state, world);
         Run_Kefka_40004FD3();
@@ -147,6 +156,7 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     private void Run_Kefka_40004FD3()
     {
         SimEnemy? kefka_40004FD3 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.GodKefka, NameId: BNpcNameId.Kefka, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible, LayoutId: BNpcLayoutId.GodKefka, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 0.000f)));
+        kefka = kefka_40004FD3;
         foreach (var at in new[] { 1.30f, 11.35f, 14.39f, 17.43f, 20.47f, 24.50f })
             world.Events.Add(at, () => kefka_40004FD3?.Cast(UmadActions.AutoAttack, party.Get(PartyRole.OffTank)));
         world.Events.Add(2.46f, () => kefka_40004FD3?.Cast(UmadActions.Forsaken));
@@ -174,7 +184,7 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
             EndAttackTargets = party.Find.ClosestN(kefka_40004FD3.Position, 4);
             if (EndAttackTargets.Count > 0) kefka_40004FD3.Cast(end.KefkaHit, EndAttackTargets[0]);
         });
-        world.Events.Add(start + 12.8f, () => kefka_40004FD3?.Face(party.Player));
+        world.Events.Add(start + 12.8f, () => kefka_40004FD3?.Face(PartyCentre()));
         world.Events.Add(start + 12.9f, () => kefka_40004FD3?.Cast(end.AllThingsEnding));
         world.Events.Add(start + 18f, () => kefka_40004FD3?.Face(party.Get(PartyRole.OffTank)));
     }
@@ -200,6 +210,7 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     private void ResolveSoakers(ActionResolved resolved)
     {
         if (resolved.Action.ActionId != ActionId.ThePathOfLight || resolved.Hits.Count != 2) return;
+        towersSoaked++;
         var tower = resolved.Caster == firstTower ? 0 : 1;
         for (var i = 0; i < resolved.Hits.Count; i++) ResolveTower(resolved.Hits[i], tower * 2 + i);
         var lockons = state.TowerLockons[towerRound * 2 + tower];
@@ -267,6 +278,8 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
     
     // Based on logs, clones end up 4y away from their target
     // TODO: verify in simulator
+    // Stepping them out that far kills the Yan strat's pairs, which clear it in game, so they
+    // stay on Kefka's centre.
     private void RunCloneEndAttack(SimEnemy? enemy, float start, int number, int index)
     {
         var end = state.EndAttacks[number];
@@ -275,12 +288,19 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
         {
             if (EndAttackTargets.Count > index + 1) enemy?.Cast(end.CloneHit, EndAttackTargets[index + 1]);
         });
-        world.Events.Add(start + 6f, () => enemy?.Face(party.Player));
+        world.Events.Add(start + 6f, () => enemy?.Face(PartyCentre()));
         world.Events.Add(start + 6.1f, () => enemy?.Cast(end.AllThingsEnding));
         world.Events.Add(start + 14.1f, () => enemy?.PlayActionTimeline(ActionTimelineId.WarpStart));
     }
 
-    
+
+    // Kefka and the clones aim All Things Ending at the party as a whole.
+    private Vector3 PartyCentre()
+    {
+        var members = party.ActiveMembers().ToList();
+        return members.Count == 0 ? Vector3.Zero : members.Aggregate(Vector3.Zero, (sum, m) => sum + m.Position) / members.Count;
+    }
+
     private void Run_Kefka_40004FD0()
     {
         for (int i = 0; i < 3; i++)

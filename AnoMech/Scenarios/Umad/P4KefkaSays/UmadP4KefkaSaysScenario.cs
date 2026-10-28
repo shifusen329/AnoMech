@@ -7,6 +7,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -24,6 +25,7 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
     public string Name => "Kefka Says";
     public IPhase Phase => UmadZone.P4;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
 
     public void DrawSettings() => settingsWindow.Draw();
     public object SettingsOverrides => settingsWindow.Overrides;
@@ -48,12 +50,17 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
     // UmadP3BlackHoleScenario.LastState.
     public UmadP4KefkaSaysState? LastState { get; private set; }
 
+    private SimEnemy? kefka;
+
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
         party = worldParam.Party;
         state = new UmadP4KefkaSaysState(world.Rng, party, settingsWindow.Overrides);
         LastState = state;
+        kefka = null;
+        world.MitPractice.Begin(UmadP4KefkaSaysMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         if (selectedAi is { } idx && idx < AiStrats.Count)
             ((IScenarioAi<UmadP4KefkaSaysState>)AiStrats[idx]).Run(state, world);
 
@@ -188,7 +195,7 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
     private void Run_Kefka_40004142()
     {
         SimEnemy? kefka_40004142 = null;
-        world.Events.Add(0f, () => kefka_40004142 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Kefka, NameId: BNpcNameId.Kefka, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible, LayoutId: BNpcLayoutId.KefkaP4, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 3.140f))));
+        world.Events.Add(0f, () => kefka = kefka_40004142 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Kefka, NameId: BNpcNameId.Kefka, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible, LayoutId: BNpcLayoutId.KefkaP4, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 3.140f))));
         world.Events.Add(1.36f, () => kefka_40004142?.Cast(UmadActions.AutoAttack, party.Get(PartyRole.MainTank)));
         world.Events.Add(1.45f, () => kefka_40004142?.Cast(ActionId.KefkaSays, animationLock: 3.1f));
         world.Events.Add(9.41f, () => kefka_40004142?.Cast(UmadActions.AutoAttack, party.Get(PartyRole.MainTank)));

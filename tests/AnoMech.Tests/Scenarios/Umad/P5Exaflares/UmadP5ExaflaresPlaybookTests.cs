@@ -18,7 +18,7 @@ public class UmadP5ExaflaresPlaybookTests
         foreach (var left in Orders)
             foreach (var right in Orders)
             {
-                var state = UmadP5ExaflaresState.FromNetworkReplay(left, right, new EventScheduler());
+                var state = UmadP5ExaflaresState.FromNetworkReplay(left, right);
                 var context = $"left {string.Join("", left)} right {string.Join("", right)}";
                 PlaybookAssert.ExplainsEveryRole(UmadP5ExaflaresPlaybook.FanOut, context);
                 for (var wave = 0; wave < 6; wave++)
@@ -32,7 +32,7 @@ public class UmadP5ExaflaresPlaybookTests
     [Test]
     public void ExaflaresOffersTheOuterLaneOnlyBeyondAnOffCentrePair()
     {
-        var state = UmadP5ExaflaresState.FromNetworkReplay([2, 5, 1, 4, 3, 6], [3, 6, 2, 5, 1, 4], new EventScheduler());
+        var state = UmadP5ExaflaresState.FromNetworkReplay([2, 5, 1, 4, 3, 6], [3, 6, 2, 5, 1, 4]);
         Assert.That(UmadP5ExaflaresPlaybook.Wave(state, 0).Why(PartyRole.CasterDps), Does.Not.Contain("open lane"));
         Assert.That(UmadP5ExaflaresPlaybook.Wave(state, 1).Why(PartyRole.CasterDps), Does.Contain("open lane"));
         Assert.That(UmadP5ExaflaresPlaybook.Wave(state, 2).Why(PartyRole.RegenHealer), Does.Contain("open lane"));

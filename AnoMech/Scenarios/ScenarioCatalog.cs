@@ -17,6 +17,7 @@ using AnoMech.Scenarios.Ucob.P5Exaflares;
 using AnoMech.Scenarios.Umad;
 using AnoMech.Scenarios.Umad.P1TeleTrouncing;
 using AnoMech.Scenarios.Umad.P2Forsaken;
+using AnoMech.Scenarios.Umad.P2Trines;
 using AnoMech.Scenarios.Umad.P3BlackHole;
 using AnoMech.Scenarios.Umad.P3LimitCut;
 using AnoMech.Scenarios.Umad.P4KefkaSays;
@@ -73,6 +74,7 @@ public sealed class ScenarioCatalog
     [
         new UmadP1TeleTrouncingScenario(),
         new UmadP2ForsakenScenario(),
+        new UmadP2TrinesScenario(),
         new UmadP3LimitCutScenario(),
         new UmadP3BlackHoleScenario(),
         new UmadP4KefkaSaysScenario(),

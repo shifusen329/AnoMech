@@ -148,6 +148,40 @@ public static class UmadActions
         Timing = new() { DamageDelay = 0.62f },
     };
 
+    // -- P2 Trines --
+
+    // Two corners of one drop on the same player kill (UmadP2TrinesScenario counts them).
+    public static readonly EnemyAction TrinePoint = new(UmadConstants.ActionId.TrinePoint)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Effects = [Damage(), ApplyStatus(UmadConstants.StatusId.DamageDown, 180f, delayToEffectResult: true)],
+    };
+
+    // The lit wing's half of the room, cast at a point 20y to that side and 40y behind Kefka, along
+    // his facing.
+    public static readonly EnemyAction WingsOfDestructionLeft = WingsOfDestructionHalf(UmadConstants.ActionId.WingsOfDestructionLeft);
+    public static readonly EnemyAction WingsOfDestructionRight = WingsOfDestructionHalf(UmadConstants.ActionId.WingsOfDestructionRight);
+
+    private static EnemyAction WingsOfDestructionHalf(uint actionId) => new(actionId)
+    {
+        Cast = new() { AnimationLock = 3.1f },
+        Effects = [Damage(Lethal)],
+    };
+
+    // On the farthest and the nearest player. UNVERIFIED how much mitigation it needs.
+    public static readonly EnemyAction WingsOfDestructionBuster = new(UmadConstants.ActionId.WingsOfDestructionBuster)
+    {
+        Cast = new() { AnimationLock = 1.1f, FaceTarget = false },
+        Effects = [Damage(MagicVulns, TankBuster.MinMit(0.55f)), MagicVulnerabilityUp],
+    };
+
+    // Shared by both tanks; one alone needs an invuln. UNVERIFIED how much mitigation either needs.
+    public static readonly EnemyAction UltimateEmbrace = new(UmadConstants.ActionId.UltimateEmbrace)
+    {
+        Cast = new() { AnimationLock = 3.1f },
+        Effects = [Damage(TankBuster.MinMit(0.30f), split: Stack(2, understacked: TankBuster.MinMit(0.80f)))],
+    };
+
     // -- P3 Black Hole --
 
     public static readonly EnemyAction ExdeathAutoAttack = new(UmadConstants.ActionId.AutoAttack2)

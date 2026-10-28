@@ -14,7 +14,7 @@ internal static class UmadP5ExaflaresMitigation
     // Raw on a physical DPS, per spread a player stands in.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(StrayEntropy, "Stray Entropy", 155000f, null),
+        new(StrayEntropy, "Stray Entropy", 155000f, null, ActionIds: [UmadConstants.ActionId.ExaflareSpread]),
     ];
 
     public static MitPlanData Plan() => new(UmadMitigation.Profile, Hits, [new(25.09f, [StrayEntropy])], Rows, UmadMitigation.Kefka);

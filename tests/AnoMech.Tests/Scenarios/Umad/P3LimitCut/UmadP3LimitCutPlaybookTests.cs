@@ -2,7 +2,6 @@ using AnoMech.Core.Game.Party;
 using AnoMech.Scenarios.Umad.P1Shared;
 using AnoMech.Scenarios.Umad.P3BlackHole;
 using AnoMech.Scenarios.Umad.P3LimitCut;
-using Geometry = AnoMech.Scenarios.Umad.P3LimitCut.UmadP3LimitCutConstants.Geometry;
 
 namespace AnoMech.Tests;
 
@@ -54,7 +53,7 @@ public class UmadP3LimitCutPlaybookTests
             {
                 var k = state.NumberOf(role) - 1;
                 var across = (state.ChargeSpot(k) + 4) % 8;
-                var lean = state.SafeHeading(k) - Geometry.SpotHeading(across);
+                var lean = state.SafeHeading(k) - UmadP3LimitCutState.SpotHeading(across);
                 lean = MathF.IEEERemainder(lean, 2f * MathF.PI);
                 Assert.That(MathF.Abs(lean), Is.EqualTo(MathF.PI / 8f).Within(1e-4f), context);
                 var why = UmadP3LimitCutPlaybook.Charges(state).Why(role);

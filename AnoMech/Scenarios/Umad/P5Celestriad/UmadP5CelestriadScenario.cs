@@ -6,6 +6,7 @@ using System.Numerics;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
 using static AnoMech.Scenarios.Umad.UmadConstants;
@@ -30,6 +31,7 @@ public sealed class UmadP5CelestriadScenario : IMultiplayerReplayable
     public IPhase Phase => UmadZone.P5;
     public bool SupportsSolo => false;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
 
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP5CelestriadAi()];
 
@@ -56,6 +58,8 @@ public sealed class UmadP5CelestriadScenario : IMultiplayerReplayable
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
+        world.MitPractice.Begin(UmadP5CelestriadMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         party = worldParam.Party;
         state = new UmadP5CelestriadState(world.Rng, party, settingsWindow.Overrides);
         LastState = state;

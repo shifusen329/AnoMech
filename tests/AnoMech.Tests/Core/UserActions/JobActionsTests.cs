@@ -28,11 +28,11 @@ public class JobActionsTests
     [Test]
     public void EveryGrantedStatusIsARealStatus()
     {
-        var data = new DataminingGameData();
+        var data = new DataminingGameData(new FakeRsvFunctions());
         foreach (var actionId in new uint[] { 7549, 7560, 2887, 7405, 16889, 16012, 16014, 25789, 25857, 34685, 34686,
                      16536, 37011, 7433, 16559, 37031, 37030, 3601, 3613, 3585, 186, 37013, 25868, 188, 16545, 16546, 16538,
                      24298, 24300, 37034, 24292, 24310, 24311 })
             foreach (var (statusId, _) in JobActions.GrantsOf(actionId))
-                Assert.That(data.StatusName(statusId), Is.Not.Null, $"action {actionId} grants unknown status {statusId}");
+                Assert.That(data.Status(statusId), Is.Not.Null, $"action {actionId} grants unknown status {statusId}");
     }
 }

@@ -87,7 +87,17 @@ public sealed partial class MultiplayerManager
     }
 
     private void OnPartyMemberKilledHost(PartyRole role, string cause, uint? actionId, ushort? statusId)
-        => _ = Send(new RoleKilledMessage(role, cause));
+        => _ = Send(new RoleKilledMessage(role, cause, BuildRecapState(role)));
+
+    private static DeathRecapState BuildRecapState(PartyRole role)
+    {
+        var (strat, aoe, progress) = Plugin.Game.RecapFor(role);
+        return new DeathRecapState(
+            strat != null, strat?.Spot.X ?? 0f, strat?.Spot.Z ?? 0f, strat?.IssuedAt ?? 0f, strat?.Deadline,
+            strat?.Mechanic, strat?.Why, strat?.Source,
+            aoe?.ActionId ?? 0u, aoe?.Source.Position.X ?? 0f, aoe?.Source.Position.Z ?? 0f, aoe?.Source.Rotation ?? 0f,
+            aoe?.OmenRotate ?? 0f, aoe?.Size, progress);
+    }
 
     // The host reads its own bookkeeping; a peer reads what the host relayed (PeerStatusMessage).
     public bool IsPeerStale(Guid peerId) => IsHost

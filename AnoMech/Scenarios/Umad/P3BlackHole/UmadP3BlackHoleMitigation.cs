@@ -26,16 +26,16 @@ internal static class UmadP3BlackHoleMitigation
     // cooldowns.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(Earthquake, "Earthquake", 80000f, null),
-        new(ShockingImpact, "Shocking Impact", 188000f, null),
-        new(Shockwave, "Shockwave", 220000f, null),
-        new(ThunderIII, "Thunder III", 566000f, null, TankBuster: true),
-        new(KnockDown, "Knock Down", 190000f, null),
-        new(StompAMole, "Stomp-a-Mole", 205000f, null),
+        new(Earthquake, "Earthquake", 80000f, null, ActionIds: [UmadConstants.ActionId.Earthquake_Cleanse]),
+        new(ShockingImpact, "Shocking Impact", 188000f, null, ActionIds: [UmadConstants.ActionId.ShockingImpact]),
+        new(Shockwave, "Shockwave", 220000f, null, ActionIds: [UmadConstants.ActionId.ShockwaveCone]),
+        new(ThunderIII, "Thunder III", 566000f, null, TankBuster: true, ActionIds: [UmadConstants.ActionId.ThunderIII_Resolve]),
+        new(KnockDown, "Knock Down", 190000f, null, ActionIds: [UmadConstants.ActionId.KnockDown]),
+        new(StompAMole, "Stomp-a-Mole", 205000f, null, ActionIds: [UmadConstants.ActionId.StompAMole]),
     ];
 
-    private const float Quake1 = 12.38f;
-    private const float Quake2 = 16.30f;
+    private const float Quake1 = 13.40f;
+    private const float Quake2 = 17.32f;
     private const float Shocking = 24.81f;
     private const float Shockwave1 = 55.26f;
     private const float Quake3 = 64.39f;

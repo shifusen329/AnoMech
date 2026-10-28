@@ -21,11 +21,11 @@ internal static class UmadP4KefkaSaysMitigation
     // Raw on a physical DPS, per player hit: Death Bolt on a three, Death Wave on one.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(GrandCross, "Grand Cross", 296000f, null),
-        new(InfernoTsunami, "Inferno/Tsunami", 230000f, null),
-        new(DeathBolt, "Death Bolt", 172000f, null),
-        new(DeathWave, "Death Wave", 225000f, null),
-        new(UltimaUpsurge, "Ultima Upsurge", 215000f, UmadMitigation.Kefka),
+        new(GrandCross, "Grand Cross", 296000f, null, ActionIds: [UmadConstants.ActionId.GrandCross]),
+        new(InfernoTsunami, "Inferno/Tsunami", 230000f, null, ActionIds: [UmadConstants.ActionId.Inferno_Visual, UmadConstants.ActionId.Tsunami_Visual]),
+        new(DeathBolt, "Death Bolt", 172000f, null, ActionIds: [UmadConstants.ActionId.DeathBolt, UmadConstants.ActionId.DeathBolt_Lie]),
+        new(DeathWave, "Death Wave", 225000f, null, ActionIds: [UmadConstants.ActionId.DeathWave, UmadConstants.ActionId.DeathWave_Lie]),
+        new(UltimaUpsurge, "Ultima Upsurge", 215000f, UmadMitigation.Kefka, ActionIds: [UmadConstants.ActionId.UltimaUpsurge]),
     ];
 
     private const float GrandCross1 = 20.37f;

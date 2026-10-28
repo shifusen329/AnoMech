@@ -18,9 +18,9 @@ public class TetherEndTests
         fake = FakeGame.Install();
         fake.BattleCharas.Player.ClassJob = (byte)JobId.Sage;
         var game = new Game();
-        DalamudServices.Install(nameof(Plugin.GameInstance), game);
+        DalamudServices.Install(nameof(Plugin.Game), game);
         world = game.World;
-        world.CreateParty((uint)JobId.Sage);
+        world.SeatParty(new LocalPartyProvider().Roster((uint)JobId.Sage));
         for (var i = 0; i < 8; i++)
             world.Party.Get(i)?.SetPosition(new Vector3(6f, 0f, 6f));
     }
@@ -29,7 +29,7 @@ public class TetherEndTests
     public void RemoveGame()
     {
         world.Despawn();
-        DalamudServices.Install(nameof(Plugin.GameInstance), null!);
+        DalamudServices.Install(nameof(Plugin.Game), null!);
     }
 
     private SimEnemy Hole(float x, float z) =>

@@ -7,6 +7,7 @@ using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Map;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
 using static AnoMech.Scenarios.Umad.UmadConstants;
@@ -24,6 +25,7 @@ public sealed class UmadP5ExaflaresScenario : IMultiplayerReplayable
     public IPhase Phase => UmadZone.P5;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
 
     // Enemy spawn level.
     private const byte Level = 100;
@@ -65,6 +67,8 @@ public sealed class UmadP5ExaflaresScenario : IMultiplayerReplayable
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
+        world.MitPractice.Begin(UmadP5ExaflaresMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         party = worldParam.Party;
         state = new UmadP5ExaflaresState(world.Rng, settingsWindow.Overrides);
         LastState = state;

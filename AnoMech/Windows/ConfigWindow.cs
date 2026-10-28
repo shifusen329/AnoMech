@@ -56,6 +56,15 @@ public class ConfigWindow : Window, IDisposable
             configuration.Save();
         }
 
+        var deathRecap = configuration.ShowDeathRecap;
+        if (ImGui.Checkbox("Show a recap when you die", ref deathRecap))
+        {
+            configuration.ShowDeathRecap = deathRecap;
+            configuration.Save();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Where you died, where the strat had you and why. Holds an auto-restart until you close it.");
+
         var userActions = configuration.EnableUserActions;
         if (ImGui.Checkbox("Resolve your own actions", ref userActions))
         {

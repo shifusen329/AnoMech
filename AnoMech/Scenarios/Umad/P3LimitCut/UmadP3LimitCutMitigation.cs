@@ -21,10 +21,10 @@ internal static class UmadP3LimitCutMitigation
     // Thunder III is what the tank takes before cooldowns.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(UltimaBlaster, "Ultima Blaster", 43000f, null),
-        new(Cyclone, "Cyclone", 198000f, null),
-        new(UltimaBlasterCharge, "Ultima Blaster", 124000f, null),
-        new(ThunderIII, "Thunder III", 566000f, null, TankBuster: true),
+        new(UltimaBlaster, "Ultima Blaster", 43000f, null, ActionIds: [UmadConstants.ActionId.UltimaBlaster]),
+        new(Cyclone, "Cyclone", 198000f, null, ActionIds: [UmadConstants.ActionId.Cyclone]),
+        new(UltimaBlasterCharge, "Ultima Blaster", 124000f, null, ActionIds: [UmadConstants.ActionId.UltimaBlasterCharge]),
+        new(ThunderIII, "Thunder III", 566000f, null, TankBuster: true, ActionIds: [UmadConstants.ActionId.ThunderIII_Resolve]),
     ];
 
     private const float Blaster1 = 8.89f;

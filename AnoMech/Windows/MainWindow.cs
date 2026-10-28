@@ -230,7 +230,7 @@ public unsafe class MainWindow : Window, IDisposable
         // Not on a failure the run plays on from: expanding mid-fight gets in the way.
         if (status >= SessionStatus.Frozen && status != _lastStatus)
         {
-            RequestCollapsed(false);
+            if (!HoldsCollapsed(died: status is SessionStatus.Frozen or SessionStatus.CompletedFailed)) RequestCollapsed(false);
         }
         else if (!scenarioActive && _wasScenarioActive)
         {
@@ -296,6 +296,17 @@ public unsafe class MainWindow : Window, IDisposable
     {
         var window = ImGuiP.FindWindowByName(WindowName);
         IsActuallyCollapsed = !window.IsNull && window.Collapsed;
+    }
+
+    // A collapsed window stays collapsed through an outcome auto-restart will rerun, rather than
+    // opening over the arena every run; one it won't rerun opens so Start is in reach.
+    private bool HoldsCollapsed(bool died)
+    {
+        var practice = Plugin.Practice;
+        if (!practice.AutoRestart || !IsActuallyCollapsed) return false;
+        return died
+            ? practice.AutoRestartOn != AnoMech.Core.Game.AutoRestartTrigger.AfterSuccess
+            : practice.AutoRestartOn != AnoMech.Core.Game.AutoRestartTrigger.AfterDeath;
     }
 
     public override void Draw()
@@ -603,6 +614,8 @@ public unsafe class MainWindow : Window, IDisposable
                     if (!inSession) DrawRoleSelector();
                     DrawStratSelector(mpGuest);
                     DrawWaymarkSelector();
+                    if (!mpGuest && !SoloSelected) DrawBotTimingSelector();
+                    if (!mpGuest && !SoloSelected && scenario.SupportsMitigationPractice) DrawMitigationSelector();
                     SettingsGrid.End();
                 }
                 ImGui.TreePop();
@@ -910,7 +923,15 @@ public unsafe class MainWindow : Window, IDisposable
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             ImGui.SetTooltip(mpActive
                 ? MpDisabledReason
-                : "Restart the same scenario immediately after a successful run. A failed run turns this back off.");
+                : "Restart the same scenario automatically. A run that ends in a death restarts once the 5s death freeze begins.");
+        if (practice.AutoRestart && !mpActive)
+        {
+            ImGui.SameLine();
+            var trigger = (int)practice.AutoRestartOn;
+            ImGui.SetNextItemWidth(AutoRestartDropdownWidth * ImGuiHelpers.GlobalScale);
+            if (ImGui.Combo("##autoRestartOn", ref trigger, AutoRestartLabels, AutoRestartLabels.Length))
+                practice.AutoRestartOn = (AnoMech.Core.Game.AutoRestartTrigger)trigger;
+        }
         ImGui.SameLine();
         ImGui.TextDisabled($"Streak: {practice.Streak}");
     }
@@ -918,6 +939,50 @@ public unsafe class MainWindow : Window, IDisposable
     // Drawn below the strat picker for scenarios that declare WaymarkPresets. _selectedWaymark
     // is the index passed to RunScenario on Start; changing it while a scenario is loaded
     // re-places the markers immediately (same live-feedback loop as the position readout).
+    // Indexed by AutoRestartTrigger.
+    private static readonly string[] AutoRestartLabels = ["After a successful run", "After dying", "Both"];
+    private const float AutoRestartDropdownWidth = 170f;
+
+    // Indexed by !NaturalBotTiming.
+    private static readonly string[] BotTimingLabels = ["Natural", "Last moment"];
+
+    private void DrawBotTimingSelector()
+    {
+        var idx = Plugin.Config.NaturalBotTiming ? 0 : 1;
+        SettingsGrid.Row("Bot timing:");
+        ImGui.SetNextItemWidth(SetupDropdownWidth * ImGuiHelpers.GlobalScale);
+        if (ImGui.Combo("##bot-timing", ref idx, BotTimingLabels, BotTimingLabels.Length))
+        {
+            Plugin.Config.NaturalBotTiming = idx == 0;
+            Plugin.Config.Save();
+            Plugin.Game.World.NaturalBotTiming = idx == 0;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Natural: bots head to their next spot early and wait there, as players do.\n"
+                             + "Last moment: they leave as late as they can and arrive just in time.\n"
+                             + "Only P1 Graven Image 1 and 2 and P2 Forsaken have natural timing; other scenarios always move at the last moment.");
+    }
+
+    // Indexed by MitigationPractice.
+    private static readonly string[] MitigationLabels = ["Off", "Practice"];
+
+    private void DrawMitigationSelector()
+    {
+        var idx = Plugin.Config.MitigationPractice ? 1 : 0;
+        SettingsGrid.Row("Mitigation:");
+        ImGui.SetNextItemWidth(SetupDropdownWidth * ImGuiHelpers.GlobalScale);
+        if (ImGui.Combo("##mitigation", ref idx, MitigationLabels, MitigationLabels.Length))
+        {
+            Plugin.Config.MitigationPractice = idx == 1;
+            Plugin.Config.Save();
+            Plugin.Game.World.MitPractice.Enabled = idx == 1;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Practice: bots press the party mitigation sheet for the comp you're in, and your own planned presses are graded in chat when the run ends.\n"
+                             + "Hits lower HP bars; a hit that would kill only warns and names what was missing.\n"
+                             + "Grading needs \"Resolve your own actions\" on. Takes effect from the next start.");
+    }
+
     private void DrawWaymarkSelector()
     {
         if (_selectedScenario is null) return;

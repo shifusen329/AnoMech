@@ -5,6 +5,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Map;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
@@ -26,6 +27,7 @@ public sealed class UmadP5FloodScenario : IMultiplayerReplayable
     public float BgmSecondsAtStart => 38.83f;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP5FloodAi()];
 
     private const byte Level = 100;
@@ -113,6 +115,8 @@ public sealed class UmadP5FloodScenario : IMultiplayerReplayable
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
+        world.MitPractice.Begin(UmadP5FloodMitigation.Plan(),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         party = worldParam.Party;
         state = new UmadP5FloodState(world.Rng, settingsWindow.Overrides);
         LastState = state;

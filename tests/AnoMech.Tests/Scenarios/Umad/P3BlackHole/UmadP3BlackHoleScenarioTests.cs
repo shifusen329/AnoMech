@@ -14,17 +14,18 @@ namespace AnoMech.Tests;
 //
 //   22.15  Slap rows at (10,-10) (10,0) (10,10), 0.65s apart; 24.45 Final Slap r=6 on the centre;
 //          24.82 cones from the centre onto DPS (-7,7), tanks (-7,-7), healers (-9,0).
-//   42.63  Thunder III on MT (-5.2,0.6), Exdeath at (-2.8,-2.8); again at 45.63.
-//   50.28  Damning Edict from Chaos (-5.7,2.7) facing north; again at 77.57 from (-5.9,4.0).
+//   42.63  Thunder III on MT (-6.1,0.7), Exdeath at (-3.2,-2.5); again at 45.63.
+//   50.28  Damning Edict from Chaos (-3.8,-0.9) facing south-west; again at 77.57 from (-2.4,1.7)
+//          facing north-east.
 //   52.60  Slap rows at x=-10; 54.91 Final Slap; 55.27 Shocking Impact on the party at (9,0).
-//   62.83  M1 (5.5,12.1) spends its crust on the (17,0) hole; M2 takes that tether at (7.6,10.0),
+//   62.83  M1 (3.5,8.7) spends its crust on the (17,0) hole; M2 takes that tether at 64,
 //          M1 heads back to the centre at 66. Every 5.1s a shot, a crust spent each time.
 //   78.99  Look upon Me and Despair, a 16y-wide band down the middle; again at 137.05.
-//   83.95  Thunder III on MT (-3.8,3.3), Exdeath at (-7.2,6.0); 86.95 on OT.
-//  102.22  OT (-10,7.6) spends its crust on the (0,17) hole; C (-7.6,-10) takes its second hit.
-//  119.09  Shockwaves from Chaos (-1,1.1) along the NE-SW diagonal; 121.11 NW-SE.
+//   83.95  Thunder III on MT (-3.0,0.8), Exdeath at (-7.2,1.8); 86.95 on OT.
+//  102.22  OT (-8.7,3.5) spends its crust on the (0,17) hole; C (-3.5,-8.7) takes its second hit.
+//  119.09  Shockwaves from Chaos (-1.3,0.8) along the NE-SW diagonal; 121.11 NW-SE.
 //  120.58  Slap rows at x=10; 122.89 Final Slap; 123.26 the same cones as at 24.82.
-//  146.68  Blizzard III on everyone at (0,-5) supports and (0,5) DPS, landing 149.38.
+//  146.68  Blizzard III on everyone at (0,-9) supports and (0,9) DPS, landing 149.38.
 //  151.91  West tower (-10,0) M1 R; 152.14 Knock Down on SH, the supports stacked at the centre;
 //          153.20 east tower (10,0) M2 C, 154.50 west RH MT, 155.84 east SH OT.
 //
@@ -86,11 +87,11 @@ public class UmadP3BlackHoleScenarioTests
             .TeleportAt(24.7f, to: new(-8.3f, 3.4f))
             .ShouldKill(ActionId.ShockwaveCone, OffTank);
 
-    [TestCase(50f)]
-    [TestCase(77.3f)]
-    public void StandingInFrontOfChaosDiesToEdict(float at)
+    [TestCase(50f, -12f, 5f)]
+    [TestCase(77.3f, 0f, -10f)]
+    public void StandingInFrontOfChaosDiesToEdict(float at, float x, float z)
         => BlackHole(MeleeDpsA)
-            .TeleportAt(at, to: new(0, -10))
+            .TeleportAt(at, to: new(x, z))
             .ShouldKill(ActionId.DamningEdict, MeleeDpsA);
 
     [Test]
@@ -120,7 +121,7 @@ public class UmadP3BlackHoleScenarioTests
     [Test]
     public void TwoCrustsSpentTogetherWipe()
         => BlackHole(CasterDps)
-            .TeleportAt(101.9f, to: new(-16.5f, 2.5f))
+            .TeleportAt(101.9f, to: new(-12.7f, -2.8f))
             .ShouldKill(ActionId.Earthquake_Cleanse, PerRole.All);
 
     [TestCase(78.7f)]

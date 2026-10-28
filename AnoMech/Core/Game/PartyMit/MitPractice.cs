@@ -156,7 +156,7 @@ public sealed class MitPractice
     // on everyone it caught, and what each lost replaces the flytext's stock number.
     internal IReadOnlyDictionary<SimCharacter, uint> Resolved(uint actionId, IReadOnlyList<SimCharacter> hits)
     {
-        if (!IsActive || !hpMode || data!.Hits.FirstOrDefault(h => h.ActionId == actionId) is not { Raw: not null } hit)
+        if (!IsActive || !hpMode || data!.Hits.FirstOrDefault(h => h.ActionIds?.Contains(actionId) == true) is not { Raw: not null } hit)
             return new Dictionary<SimCharacter, uint>();
         var now = clock();
         var shown = new Dictionary<SimCharacter, uint>();

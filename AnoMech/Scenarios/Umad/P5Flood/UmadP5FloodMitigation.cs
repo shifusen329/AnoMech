@@ -14,7 +14,7 @@ internal static class UmadP5FloodMitigation
     // Raw on a physical DPS, per player in the stack.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(ChaoticFlood, "Chaotic Flood", 74000f, null),
+        new(ChaoticFlood, "Chaotic Flood", 74000f, null, ActionIds: [UmadConstants.ActionId.ChaoticFlood]),
     ];
 
     private const float Flood1 = 6.33f;

@@ -21,16 +21,17 @@ public static class UmadP1Hits
 
     public static readonly IReadOnlyList<MitHitDef> All =
     [
-        new(FlagrantFire, "Flagrant Fire III", 208000f, UmadMitigation.Kefka),
+        new(FlagrantFire, "Flagrant Fire III", 208000f, UmadMitigation.Kefka,
+            ActionIds: [UmadConstants.ActionId.FlagrantFireSpread, UmadConstants.ActionId.FlagrantFireStack]),
         new(WaveCannon, "Wave Cannon", 308000f, null),
         new(Explosion, "Explosion", 311000f, UmadMitigation.Kefka),
-        new(DoubleTroubleTrap, "Double-trouble Trap", 168000f, UmadMitigation.Kefka),
+        new(DoubleTroubleTrap, "Double-trouble Trap", 168000f, UmadMitigation.Kefka, ActionIds: [UmadConstants.ActionId.DoubleTroubleTrapStack]),
         new(LightOfJudgment, "Light of Judgment", 293000f, UmadMitigation.Kefka),
         new(Hyperdrive, "Hyperdrive", 568000f, UmadMitigation.Kefka, TankBuster: true, Fresh: true),
         new(Gravitas, "Gravitas", 53000f, null),
         new(Vitrophyre, "Vitrophyre", 21000f, null),
         new(GravityIII, "Gravity III", 62000f, UmadMitigation.Kefka),
-        new(IdyllicWill, "Idyllic Will", 209000f, null),
-        new(IndulgentWill, "Indulgent Will", 206000f, null),
+        new(IdyllicWill, "Idyllic Will", 209000f, null, ActionIds: [UmadConstants.ActionId.IdyllicWill]),
+        new(IndulgentWill, "Indulgent Will", 206000f, null, ActionIds: [UmadConstants.ActionId.IndulgentWill]),
     ];
 }

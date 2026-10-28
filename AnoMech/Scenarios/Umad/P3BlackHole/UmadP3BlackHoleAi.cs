@@ -142,9 +142,9 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
             world.Events.Add(125.9f, () => GrabNewTether(tetherIndex: 0, playerIndex: 2));
             world.Events.Add(126.9f, () => GrabOtherTether(playerIndex: 2));
             world.Events.Add(128f, () => HoldBothTethers(playerIndex: 2));
-            world.Events.Add(130.8f, () => ReturnToMiddle(playerIndex: 2));
-            world.Events.Add(130.8f, () => GrabTether(tetherIndex: 0, playerIndex: 6));
-            ScheduleTetherRegrab(131.2f, 134f, tetherIndex: 0, playerIndex: 6);
+            world.Events.Add(131f, () => ReturnToMiddle(playerIndex: 2));
+            world.Events.Add(132f, () => GrabTether(tetherIndex: 0, playerIndex: 6));
+            ScheduleTetherRegrab(132.4f, 134f, tetherIndex: 0, playerIndex: 6);
             ai.Move(134f, () => DodgeLookUponSplitHolder(tetherPlayerIndex: 6, lookKefkaIndex: 4, leaveWithoutTether: false), sprint: true, cue: lookSplit);
             ai.Move(134f, () => DodgeLookUponSplitOthers(tetherPlayerIndex: 6, lookKefkaIndex: 4), sprint: true, cue: lookSplit);
             ai.Move(134.5f, () => DodgeLookUponSplitHolder(tetherPlayerIndex: 6, lookKefkaIndex: 4, leaveWithoutTether: false), sprint: true, cue: lookSplit);
@@ -175,7 +175,7 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
     private static IAiMove StackCentreTanksHoldBossesCentred() =>
         AiMove.Create(
             new(6.0f, 0f),
-            new(3.8f, 0f),
+            new(-3.8f, 0f),
             new(0f, 0f),
             new(0f, 0f),
             new(0f, 0f),
@@ -727,9 +727,28 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
             return;
         }
         pairedHole[seat] = other.A;
-        AnoMech.Core.DiagnosticLog.Info($"[UmadP3BlackHoleAi] GrabOtherTether: {role} intercepting the second tether (black hole at ({other.A?.Position.X:F1},{other.A?.Position.Z:F1})).");
-        world.Strat.Note(state.Roles[seat], UmadP3BlackHolePlaybook.TetherGrabSpot(other, player, 3f), UmadP3BlackHolePlaybook.GrabBoth(state, tetherOrder), deadline: null);
-        player.Intercept(other, 3f);
+        var spot = SecondBeamSpotOnTheDoubleHoldSide(other, firstHole) ?? UmadP3BlackHolePlaybook.TetherGrabSpot(other, player, 3f);
+        AnoMech.Core.DiagnosticLog.Info($"[UmadP3BlackHoleAi] GrabOtherTether: {role} taking the second tether (black hole at ({other.A?.Position.X:F1},{other.A?.Position.Z:F1})) at ({spot.X:F1},{spot.Y:F1}).");
+        world.Strat.Note(state.Roles[seat], spot, UmadP3BlackHolePlaybook.GrabBoth(state, tetherOrder), deadline: null);
+        player.MoveTo(new Vector3(spot.X, 0f, spot.Y));
+    }
+
+    private const float SecondBeamEndInset = 3f;
+
+    private static Vector2? SecondBeamSpotOnTheDoubleHoldSide(SimTether beam, SimCharacter? firstHole)
+    {
+        if (beam is not { A: { } hole, B: { } holder } || firstHole is null) return null;
+        var holeAt = new Vector2(hole.Position.X, hole.Position.Z);
+        var firstAt = new Vector2(firstHole.Position.X, firstHole.Position.Z);
+        var between = Vector2.Normalize(holeAt) + Vector2.Normalize(firstAt);
+        if (between.LengthSquared() < 1e-3f) return null;
+        var hold = Vector2.Normalize(between) * DoubleTetherHoldRadius;
+        var segment = new Vector2(holder.Position.X, holder.Position.Z) - holeAt;
+        var length = segment.Length();
+        if (length < 2f * SecondBeamEndInset) return holeAt + segment * 0.5f;
+        var inset = SecondBeamEndInset / length;
+        var t = Math.Clamp(Vector2.Dot(hold - holeAt, segment) / (length * length), inset, 1f - inset);
+        return holeAt + segment * t;
     }
 
     private void HoldBothTethers(int playerIndex, int retriesLeft = HoldBothTethersMaxRetries)
@@ -781,7 +800,8 @@ public sealed class UmadP3BlackHoleAi(UmadP3BlackHoleAi.TetherOrder tetherOrder)
     {
         var coords = new Vector2?[8];
         var offTankHoldsAWaveOneTether = state.Roles[TetherSeat(0)] == PartyRole.OffTank || state.Roles[TetherSeat(4)] == PartyRole.OffTank;
-        if (!offTankHoldsAWaveOneTether && firstTetherHole is { } hole)
+        var offTankTakesTheFirstThunder = ThunderIIIPlanning.Roles(state.ThunderSet1).First == PartyRole.OffTank;
+        if (offTankTakesTheFirstThunder && !offTankHoldsAWaveOneTether && firstTetherHole is { } hole)
         {
             var bearing = new Vector2(hole.Position.X, hole.Position.Z);
             if (bearing.LengthSquared() > 1e-4f)

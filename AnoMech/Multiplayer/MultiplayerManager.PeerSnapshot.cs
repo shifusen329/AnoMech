@@ -301,10 +301,33 @@ public sealed partial class MultiplayerManager
         var cause = NetGuard.Clean(msg.Cause);
         DiagnosticLog.Info($"[Multiplayer] {msg.Role} killed: {cause}");
         if (Plugin.Game.World.Party.Get(msg.Role) is ISimPartyMember member)
-            Plugin.Game.Kill(member, cause);
+        {
+            var (strat, aoe, progress) = ReadRecap(msg.Role, msg.Recap);
+            Plugin.Game.Kill(member, cause, hostStrat: strat, hostAoe: aoe, hostProgress: progress);
+        }
         else
             DiagnosticLog.Debug($"[Multiplayer] RoleKilled for {msg.Role} but that slot isn't an ISimPartyMember locally -- dropping.");
     }
+
+    private static (AnoMech.Core.Game.Ai.StratTarget? Strat, AoeQuery? Aoe, string? Progress) ReadRecap(PartyRole role, DeathRecapState? recap)
+    {
+        if (recap == null) return (null, null, null);
+        AnoMech.Core.Game.Ai.StratTarget? strat = null;
+        if (recap.HasSpot && NetGuard.TryPosition(recap.SpotX, 0f, recap.SpotZ, out var spot) && NetGuard.IsFinite(recap.IssuedAt))
+            strat = new AnoMech.Core.Game.Ai.StratTarget(role, spot, recap.IssuedAt,
+                recap.Deadline is { } d && NetGuard.IsFinite(d) ? d : null,
+                Optional(recap.Mechanic, NetGuard.MaxStringLength), Optional(recap.Why, NetGuard.MaxRecapTextLength),
+                Optional(recap.Source, NetGuard.MaxStringLength));
+        AoeQuery? aoe = null;
+        if (recap.AoeActionId != 0 && SimAssets.Allow(SimAssetKind.Action, recap.AoeActionId, "death recap")
+            && NetGuard.TryPosition(recap.AoeX, 0f, recap.AoeZ, out var origin))
+            aoe = new AoeQuery(recap.AoeActionId, new Placement(origin, NetGuard.Rotation(recap.AoeRotation)),
+                NetGuard.Rotation(recap.AoeOmenRotate), recap.AoeSize is { } size && NetGuard.IsFinite(size) ? size : null);
+        return (strat, aoe, Optional(recap.Progress, NetGuard.MaxStringLength));
+    }
+
+    private static string? Optional(string? value, int maxLength)
+        => string.IsNullOrEmpty(value) ? null : NetGuard.Clean(value, maxLength);
 
     // The hit's ActionEffect already carried the knockback entry, which this client's own player
     // acts on; the forced move holds a debug bot's walk for it, or pushes for a row the client

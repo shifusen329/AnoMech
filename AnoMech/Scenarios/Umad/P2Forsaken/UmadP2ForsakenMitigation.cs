@@ -22,12 +22,12 @@ internal static class UmadP2ForsakenMitigation
     // debuffs on Kefka.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(Forsaken, "Forsaken", 548000f, UmadMitigation.Kefka),
-        new(Spelldriver, "Spelldriver", 189000f, UmadMitigation.Kefka),
-        new(Spellscatter, "Spellscatter", 196000f, UmadMitigation.Kefka),
-        new(Spellwave, "Spellwave", 189000f, UmadMitigation.Kefka),
-        new(PastsEnd, "Past's End", 168000f, UmadMitigation.Kefka),
-        new(FuturesEnd, "Future's End", 168000f, UmadMitigation.Kefka),
+        new(Forsaken, "Forsaken", 548000f, UmadMitigation.Kefka, ActionIds: [UmadConstants.ActionId.Forsaken]),
+        new(Spelldriver, "Spelldriver", 189000f, UmadMitigation.Kefka, ActionIds: [UmadConstants.ActionId.Spelldriver]),
+        new(Spellscatter, "Spellscatter", 196000f, UmadMitigation.Kefka, ActionIds: [UmadConstants.ActionId.Spellscatter]),
+        new(Spellwave, "Spellwave", 189000f, UmadMitigation.Kefka, ActionIds: [UmadConstants.ActionId.Spellwave]),
+        new(PastsEnd, "Past's End", 168000f, UmadMitigation.Kefka, ActionIds: [UmadConstants.ActionId.PastSEnd_Resolve, UmadConstants.ActionId.PastSEnd_CloneResolve]),
+        new(FuturesEnd, "Future's End", 168000f, UmadMitigation.Kefka, ActionIds: [UmadConstants.ActionId.FutureSEnd_Resolve, UmadConstants.ActionId.FutureSEnd_CloneResolve]),
     ];
 
     private const float ForsakenHit = 9.46f;

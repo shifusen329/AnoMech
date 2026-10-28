@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
+using AnoMech.Core.Game.Party;
 using AnoMech.Core.SimObjects;
 
 namespace AnoMech.Scenarios.Umad.P5Flood;
@@ -35,8 +36,9 @@ public sealed class UmadP5FloodAi : IScenarioAi<UmadP5FloodState>
     public void Run(UmadP5FloodState state, SimWorld world)
     {
         var firstWave = UmadP5FloodScenario.FirstTelegraphAt + UmadP5FloodScenario.ResolveDelayAfterTelegraph;
-        new AiManager(world).Move(UmadP5FloodScenario.FirstTelegraphAt, () => ClumpAt(QuadrantAt(state, 0)), jitter: 0f,
-            arrivalTime: firstWave - ArriveBeforeFirstWave);
+        var start = QuadrantAt(state, 0);
+        new AiManager(world).Move(UmadP5FloodScenario.FirstTelegraphAt, () => ClumpAt(start), jitter: 0f,
+            arrivalTime: firstWave - ArriveBeforeFirstWave, cue: UmadP5FloodPlaybook.Start(start));
 
         for (var tick = 1; tick < UmadP5FloodScenario.TickCount; tick++)
         {
@@ -46,7 +48,8 @@ public sealed class UmadP5FloodAi : IScenarioAi<UmadP5FloodState>
             var previousResolve = UmadP5FloodScenario.FirstTelegraphAt
                 + (tick - 1) * UmadP5FloodScenario.TelegraphStagger
                 + UmadP5FloodScenario.ResolveDelayAfterTelegraph;
-            world.Events.Add(previousResolve + DepartAfterResolve, () => MoveToQuadrant(world, quadrant));
+            var cue = UmadP5FloodPlaybook.Rotate(state, quadrant, tick);
+            world.Events.Add(previousResolve + DepartAfterResolve, () => MoveToQuadrant(world, quadrant, cue));
         }
     }
 
@@ -59,13 +62,15 @@ public sealed class UmadP5FloodAi : IScenarioAi<UmadP5FloodState>
         return ((state.StartQuadrant + step) % 4 + 4) % 4;
     }
 
-    private static void MoveToQuadrant(SimWorld world, int quadrant)
+    private static void MoveToQuadrant(SimWorld world, int quadrant, StratCue cue)
     {
         for (var slot = 0; slot < 8; slot++)
         {
             var bot = world.Party.Get(slot);
             if (bot is null || !bot.IsAlive()) continue;
-            bot.MoveTo(ClumpSpot(quadrant, slot), MoveSpeed);
+            var spot = ClumpSpot(quadrant, slot);
+            world.Strat.Note((PartyRole)slot, new Vector2(spot.X, spot.Z), cue);
+            bot.MoveTo(spot, MoveSpeed);
         }
     }
 

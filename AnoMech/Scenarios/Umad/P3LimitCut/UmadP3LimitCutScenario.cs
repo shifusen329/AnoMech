@@ -7,6 +7,7 @@ using AnoMech.Core;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Multiplayer;
 using AnoMech.Scenarios.Umad.P3BlackHole;
@@ -26,6 +27,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
     public float BgmSecondsAtStart => 108.67f;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => true;
+    public bool SupportsMitigationPractice => true;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP3LimitCutAi()];
     public void DrawSettings() => settingsWindow.Draw();
     public bool HasPerPlayerSettings => true;
@@ -74,9 +76,15 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
             ((IScenarioAi<UmadP3LimitCutState>)AiStrats[idx]).Run(state, world);
 
         SpawnActors();
+        world.MitPractice.Begin(UmadP3LimitCutMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+        {
+            [UmadMitigation.Chaos] = () => state.Objects.Chaos,
+            [UmadMitigation.Exdeath] = () => state.Objects.Exdeath,
+        });
         ApplyStartingStatuses();
 
-        world.Events.Add(1.0f, () =>
+        // Once the tanks are in the stack, so the bosses don't chase them in from the corner.
+        world.Events.Add(3.0f, () =>
         {
             state.Objects.Chaos?.Follow(party.Get(PartyRole.MainTank));
             state.Objects.Exdeath?.Follow(party.Get(PartyRole.OffTank));
@@ -125,7 +133,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         world.Events.Add(33.49f, () => state.Objects.Exdeath?.Cast(ActionId.ThunderIII_Cast, animationLock: 3.1f));
         world.Events.Add(38.57f, ResolveThunder);
         world.Events.Add(41.60f, ResolveThunder);
-        world.Events.Add(42.10f, () => state.Objects.Exdeath?.Follow(party.Get(PartyRole.OffTank)));
+        // Exdeath stays where Thunder III left him until the Decisive Battle re-hands the sides.
         world.Events.Add(43.30f, () =>
         {
             state.Objects.Chaos?.Follow();
@@ -214,13 +222,13 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
             BNpcBaseId: BNpcBaseId.ChaosP3, NameId: BNpcNameId.Chaos, Level: 100,
             Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible,
             LayoutId: BNpcLayoutId.ChaosP3,
-            Placement: new Placement(OnCircle(hold, 9f), hold + MathF.PI)));
+            Placement: new Placement(OnCircle(hold, 10.1f), hold + MathF.PI)));
         objects.Exdeath = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100,
             Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible,
             LayoutId: BNpcLayoutId.Exdeath,
             Placement: new Placement(
-                OnCircle(hold, 10.6f) + OnCircle(hold + MathF.PI / 2f, 1.6f),
+                OnCircle(hold, 10.5f),
                 hold + MathF.PI)));
         for (var k = 0; k < 8; k++)
             objects.Clones[k] = world.SpawnEnemy(new EnemySpawnConfig(

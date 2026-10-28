@@ -21,9 +21,9 @@ public class MitPracticeTests
         fake = FakeGame.Install();
         fake.BattleCharas.Player.ClassJob = (byte)JobId.Sage;
         var game = new Game();
-        DalamudServices.Install(nameof(Plugin.GameInstance), game);
+        DalamudServices.Install(nameof(Plugin.Game), game);
         world = game.World;
-        world.CreateParty((uint)JobId.Sage);
+        world.SeatParty(new LocalPartyProvider().Roster((uint)JobId.Sage));
         world.MitPractice.Enabled = true;
     }
 
@@ -31,7 +31,7 @@ public class MitPracticeTests
     public void RemoveGame()
     {
         world.Despawn();
-        DalamudServices.Install(nameof(Plugin.GameInstance), null!);
+        DalamudServices.Install(nameof(Plugin.Game), null!);
     }
 
     private static MitPlanData Data(params MitPlanEntry[] entries) => new(Profile,
@@ -46,7 +46,10 @@ public class MitPracticeTests
 
     private SimCharacter Slot(PartyRole role) => world.Party.Get(role)!;
 
-    private uint Hp(PartyRole role) => Slot(role).Proxy!.Health;
+    // One HP point of the character's own max: WriteHp rounds to whole HP.
+    private const float ShareTolerance = 1e-4f;
+
+    private float HpShare(PartyRole role) => (float)Slot(role).Proxy!.Health / Slot(role).Proxy!.MaxHealth;
 
     [Test]
     public void BotsPressThePlanWhenItSays()
@@ -94,22 +97,23 @@ public class MitPracticeTests
     }
 
     [Test]
-    public void BeginPutsEveryoneOnTheirClassMaxHp()
+    public void BeginStartsEveryoneOnFullHp()
     {
         world.MitPractice.Begin(Data());
-        Assert.That(Slot(PartyRole.MainTank).Proxy!.MaxHealth, Is.EqualTo(325200u));
-        Assert.That(Slot(PartyRole.MeleeDpsA).Proxy!.MaxHealth, Is.EqualTo(226600u));
-        Assert.That(Slot(PartyRole.ShieldHealer).Proxy!.MaxHealth, Is.EqualTo(205200u), "the player's Sage");
+        Assert.That(HpShare(PartyRole.MainTank), Is.EqualTo(1f));
+        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo(1f));
+        Assert.That(HpShare(PartyRole.ShieldHealer), Is.EqualTo(1f), "the player's Sage");
     }
 
+    // The bar shows each class's pool as a share of the character's own max HP.
     [Test]
     public void AHitTakesEachClassItsShare()
     {
         world.MitPractice.Begin(Data());
         world.MitPractice.HitParty("hit");
-        Assert.That(Hp(PartyRole.MeleeDpsA), Is.EqualTo(226600u - 100000u));
-        Assert.That(Hp(PartyRole.MainTank), Is.EqualTo(325200u - 61000u));
-        Assert.That(Hp(PartyRole.ShieldHealer), Is.EqualTo(205200u - 92000u));
+        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo((226600f - 100000f) / 226600f).Within(ShareTolerance));
+        Assert.That(HpShare(PartyRole.MainTank), Is.EqualTo((325200f - 61000f) / 325200f).Within(ShareTolerance));
+        Assert.That(HpShare(PartyRole.ShieldHealer), Is.EqualTo((205200f - 92000f) / 205200f).Within(ShareTolerance));
     }
 
     [Test]
@@ -118,7 +122,8 @@ public class MitPracticeTests
         world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.OT, MitPlanEntry.PartyMit, 1f, "Big Hit", [5f])));
         Step(1.1f);
         world.MitPractice.Hit(Slot(PartyRole.MeleeDpsA), "hit");
-        Assert.That(Hp(PartyRole.MeleeDpsA), Is.EqualTo(226600u - (100000u - 22660u)), "Divine Veil is 10% of the target's max HP");
+        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo((226600f - (100000f - 22660f)) / 226600f).Within(ShareTolerance),
+            "Divine Veil is 10% of the target's max HP");
         Assert.That(Slot(PartyRole.MeleeDpsA).HasStatus(1362), Is.False);
     }
 
@@ -128,9 +133,9 @@ public class MitPracticeTests
         world.MitPractice.Begin(Data());
         world.MitPractice.Hit(Slot(PartyRole.MeleeDpsA), "hit");
         Step(2f);
-        Assert.That(Hp(PartyRole.MeleeDpsA), Is.LessThan(226600u));
+        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.LessThan(1f));
         Step(1.5f);
-        Assert.That(Hp(PartyRole.MeleeDpsA), Is.EqualTo(226600u));
+        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo(1f));
     }
 
     [Test]
@@ -138,7 +143,7 @@ public class MitPracticeTests
     {
         world.MitPractice.Begin(Data());
         for (var i = 0; i < 3; i++) world.MitPractice.Hit(Slot(PartyRole.MeleeDpsA), "hit");
-        Assert.That(Hp(PartyRole.MeleeDpsA), Is.EqualTo(1u));
+        Assert.That(Slot(PartyRole.MeleeDpsA).Proxy!.Health, Is.EqualTo(1u));
         Assert.That(Slot(PartyRole.MeleeDpsA).IsAlive());
     }
 
@@ -147,7 +152,7 @@ public class MitPracticeTests
     {
         world.MitPractice.Begin(Data());
         world.MitPractice.HitParty("unknown");
-        Assert.That(Hp(PartyRole.MeleeDpsA), Is.EqualTo(226600u));
+        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo(1f));
     }
 
     [Test]
@@ -156,26 +161,28 @@ public class MitPracticeTests
         world.MitPractice.Enabled = false;
         world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.OT, MitPlanEntry.PartyMit, 1f, "Big Hit", [5f])));
         Step(1.1f);
+        world.MitPractice.HitParty("hit");
         Assert.That(world.MitPractice.IsActive, Is.False);
         Assert.That(Slot(PartyRole.MeleeDpsA).HasStatus(1362), Is.False);
-        Assert.That(Slot(PartyRole.MeleeDpsA).Proxy!.MaxHealth, Is.Not.EqualTo(226600u));
+        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo(1f));
     }
 
     [Test]
     public void ASoloRunHasNoPractice()
     {
         world.Despawn();
-        world.CreateParty((uint)JobId.Sage, solo: true);
+        world.SeatParty(new LocalPartyProvider { Solo = true }.Roster((uint)JobId.Sage));
         world.MitPractice.Begin(Data());
         Assert.That(world.MitPractice.IsActive, Is.False);
     }
 
     [Test]
-    public void DespawnRestoresThePlayersRealMaxHp()
+    public void TheRunsEndPutsThePlayerBackOnFullHp()
     {
         world.MitPractice.Begin(Data());
-        Assert.That(fake.BattleCharas.Player.MaxHealth, Is.EqualTo(205200u));
+        world.MitPractice.Hit(world.Party.Player, "hit");
+        Assert.That(fake.BattleCharas.Player.Health, Is.LessThan(fake.BattleCharas.Player.MaxHealth));
         world.Despawn();
-        Assert.That(fake.BattleCharas.Player.MaxHealth, Is.EqualTo(100000u));
+        Assert.That(fake.BattleCharas.Player.Health, Is.EqualTo(fake.BattleCharas.Player.MaxHealth));
     }
 }
