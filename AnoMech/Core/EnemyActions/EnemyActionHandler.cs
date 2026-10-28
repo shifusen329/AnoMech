@@ -152,10 +152,13 @@ internal sealed class EnemyActionHandler(SimCharacter caster, SimCast cast, SimW
         var ctx = new EnemyActionContext(action, caster, target, origin, party, releaseDelay);
 
         // A party member's own action never hits them.
-        IReadOnlyList<SimCharacter> hits = IsSingleTarget(action)
-            ? party.ActiveMembers().Where(m => ReferenceEquals(m, target)).ToList()
-            : AreaHits(action, origin, origin.Position == caster.Position ? caster.HitboxRadius : 0f, party)
-                .Where(h => h != caster).ToList();
+        var area = IsSingleTarget(action) ? (AoeQuery?)null : AreaQuery(action, origin, origin.Position == caster.Position ? caster.HitboxRadius : 0f);
+        IReadOnlyList<SimCharacter> hits = area is { } query
+            ? AreaHits(query, party).Where(h => h != caster).ToList()
+            : party.ActiveMembers().Where(m => ReferenceEquals(m, target)).ToList();
+        // Before any kill, so the death recap can outline what hit them.
+        if (area is { } struck)
+            foreach (var hit in hits) hit.LastAoe = new AoeHit(struck, world.Events.Elapsed);
         if (action.Area.ExcludeCaster
             && hits.MinBy(h => DistanceXZ(h.Position, caster.Position)) is { } baiter
             && DistanceXZ(baiter.Position, caster.Position) <= ExcludeCasterThreshold)
@@ -170,6 +173,8 @@ internal sealed class EnemyActionHandler(SimCharacter caster, SimCast cast, SimW
 
         foreach (var effect in action.Effects)
             effect.Apply(ctx, hits);
+        foreach (var (who, loss) in world.MitPractice.Resolved(action.ActionId, hits))
+            if (!ctx.IsKilled(who)) ctx.OverrideDamage(who, loss);
         world.SimEvents.Raise(new ActionResolved(action, caster, origin, hits, ctx.NpcHits, hits.Where(ctx.IsKilled).ToList(), releaseDelay));
 
         delivery.Outcomes = ctx.Outcomes;
@@ -209,9 +214,11 @@ internal sealed class EnemyActionHandler(SimCharacter caster, SimCast cast, SimW
     // The ActionEffect's limit; damage, knockback and the marker take three.
     private const int MaxEffectsPerTarget = 8;
 
-    private static IReadOnlyList<SimCharacter> AreaHits(EnemyAction action, Placement origin, float casterHitboxRadius, SimParty party)
+    private static AoeQuery AreaQuery(EnemyAction action, Placement origin, float casterHitboxRadius)
+        => new(action.ActionId, origin, action.Cast.Rotation + action.Area.Rotation, action.Area.Size, action.Area.CastTypeOverride, casterHitboxRadius);
+
+    private static IReadOnlyList<SimCharacter> AreaHits(AoeQuery query, SimParty party)
     {
-        var query = new AoeQuery(action.ActionId, origin, action.Cast.Rotation + action.Area.Rotation, action.Area.Size, action.Area.CastTypeOverride, casterHitboxRadius);
 #if DEBUG
         AnoMech.Windows.DamageDebugWindow.Instance?.Record(query);
 #endif

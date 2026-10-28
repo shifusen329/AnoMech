@@ -1,6 +1,5 @@
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.Game.Party;
-using static AnoMech.Scenarios.Umad.P5Celestriad.UmadP5CelestriadConstants;
 
 namespace AnoMech.Scenarios.Umad.P5Celestriad;
 
@@ -47,7 +46,7 @@ internal static class UmadP5CelestriadPlaybook
     public static StratCue Towers(UmadP5CelestriadState state, int set) => new(
         $"Celestriad set {set + 1} towers",
         role => TowerText(state, set, role)
-                + (CelestriadTiming.CcAt[set] is null ? "" : " Hold there until Catastrophic Choice shows which half of the tower is safe."),
+                + (state.AeroVariant[set] is null ? "" : " Hold there until Catastrophic Choice shows which half of the tower is safe."),
         Celestriad);
 
     public static StratCue CatastrophicChoiceHalf(UmadP5CelestriadState state, int set) => new(

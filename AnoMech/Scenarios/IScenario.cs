@@ -20,11 +20,17 @@ public interface IScenario : IWorldEventListener
     // (IMultiplayerReplayable).
     bool SupportsMultiplayer => false;
 
+    // Has a mitigation plan and calls world.MitPractice.Begin from Run.
+    bool SupportsMitigationPractice => false;
+
     // Selectable strats. Run's selectedAi indexes this (null = solo); region buttons derive
     // from each strat's IScenarioAi.Group.
     IReadOnlyList<IScenarioAi> AiStrats { get; }
 
-    // How far into the phase's track the real fight is when this scenario starts.
+    // The track playing when this scenario starts, when it isn't the phase's (0 = the phase's).
+    ushort Bgm => 0;
+
+    // How far into that track the real fight is when this scenario starts.
     float BgmSecondsAtStart => 0f;
 
     void Run(SimWorld world, int? selectedAi);
@@ -54,6 +60,10 @@ public interface IScenario : IWorldEventListener
     // Deterministic instance-progress replay (native DirectorUpdate/AddEffect calls) with no
     // host-only dependency, so ScenarioSession.Start schedules it for a peer too.
     void RunInstanceEvents(SimWorld world) { }
+
+    // How far the run has got, told to the player with their death; null when the scenario
+    // doesn't count it.
+    string? RunProgress => null;
 }
 
 public static class ScenarioExtensions

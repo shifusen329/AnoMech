@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.Text;
 using AnoMech.Core.Game.Party;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.Native.Interfaces;
 using AnoMech.Core.SimObjects;
 using AnoMech.Scenarios;
@@ -84,6 +85,8 @@ public sealed class ScenarioSession
     // mistake marked either.
     public event Action<bool>? Finished;
     public event Action<string>? MechanicFailed;
+    // Raised as the post-death freeze begins.
+    public event Action? Frozen;
 
     private ScenarioSession(SimWorld world, InstanceSession instance, RunScenarioParams run, IReadOnlyList<PartySlot?> roster)
     {
@@ -202,6 +205,7 @@ public sealed class ScenarioSession
         finishedElapsed = (finishedElapsed ?? 0f) + deltaSeconds;
         if (finishedElapsed < MechanicResultSettleSeconds) return;
         resultReported = true;
+        world.MitPractice.Finish(HasFailed ? MitRunEnd.Death : MitRunEnd.Completed);
         if (HasFailed)
         {
             PrintFailureSummary();
@@ -270,8 +274,10 @@ public sealed class ScenarioSession
 #endif
         world.Events.Add(FreezeDelaySeconds, () =>
         {
+            world.MitPractice.Finish(MitRunEnd.Death);
             Paused = true;
             PrintFailureSummary();
+            Frozen?.Invoke();
         });
     }
 
@@ -279,6 +285,7 @@ public sealed class ScenarioSession
     {
         Ended = true;
         world.Failed -= OnMechanicFailed;
+        world.MitPractice.Finish(MitRunEnd.Reset);
         world.Events.Clear();
         world.Despawn();
 #if DEBUG
@@ -290,8 +297,9 @@ public sealed class ScenarioSession
     {
         var phase = Scenario.Phase;
         DiagnosticLog.Info($"[Bgm] Suppress scenario BGM: {(Plugin.Config.SuppressBgm ? "on" : "off")}.");
-        if (!Plugin.Config.SuppressBgm && phase.Bgm != 0)
-            world.PlayBgm(phase.Bgm, Scenario.BgmSecondsAtStart);
+        var bgm = Scenario.Bgm != 0 ? Scenario.Bgm : phase.Bgm;
+        if (!Plugin.Config.SuppressBgm && bgm != 0)
+            world.PlayBgm(bgm, Scenario.BgmSecondsAtStart);
     }
 
     // The selected preset, or [0] as the default.

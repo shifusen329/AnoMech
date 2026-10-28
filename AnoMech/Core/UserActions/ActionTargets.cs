@@ -46,7 +46,7 @@ internal static class ActionTargets
     }
 
     public static IReadOnlyList<SimCharacter> PartyAround(SimCharacter caster, float range)
-        => Plugin.GameInstance is { } game
+        => Plugin.Game is { } game
             ? game.World.Party.ActiveMembers().Where(m => InRange(caster, m, range)).ToList()
             : [];
 

@@ -51,7 +51,7 @@ public sealed class DeathRecapWindow : Window
 
         ImGui.PopTextWrapPos();
         ImGui.Spacing();
-        if (ImGui.Button(game.RestartWaitingOnRecap ? "Close & restart" : "Close")) game.CloseRecap();
+        if (ImGui.Button(Plugin.Practice.RestartWaitingOnRecap ? "Close & restart" : "Close")) game.CloseRecap();
     }
 
     private static void Section(string title)

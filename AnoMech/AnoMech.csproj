@@ -27,4 +27,13 @@
     <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
     <PackageReference Include="NVorbis" Version="0.10.5" />
   </ItemGroup>
+  <!-- The fork's scenarios not yet ported to the EnemyActions engine; each comes back as it is. -->
+  <ItemGroup>
+    <Compile Remove="Scenarios/Umad/P1GravenImage1/**" />
+    <Compile Remove="Scenarios/Umad/P1GravenImage2/**" />
+    <Compile Remove="Scenarios/Umad/P1Shared/UmadP1Kit.cs" />
+    <Compile Remove="Scenarios/Umad/P1Shared/UmadP1SettingsRows.cs" />
+    <Compile Remove="Scenarios/Umad/P2Trines/**" />
+    <Compile Remove="Scenarios/Umad/P3BowelsOfAgony/**" />
+  </ItemGroup>
 </Project>

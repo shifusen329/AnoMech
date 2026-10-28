@@ -34,6 +34,12 @@ public sealed class Game : IDisposable
     public event Action<PartyRole, string, uint?, ushort?>? PartyMemberKilled;
     // Back in the inn: a Leave, or the native zone going away under the stay.
     public event Action? InstanceExited;
+    // The post-death freeze began.
+    public event Action? RunFrozen;
+    public event Action? RecapClosed;
+
+    // The local player's last death this run: where they were, the strat's spot, and why.
+    public DeathRecap? Recap { get; private set; }
 
     private InstanceSession? instance;
     private ScenarioSession? run;
@@ -144,6 +150,7 @@ public sealed class Game : IDisposable
         run = next;
         run.Finished += OnRunFinished;
         run.MechanicFailed += OnMechanicFailed;
+        run.Frozen += OnRunFrozen;
         run.Start();
         RunStarted?.Invoke(p, instance.Mode == SessionMode.Local);
         return null;
@@ -157,7 +164,9 @@ public sealed class Game : IDisposable
             endedRun = ending;
             ending.Finished -= OnRunFinished;
             ending.MechanicFailed -= OnMechanicFailed;
+            ending.Frozen -= OnRunFrozen;
             ending.End();
+            Recap = null;
         }
     }
 
@@ -197,7 +206,9 @@ public sealed class Game : IDisposable
 
         DiagnosticLog.Warn(
             $"[Game] Kill: {target.Role} died at ({(target as IPositioned)?.Position.X:F1},{(target as IPositioned)?.Position.Z:F1}) -- {cause}");
-        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[AnoMech] {DescribeName(target)} died: {cause}" });
+        var progress = target is SimPlayer ? ActiveScenario?.RunProgress : null;
+        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[AnoMech] {DescribeName(target)} died: {cause}{(progress != null ? $". {progress}" : "")}" });
+        if (target is SimPlayer && Plugin.Config.ShowDeathRecap) Recap = BuildRecap(target, cause, progress);
         run?.OnDeathReported(DescribeName(target), cause);
 
         if (GodMode)
@@ -212,6 +223,24 @@ public sealed class Game : IDisposable
     }
 
 
+    private DeathRecap BuildRecap(ISimPartyMember target, string cause, string? progress)
+    {
+        var now = Events.Elapsed;
+        var aoe = target is SimCharacter { LastAoe: { } hit } && MathF.Abs(hit.At - now) < SameMomentSeconds ? hit.Query : (AoeQuery?)null;
+        return DeathRecap.Build(target.Role, cause, (target as IPositioned)?.Position ?? System.Numerics.Vector3.Zero, now,
+            World.Strat.DueFor(target.Role, now), aoe, World.Coordinates, progress);
+    }
+
+    // An AoE stamped this long before the death is the one that caused it.
+    private const float SameMomentSeconds = 0.1f;
+
+    // Closing the recap releases an auto-restart it was holding (PracticeLoop).
+    public void CloseRecap()
+    {
+        Recap = null;
+        RecapClosed?.Invoke();
+    }
+
     // Synchronous: Plugin.Dispose runs on the framework thread during unload, and a
     // Framework.Run wrapper would never fire.
     public void Dispose()
@@ -225,6 +254,7 @@ public sealed class Game : IDisposable
     
     private void OnRunFinished(bool clean) => RunFinished?.Invoke(clean);
     private void OnMechanicFailed(string reason) => MechanicFailed?.Invoke(reason);
+    private void OnRunFrozen() => RunFrozen?.Invoke();
     
 
     private static string DescribeName(ISimPartyMember target) => target switch

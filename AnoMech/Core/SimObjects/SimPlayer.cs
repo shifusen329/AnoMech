@@ -24,6 +24,8 @@ public sealed class SimPlayer : SimCharacter, ISimPartyMember
 
     internal override IBattleCharaProxy Proxy => Natives.BattleCharas.LocalPlayer;
 
+    public byte ClassJob => Proxy is { Exists: true } chara ? chara.ClassJob : (byte)0;
+
     public void UseSprint(float duration)
     {
         if (DebugBotControl.Enabled && !Dead && !ActionsLocked) SprintHandler.Apply(this, duration);

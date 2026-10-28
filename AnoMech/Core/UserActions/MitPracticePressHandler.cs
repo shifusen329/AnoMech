@@ -8,7 +8,7 @@ internal sealed class MitPracticePressHandler : IUserActionHandler
 {
     public void OnAction(ActionType actionType, uint actionId)
     {
-        if (actionType != ActionType.Action || Plugin.GameInstance?.Player is not { } player) return;
-        Plugin.GameInstance.World.MitPractice.RecordPress(player.Role, actionId);
+        if (actionType != ActionType.Action || Plugin.Game?.Player is not { } player) return;
+        Plugin.Game.World.MitPractice.RecordPress(player.Role, actionId);
     }
 }

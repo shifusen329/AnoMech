@@ -37,6 +37,16 @@ public sealed class SimWorld : ISimObject, IDisposable
     // Root container — Game owns its lifetime; no parent reaps it.
     public bool IsActive => true;
     public EventScheduler Events { get; }
+
+    // Every strat spot handed out this run (the death recap's "where you should have been").
+    public AnoMech.Core.Game.Ai.StratTrail Strat { get; }
+
+    // Optional party mitigation practice; a scenario that supports it calls Begin from Run.
+    public AnoMech.Core.Game.PartyMit.MitPractice MitPractice { get; }
+
+    // On, bots in the strats tuned for it take their next spot early and wait there, as players
+    // do (AiManager.Move's settleFraction); off, every bot leaves at the last moment.
+    public bool NaturalBotTiming { get; set; } = true;
     // The zone's origin for as long as an InstanceSession holds it; outlives the runs inside it.
     public Vector3 ScenarioOrigin { get; set; }
 
@@ -68,6 +78,8 @@ public sealed class SimWorld : ISimObject, IDisposable
     public SimWorld(EventScheduler events)
     {
         Events = events;
+        Strat = new AnoMech.Core.Game.Ai.StratTrail(events);
+        MitPractice = new AnoMech.Core.Game.PartyMit.MitPractice(this);
         Coordinates = new Coordinates(() => ScenarioOrigin);
     }
 
@@ -120,6 +132,14 @@ public sealed class SimWorld : ISimObject, IDisposable
         var tower = SimTower.Spawn(config, Coordinates, Events, states, stateUnk, radius, Party);
         if (tower != null) children.Add(tower);
         return tower;
+    }
+
+    // `center` is scenario-local; onEnter reports each member who walks in, with the time left.
+    public SimGroundZone PlaceGroundZone(Vector3 center, float radius, ushort statusId, float duration, Action<PartyRole, float>? onEnter = null)
+    {
+        var zone = new SimGroundZone(Party, center, radius, statusId, duration, onEnter);
+        children.Add(zone);
+        return zone;
     }
 
     // Places the scenario's waymark layout (scenario-local offsets), replacing any markers already
@@ -201,6 +221,7 @@ public sealed class SimWorld : ISimObject, IDisposable
         Map.Tick();
         Party.Tick(deltaSeconds);
         children.Update(deltaSeconds);
+        MitPractice.Tick();
         enemyList.Tick(children.OfType<SimEnemy>(), deltaSeconds);
         SimEvents.Dispatch();
     }
@@ -213,6 +234,8 @@ public sealed class SimWorld : ISimObject, IDisposable
         enemyList.Clear();
         Obstacles.Clear();
         NpcKnockbackStopRadius = null;
+        Strat.Clear();
+        MitPractice.Clear();
         Party.EndRun();
     }
 

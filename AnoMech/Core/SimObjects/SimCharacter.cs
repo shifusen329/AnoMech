@@ -193,12 +193,12 @@ public abstract class SimCharacter : ISimObject, IPositioned
     // death recap can outline what did it.
     public AoeHit? LastAoe { get; internal set; }
 
-    // Mitigation practice's simulated HP on the real bar.
-    internal virtual void WriteHp(uint current, uint max)
+    // Mitigation practice's simulated HP on the real bar, as a share of the character's own max HP:
+    // the status list carries current HP, never a max.
+    internal void WriteHp(float fraction)
     {
         if (Proxy is not { Exists: true } chara) return;
-        chara.MaxHealth = max;
-        chara.Health = Math.Min(current, max);
+        SendStatusList((uint)Math.Clamp(MathF.Round(fraction * chara.MaxHealth), 1f, chara.MaxHealth), chara.Mana);
     }
 
     // What's left of this character's barriers as a share of max HP, when mitigation practice
@@ -317,7 +317,7 @@ public abstract class SimCharacter : ISimObject, IPositioned
         foreach (var status in statusList)
             if (status.IsActive && status.Slot >= 0 && !status.Hidden)
                 slots[status.Slot] = new StatusSlot(status.StatusId, status.Stacks, status.RemainingTime, (status.ShownSource ?? status.SourceObject).ObjectId);
-        var shield = Mitigation.ShieldFraction(statusList.Where(s => s.IsActive).Select(s => s.StatusId));
+        var shield = ShieldOverride ?? Mitigation.ShieldFraction(statusList.Where(s => s.IsActive).Select(s => s.StatusId), chara.MaxHealth);
         chara.ReceiveStatusList(slots, health, mana, (byte)Math.Clamp(shield * 100f, 0f, 100f));
     }
 

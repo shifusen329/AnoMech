@@ -15,7 +15,7 @@ public sealed record DeathAoe(uint ActionId, string Name, byte CastType, float R
         if (Natives.Data.Action(query.ActionId) is not { } row) return null;
         var range = (float)row.EffectRange;
         var halfWidth = row.XAxisModifier > 0 ? row.XAxisModifier * 0.5f : range;
-        return new DeathAoe(query.ActionId, row.Name, row.CastType, range, halfWidth, query.Size,
+        return new DeathAoe(query.ActionId, row.Name, (byte)row.CastType, range, halfWidth, query.Size,
             coordinates.ToGlobal(query.Source.Position), query.Source.Rotation + query.OmenRotate);
     }
 }

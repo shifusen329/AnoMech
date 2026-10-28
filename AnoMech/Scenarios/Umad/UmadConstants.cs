@@ -71,6 +71,8 @@ public static class UmadConstants
         public const uint GazeStatueInverted = 2015167; // NW, AveMaria
         public const uint TelePortent        = 2015267;
         public const uint WindCrystal        = 2015292;
+        public const uint TriangleEast       = 2015154;
+        public const uint TriangleWest       = 2015155;
         public const uint EarthCore          = 2015293;
         public const uint CelestriadFireTower      = 2015294;
         public const uint CelestriadIceTower       = 2015295;
@@ -158,6 +160,9 @@ public static class UmadConstants
         public const uint Spelldriver                  = 0xBAC0U; // circle r=5, instant
         public const uint Spellscatter                 = 0xBAC1U; // circle r=5, instant
         public const uint Spellwave                    = 0xBAC2U; // cone r=40, instant
+        public const uint WingsOfDestructionLeft       = 0xBACDU; // rect 80x40 from 20y to Kefka's left and 40y behind him: his left half, cast 4.0s
+        public const uint WingsOfDestructionRight      = 0xBACEU; // rect 80x40, his right half, cast 4.0s
+        public const uint WingsOfDestructionBuster     = 0xBACFU; // circle r=7 on a target, instant; the nearest and the farthest player
         public const uint FutureSEnd                   = 0xBAD2U; // single-target, cast 6.4s
         public const uint PastSEnd                     = 0xBAD3U; // single-target, cast 6.4s
         public const uint FutureSEnd_Resolve           = 0xBAD6U; // circle r=5, instant
@@ -166,6 +171,9 @@ public static class UmadConstants
         public const uint PastSEnd_CloneResolve        = 0xBAD9U; // circle r=5, instant
         public const uint AllThingsEnding_Future       = 0xBADCU; // cone r=100, cast 5.0s
         public const uint AllThingsEnding_Past         = 0xBADDU; // cone r=100, cast 5.0s
+        public const uint Trine                        = 0xBADFU; // single-target, cast 3.0s
+        public const uint TrinePoint                   = 0xBAE0U; // circle r=6 on a triangle corner, instant
+        public const uint DefinitionOfInsanity         = 0xBAE2U; // single-target, cast 4.0s; Kefka as the bosses arrive
         public const uint UltimaBlaster                = 0xBAE3U; // each Limit Cut clone's appearance hit
         public const uint UltimaBlasterCharge          = 0xBAE4U; // rect 100x6 (len x width)
         public const uint SlapHappy_Left                    = 0xBAE6U; // single-target, cast 5.0s
@@ -180,6 +188,11 @@ public static class UmadConstants
         public const uint StompAMole_Cast              = 0xBAEFU; // single-target, cast 5.0s (cf. StompAMole 0xBAF0)
         public const uint StompAMole                   = 0xBAF0U; // circle r=5, cast 1.5s
         public const uint UnmitigatedImpact            = 0xBAF1U; // circle r=100, instant; StompAMole (0xBAF0) failure resolution
+        public const uint BowelsOfAgony                = 0xBAF2U; // circle r=100, cast 5.0s
+        public const uint StrayFlames_P3               = 0xBAF3U; // circle r=5, instant; Entropy (0x640) running out
+        public const uint Inferno_P3                   = 0xBAF4U; // donut r=10, instant; the fire crystal
+        public const uint Tsunami_P3                   = 0xBAF5U; // circle r=5, instant; the water crystal
+        public const uint StraySpray_P3                = 0xBAF6U; // donut r=10, instant; Dynamic Fluid (0x641) running out
         public const uint Cyclone                      = 0xBAF8U; // circle r=6, instant
         public const uint Earthquake_Cleanse           = 0xBAFAU; // circle r=100, instant (cf. Earthquake 0xC571)
         public const uint BlackHole                    = 0xBAFBU; // single-target, cast 3.0s
@@ -198,6 +211,7 @@ public static class UmadConstants
         public const uint BlizzardIII                  = 0xBB0DU; // circle r=6, cast 3.0s
         public const uint BlizzardIII_Cast             = 0xBB0FU; // single-target, cast 3.0s (cf. BlizzardIII 0xBB0D)
         public const uint BlizzardIII_Raidwide         = 0xBB11U; // circle r=100, cast 4.0s
+        public const uint ThunderIII_Aoe               = 0xBB12U; // circle r=11 around Exdeath, cast 7.0s
         public const uint VacuumWave                   = 0xBB13U;
         public const uint GrandCross                   = 0xBB14U; // circle r=100, cast 9.0s
         public const uint DeathBomb                    = 0xBB15U; // single-target, instant
@@ -243,6 +257,7 @@ public static class UmadConstants
         public const uint CatastrophicChoiceAero       = 0xC24FU;
         public const uint AutoAttack2                  = 0xC250U; // single-target, instant
         public const uint AutoAttack1                    = 0xC252U; // single-target, instant
+        public const uint Trance                       = 0xC2D6U; // single-target, cast 3.9s
         public const uint KefkaSays                    = 0xC2DCU; // single-target, cast 5.0s
         public const uint DecisiveBattle_Chaos         = 0xC2E2U;
         public const uint DecisiveBattle_Exdeath       = 0xC2E3U;
@@ -256,6 +271,7 @@ public static class UmadConstants
         public const uint FloodOfNaught_WhiteFake      = 0xC3A1U; // single-target, cast 5.0s
         public const uint FloodOfNaught_BlackFake      = 0xC3A2U; // single-target, cast 5.0s
         public const uint KefkaPoof                    = 0xC3FDU; // single-target, instant
+        public const uint WingsOfDestruction           = 0xC487U; // single-target, cast 4.0s; the near and far busters
         public const uint StandUp_ToWall                  = 0xC4BAU; // single-target, instant
         public const uint StandUp_Levitate                  = 0xC533U; // single-target, instant
         public const uint KefkaRest                    = 0xC554U; // single-target, cast 3.0s
@@ -273,6 +289,8 @@ public static class UmadConstants
         public const ushort Confused                  = (ushort)0x503;
         public const ushort BeyondDeath               = (ushort)0x566;
         public const ushort ManaCharge                = (ushort)0x5CA;
+        public const ushort EntropyP3                 = (ushort)0x640;
+        public const ushort DynamicFluidP3            = (ushort)0x641;
         public const ushort Headwind                  = (ushort)0x642;
         public const ushort Tailwind                  = (ushort)0x643;
         public const ushort BlizzardCharged           = (ushort)0x5CC;
@@ -339,6 +357,7 @@ public static class UmadConstants
     public static class TetherId
     {
         public const ushort GravenImage  = (ushort)0x2D;
+        public const ushort ExdeathToGravenImage = (ushort)0x40;
         public const ushort GrabbyTether = (ushort)0x54;
     }
 
@@ -352,6 +371,7 @@ public static class UmadConstants
         public const uint FireSpread      = 127;
         public const uint FireStack       = 128;
         public const uint Stack           = 161;
+        public const uint UltimateEmbrace = 259;
         // Limit Cut numbers 1-8.
         public static readonly uint[] LimitCutNumbers = [336, 337, 338, 339, 437, 438, 439, 440];
         public const uint FireFalse       = 673;

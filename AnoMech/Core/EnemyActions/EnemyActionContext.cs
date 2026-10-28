@@ -58,6 +58,12 @@ public sealed class EnemyActionContext
         if (outcome.Damage is not { } shown || amount > shown.Amount) outcome.Damage = (amount, kind);
     }
 
+    // Mitigation practice's own number for a hit it models, in place of the severity's stock one.
+    internal void OverrideDamage(SimCharacter who, uint amount)
+    {
+        if (outcomes.TryGetValue(who, out var outcome) && outcome.Damage is { } shown) outcome.Damage = (amount, shown.Kind);
+    }
+
     // Decided now; moves the character after `delay` (null = TimingSpec.DamageDelay), unless it died
     // meanwhile. knockbackRow goes into the ActionEffect; null for a push with no Knockback sheet
     // row. The first push wins.

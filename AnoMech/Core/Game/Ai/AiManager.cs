@@ -34,7 +34,10 @@ public sealed class AiManager
     /// <summary>Schedule bots movement</summary> 
     /// <param name="arrivalTime">If not empty, this is expected arrival time for bots. They will sprint if there is not enough time to walk, and they will leave as late as possible otherwise</param>
     /// <param name="sprint">Ignored if arrivalTime is set. Sprint towards target instead of walking</param>
+    /// <param name="settleFraction">Only with arrivalTime, and only while SimWorld.NaturalBotTiming is on: the share of a walker's spare time spent waiting at the destination instead of the start (0 leaves at the last moment, 1 leaves now)</param>
+    /// <param name="cue">Why each role goes where it does, for the death recap. Every live slot's spot goes on world.Strat, the human's included</param>
     public void Move(float time, Func<IAiMove> positions, float jitter = DefaultJitter, float? arrivalTime = null, bool sprint = false,
+        float settleFraction = 0f, StratCue? cue = null,
         [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
     {
         world.Events.Add(time, () =>
@@ -45,6 +48,8 @@ public sealed class AiManager
                 if (move[i] is not { } local) continue;
                 var member = world.Party.Get(i);
                 if (member == null || !member.IsAlive()) continue;
+                world.Strat.Record(new StratTarget((PartyRole)i, new Vector3(local.X, 0f, local.Y), world.Events.Elapsed, arrivalTime,
+                    cue?.Mechanic, cue?.Why((PartyRole)i), cue?.Source));
                 var target = Jitter(new Vector3(local.X, 0f, local.Y), jitter);
                 var partyMember = member as ISimPartyMember;
                 var role = partyMember?.Role.ToString() ?? $"slot{i}";
@@ -52,6 +57,7 @@ public sealed class AiManager
                 var (sprinting, delay) = arrivalTime is { } arrival
                     ? PlanArrival(dist, arrival - time - MoveDeadlineSafetyMargin)
                     : (sprint, 0f);
+                delay *= 1f - (world.NaturalBotTiming ? Math.Clamp(settleFraction, 0f, 1f) : 0f);
                 var speed = sprinting ? SprintSpeed : RunSpeed;
 
                 if (sprinting) partyMember?.UseSprint(dist / SprintSpeed + 1f);

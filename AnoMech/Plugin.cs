@@ -38,6 +38,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDutyState DutyState { get; private set; } = null!;
     [PluginService] internal static ICondition Condition { get; private set; } = null!;
     [PluginService] internal static IGameConfig GameConfig { get; private set; } = null!;
+    [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
 
     private const string CommandName = "/anomech";
     private const string CommandAlias = "/ano";
@@ -57,6 +58,8 @@ public sealed class Plugin : IDalamudPlugin
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
     private FailureBanner? FailureBanner { get; init; }
+    private DeathRecapOverlay DeathRecapOverlay { get; init; } = null!;
+    private DeathRecapWindow DeathRecapWindow { get; init; } = null!;
 #if DEBUG
     private DamageDebugWindow DamageDebugWindow { get; init; }
 #endif
@@ -78,6 +81,8 @@ public sealed class Plugin : IDalamudPlugin
             opcodeUpdater = new OpcodeUpdater();
             Game = new Game();
             Practice = new PracticeLoop(Game);
+            Game.World.NaturalBotTiming = Config.NaturalBotTiming;
+            Game.World.MitPractice.Enabled = Config.MitigationPractice;
             Multiplayer = new MultiplayerManager();
             Runs = new RunController(Game, Multiplayer);
             if (Config.EnableUserActions) Natives.UserActions.Enable();
@@ -90,6 +95,10 @@ public sealed class Plugin : IDalamudPlugin
             windowSystem.AddWindow(MainWindow.PartyPanel);
             FailureBanner = new FailureBanner();
             windowSystem.AddWindow(FailureBanner);
+            DeathRecapOverlay = new DeathRecapOverlay(Game);
+            DeathRecapWindow = new DeathRecapWindow(Game);
+            windowSystem.AddWindow(DeathRecapOverlay);
+            windowSystem.AddWindow(DeathRecapWindow);
 #if DEBUG
             DamageDebugWindow = new DamageDebugWindow(this);
             windowSystem.AddWindow(DamageDebugWindow);

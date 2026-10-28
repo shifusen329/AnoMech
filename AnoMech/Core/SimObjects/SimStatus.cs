@@ -13,6 +13,9 @@ public sealed class SimStatus : ISimObject
     public ushort StatusId { get; }
     public GameObjectId SourceObject { get; }
 
+    // A barrier's size relative to its Mitigation.ByStatusId base (a Zoe-boosted Prognosis is 1.5).
+    public float ShieldScale { get; internal set; } = 1f;
+
     // Who the client is told applied it; unlike SourceObject, not part of the status's identity.
     internal GameObjectId? ShownSource { get; set; }
     public bool IsActive { get; private set; }

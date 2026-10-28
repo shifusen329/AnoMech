@@ -1,3 +1,4 @@
+using AnoMech.Core.EnemyActions;
 using System.Collections.Generic;
 using AnoMech.Core.UserActions;
 
@@ -25,9 +26,11 @@ public sealed record MitPlanEntry(SheetColumn Column, uint ActionId, float At, s
 public sealed record MitSource(string Name);
 
 // Raw is the unmitigated damage on a physical DPS, or null while unknown (the hit moves no HP).
+// ActionId is the EnemyAction that deals it, landing it on whoever that action resolves on; 0 for a
+// hit the scenario lands itself with MitPractice.Hit.
 // A tank buster ignores the class factor; Fresh lands on full HP whatever came before.
 public sealed record MitHitDef(string Key, string Name, float? Raw, MitSource? Source, DamageKind Kind = DamageKind.Magic,
-    bool TankBuster = false, bool Fresh = false);
+    bool TankBuster = false, bool Fresh = false, uint ActionId = 0);
 
 public readonly record struct MitScheduledHit(float At, string[] Keys);
 

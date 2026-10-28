@@ -94,10 +94,12 @@ public sealed class MitPractice
         foreach (var (member, pool) in pools)
         {
             if (!member.IsAlive()) continue;
-            if (pool.TopUp(now)) Write(member, pool);
             var ledger = Ledger(member);
             ledger.Sync(member, pool.Max);
-            member.ShieldOverride = ledger.Remaining / pool.Max;
+            var shield = ledger.Remaining / pool.Max;
+            var shieldChanged = member.ShieldOverride != shield;
+            member.ShieldOverride = shield;
+            if (pool.TopUp(now) || shieldChanged) Write(member, pool);
         }
     }
 
@@ -120,7 +122,7 @@ public sealed class MitPractice
         }
         if (p.Action.Requires != 0 && !bot.HasStatus(p.Action.Requires))
         {
-            DiagnosticLog.Warn($"[MitPractice] {p.Slot} skips {p.Action.Name} at {now:F2}s: needs {StatusLookup.Name(p.Action.Requires)} ({p.Label}).");
+            DiagnosticLog.Warn($"[MitPractice] {p.Slot} skips {p.Action.Name} at {now:F2}s: needs {Natives.Data.StatusName(p.Action.Requires)} ({p.Label}).");
             return;
         }
         bot.UseAction(p.Action.ActionId, p.Action.Kind == MitKind.Debuff ? DebuffTarget(p) : null);
@@ -150,9 +152,23 @@ public sealed class MitPractice
         foreach (var victim in victims) Land(victim, hit, now);
     }
 
-    private void Land(SimCharacter victim, MitHitDef hit, float now)
+    // An EnemyAction's resolve, before its ActionEffect goes out: the plan's hit for that action lands
+    // on everyone it caught, and what each lost replaces the flytext's stock number.
+    internal IReadOnlyDictionary<SimCharacter, uint> Resolved(uint actionId, IReadOnlyList<SimCharacter> hits)
     {
-        if (victim is not ISimPartyMember member || !victim.IsAlive() || !pools.TryGetValue(victim, out var pool)) return;
+        if (!IsActive || !hpMode || data!.Hits.FirstOrDefault(h => h.ActionId == actionId) is not { Raw: not null } hit)
+            return new Dictionary<SimCharacter, uint>();
+        var now = clock();
+        var shown = new Dictionary<SimCharacter, uint>();
+        foreach (var victim in hits)
+            if (Land(victim, hit, now) is >= 1f and var loss) shown[victim] = (uint)MathF.Round(loss);
+        return shown;
+    }
+
+    // The HP the hit took, or null when it landed on no pool.
+    private float? Land(SimCharacter victim, MitHitDef hit, float now)
+    {
+        if (victim is not ISimPartyMember member || !victim.IsAlive() || !pools.TryGetValue(victim, out var pool)) return null;
         var ledger = Ledger(victim);
         ledger.Sync(victim, pool.Max);
         var source = hit.Source is { } s ? Layers(Source(s)) : [];
@@ -160,13 +176,13 @@ public sealed class MitPractice
             ledger.Shields, assumeTankCooldowns: world.Party.IsBotDriven(victim));
         ledger.Commit(victim);
         var hp = pool.Land(now, result.HpLoss, hit.Fresh);
-        Write(victim, pool);
         victim.ShieldOverride = ledger.Remaining / pool.Max;
-        if (result.HpLoss >= 1f && victim.Proxy is { Exists: true } chara) chara.ShowFlyText((uint)MathF.Round(result.HpLoss), hit.Name);
-        if (hp > 0f) return;
-        if (warnedAt.TryGetValue(victim, out var warned) && now - warned <= data.Profile.TopUpGap) return;
+        Write(victim, pool);
+        if (hp > 0f) return result.HpLoss;
+        if (warnedAt.TryGetValue(victim, out var warned) && now - warned <= data.Profile.TopUpGap) return result.HpLoss;
         warnedAt[victim] = now;
         world.Announce($"{hit.Name} would have killed {Who(member)}: {MitDamage.Explain(result, Missing(victim, now))}");
+        return result.HpLoss;
     }
 
     // Planned presses meant for a hit around now that aren't in effect on the victim.
@@ -244,12 +260,11 @@ public sealed class MitPractice
     private static IReadOnlyList<MitLayer> Layers(SimCharacter? character)
         => character?.ActiveStatuses
                     .Where(s => Mitigation.ByStatusId.ContainsKey(s.StatusId))
-                    .Select(s => new MitLayer(s.StatusId, StatusLookup.Name(s.StatusId), Mitigation.ByStatusId[s.StatusId]))
+                    .Select(s => new MitLayer(s.StatusId, Natives.Data.StatusName(s.StatusId), Mitigation.ByStatusId[s.StatusId]))
                     .ToList()
            ?? [];
 
-    private static void Write(SimCharacter member, MitHpPool pool)
-        => member.WriteHp((uint)MathF.Max(1f, MathF.Round(pool.Hp)), (uint)MathF.Round(pool.Max));
+    private static void Write(SimCharacter member, MitHpPool pool) => member.WriteHp(pool.Hp / pool.Max);
 
     private string Owner(PartyRole slot) => world.Party.Player is { } player && player.Role == slot ? "your" : $"{slot.ShortLabel()}'s";
 

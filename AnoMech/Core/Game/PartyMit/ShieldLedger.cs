@@ -1,3 +1,4 @@
+using AnoMech.Core.Native.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using AnoMech.Core.SimObjects;
@@ -26,7 +27,7 @@ internal sealed class ShieldLedger
             if (!Mitigation.ByStatusId.TryGetValue(status.StatusId, out var m) || !m.IsShield) continue;
             if (entries.Any(e => ReferenceEquals(e.Status, status))) continue;
             var amount = m.ShieldFractionOfMaxHp(maxHp) * maxHp * status.ShieldScale;
-            entries.Add((status, new MitShield(status.StatusId, StatusLookup.Name(status.StatusId), amount, m.ShieldHits)));
+            entries.Add((status, new MitShield(status.StatusId, Natives.Data.StatusName(status.StatusId), amount, m.ShieldHits)));
         }
     }
 
