@@ -1,9 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Party;
 using AnoMech.Core.Native.Interfaces;
 using AnoMech.Core.SimObjects;
-using FFXIVClientStructs.FFXIV.Client.Game.Network;
-using System.Runtime.InteropServices;
 
 namespace AnoMech.Tests;
 
@@ -12,59 +13,79 @@ namespace AnoMech.Tests;
 internal sealed class FakeBattleCharas : IBattleCharas
 {
     private const int SlotCount = 100;
-    private const uint CreatedEntityIdBase = 0xE0000000u;
+    private const uint DoppelEntityIdBase = 0x10FFFE00u;
     private const uint PacketSpawnEntityIdBase = 0x4000FE00u;
     private const uint DoppelMaxHealth = 100_000;
     private const uint EnemyMaxHealth = 1_000_000;
     private const float DoppelHitboxRadius = 0.5f;
-    private const float DefaultUnscaledRadius = 0.5f;
     private const uint DemihumanSkeletonIdBase = 10000;
     private const byte IsTargetable = 0x02;
-    private const int OrphanForgetFrames = 300;
-
-    // UNVERIFIED: the engine builds a packet-spawned actor "a few frames" later.
-    private const int PacketSpawnFrames = 3;
 
     private readonly FakeCharacter?[] slots = new FakeCharacter?[SlotCount];
+    private readonly Dictionary<uint, (uint Caster, uint ActionId)> effects = new();
     private readonly HashSet<int> reserved = [];
-    private readonly List<(int Slot, FakeCharacter Actor, int FramesLeft)> packetSpawns = [];
-    private readonly List<(int Slot, uint EntityId, int Frames)> orphans = [];
+    private readonly List<(int Slot, FakeCharacter Actor, int Frames)> arriving = [];
+    private readonly Random arrivals = new(17);
+
+    // Where this client hands out slots from, so two clients' actors get different entity ids,
+    // as two real clients' do.
+    public int SlotOffset { get; set; }
+
+    // How many frames a spawn packet's actor takes to arrive, as the engine's handler takes; none
+    // by default.
+    public (int Min, int Max) PacketSpawnFrames { get; set; }
 
     public FakeCharacter Player { get; } = new(0x10000001u, "Player") { MaxHealth = 100_000, Health = 100_000, HitboxRadius = 0.5f, HasDrawObject = true, IsDrawObjectVisible = true };
 
     public IBattleCharaProxy LocalPlayer { get; }
 
-    public FakeBattleCharas() => LocalPlayer = new FakeBattleChara(this, -1);
+    public SimTimeline Timeline { get; }
+
+    public FakeBattleCharas(SimTimeline? timeline = null)
+    {
+        Timeline = timeline ?? new SimTimeline();
+        LocalPlayer = new FakeBattleChara(this, -1);
+    }
+
+    internal FakeCharacter? Find(uint entityId)
+        => Player.EntityId == entityId ? Player : slots.FirstOrDefault(a => a?.EntityId == entityId);
+
+    // An ActionEffect's global sequence, until the first party EffectResult names it (its impact).
+    internal void RecordEffect(uint sequence, uint caster, uint actionId) => effects[sequence] = (caster, actionId);
+
+    internal (uint Caster, uint ActionId)? TakeEffect(uint sequence)
+        => effects.Remove(sequence, out var effect) ? effect : null;
 
     internal FakeCharacter? ActorAt(int slot) => slot < 0 ? Player : slots[slot];
 
-    internal void Free(int slot) => slots[slot] = null;
+    // Every character in the table but the local player: doppels and NPCs.
+    internal int Live => slots.Count(s => s != null);
 
-    public IBattleCharaProxy? SpawnBattleNpc(EnemySpawnConfig config, Placement placement)
+    internal void Free(int slot)
     {
-        if (Natives.Data.BNpcBase(config.BNpcBaseId) is not { } bnpc) return null;
-        var modelCharaId = config.ModelCharaId != 0 ? config.ModelCharaId : bnpc.ModelChara;
-        if (Natives.Data.ModelChara(modelCharaId) is not { } modelChara) return null;
-        var scale = config.Scale > 0f ? config.Scale : bnpc.Scale;
+        slots[slot] = null;
+        reserved.Remove(slot);
+        arriving.RemoveAll(a => a.Slot == slot);
+    }
 
-        var slot = FindFreeSlot();
-        if (slot < 0) return null;
-        var name = Natives.Data.BNpcName(config.NameId) ?? $"BNpc {config.BNpcBaseId:X}";
-        slots[slot] = new FakeCharacter(CreatedEntityIdBase + (uint)slot, name)
+    // In its slot now, or once its frames have passed; until then the slot is held.
+    private void Place(int slot, FakeCharacter actor)
+    {
+        var frames = PacketSpawnFrames.Max > 0 ? arrivals.Next(PacketSpawnFrames.Min, PacketSpawnFrames.Max + 1) : 0;
+        if (frames == 0)
         {
-            Position = placement.Position,
-            Rotation = placement.Rotation,
-            HitboxRadius = SpawnHitboxRadius(config, modelChara, scale),
-            MaxHealth = EnemyMaxHealth,
-            Health = EnemyMaxHealth,
-        };
-        return new FakeBattleChara(this, slot);
+            slots[slot] = actor;
+            return;
+        }
+        reserved.Add(slot);
+        arriving.Add((slot, actor, frames));
     }
 
     public IBattleCharaProxy? SpawnBattleNpcFromPacket(EnemySpawnConfig config, Placement placement, out uint entityId)
     {
         entityId = 0;
-        if (config.NpcSpawnTemplate is null) return null;
+        if (Natives.Data.BNpcBase(config.BNpcBaseId) is not { } bnpc) return null;
+        if (Natives.Data.ModelChara(config.ModelCharaId != 0 ? config.ModelCharaId : bnpc.ModelChara) is not { } modelChara) return null;
         var slot = FindFreeSlot();
         if (slot < 0) return null;
         entityId = PacketSpawnEntityIdBase + (uint)slot;
@@ -73,20 +94,54 @@ internal sealed class FakeBattleCharas : IBattleCharas
         {
             Position = placement.Position,
             Rotation = placement.Rotation,
-            HitboxRadius = PacketHitboxRadius(config.NpcSpawnTemplate),
+            HitboxRadius = NativeHitboxRadius(modelChara, bnpc.Scale),
             MaxHealth = EnemyMaxHealth,
             Health = EnemyMaxHealth,
+            HasDrawObject = true,
+            IsDrawObjectVisible = config.Visibility == SpawnVisibility.Visible,
         };
-        reserved.Add(slot);
-        packetSpawns.Add((slot, actor, PacketSpawnFrames));
+        Place(slot, actor);
+        Timeline.Add("spawn", entityId, name, config.BNpcBaseId.ToString(), "BNpcBase", position: placement.Position,
+            rotation: placement.Rotation,
+            detail: $"bnpcname={config.NameId} visibility={config.Visibility} display_flags=0x{config.DisplayFlags ?? (uint)config.Visibility:X} layout=0x{config.LayoutId:X} model={config.ModelCharaId} sheet_model={bnpc.ModelChara} "
+                    + $"level={config.Level} battalion={(config.IsHostile ? 4 : 0)} targetable={(config.Targetable ? 1 : 0)} enemy_list={config.EnemyList}"
+                    + (config.InitialModeAttributeFlags is { } flags ? $" mode_attr=0x{flags:X}" : "")
+                    + (config.ModelState != 0 ? $" model_state=0x{config.ModelState:X}" : "")
+                    + (config.ModelScale != 0 ? $" model_scale={config.ModelScale}" : "")
+                    + (AppearanceText(config.Appearance) is { Length: > 0 } appearance ? $" appearance={appearance}" : ""));
+        foreach (var status in config.Statuses ?? [])
+        {
+            actor.Statuses[(status.StatusId, FakeCharacter.StatusSource(0xE0000000))] = new StatusSlot(status.StatusId, status.Param, 0f, 0xE0000000);
+            Timeline.Add("status_gain", entityId, name, status.StatusId.ToString(), "", detail: $"dur=0.0 param={status.Param} on_spawn");
+        }
         return new FakeBattleChara(this, slot);
     }
 
-    public IBattleCharaProxy? SpawnDoppel(PartyMemberPreset preset, Placement placement)
+    // The form replay_timeline.py's npc_appearance_text writes, so spawn rows compare as text.
+    private static string AppearanceText(NpcAppearance? appearance)
     {
+        if (appearance is null) return "";
+        var parts = new List<string>();
+        if (appearance.MainHand != 0) parts.Add($"mh:0x{appearance.MainHand:X}");
+        if (appearance.OffHand != 0) parts.Add($"oh:0x{appearance.OffHand:X}");
+        var equipment = appearance.Equipment ?? [];
+        for (var i = 0; i < Math.Min(equipment.Length, 10); i++)
+            if (equipment[i] != 0) parts.Add($"eq{i}:0x{equipment[i]:X}");
+        var customize = new byte[26];
+        (appearance.Customize ?? []).AsSpan(0, Math.Min(appearance.Customize?.Length ?? 0, 26)).CopyTo(customize);
+        if (customize.Any(c => c != 0)) parts.Add($"cust:{Convert.ToHexString(customize)}");
+        return string.Join("/", parts);
+    }
+
+    public IBattleCharaProxy? SpawnDoppel(PartyMemberPreset preset, byte level, Placement placement, out uint entityId)
+    {
+        entityId = 0;
         var slot = FindFreeSlot();
         if (slot < 0) return null;
-        slots[slot] = new FakeCharacter(CreatedEntityIdBase + (uint)slot, preset.Name)
+        entityId = DoppelEntityIdBase + (uint)slot;
+        Timeline.Add("spawn_doppel", entityId, preset.Name, preset.ClassJob.ToString(), "ClassJob", position: placement.Position,
+            rotation: placement.Rotation);
+        Place(slot, new FakeCharacter(entityId, preset.Name)
         {
             ClassJob = preset.ClassJob,
             Position = placement.Position,
@@ -95,7 +150,7 @@ internal sealed class FakeBattleCharas : IBattleCharas
             MaxHealth = DoppelMaxHealth,
             Health = DoppelMaxHealth,
             TargetableStatus = IsTargetable,
-        };
+        });
         return new FakeBattleChara(this, slot);
     }
 
@@ -104,67 +159,25 @@ internal sealed class FakeBattleCharas : IBattleCharas
 
     public void ReleaseSlot(int slot) => reserved.Remove(slot);
 
-    public void NoteOrphan(int slot, uint entityId) => orphans.Add((slot, entityId, 0));
-
-    public void SweepOrphans()
-    {
-        for (var i = orphans.Count - 1; i >= 0; i--)
-        {
-            var (slot, entityId, frames) = orphans[i];
-            if (slots[slot]?.EntityId == entityId)
-            {
-                slots[slot] = null;
-                reserved.Remove(slot);
-                orphans.RemoveAt(i);
-            }
-            else if (frames >= OrphanForgetFrames)
-            {
-                reserved.Remove(slot);
-                orphans.RemoveAt(i);
-            }
-            else
-            {
-                orphans[i] = (slot, entityId, frames + 1);
-            }
-        }
-    }
-
     internal void Tick(float deltaSeconds)
     {
-        for (var i = packetSpawns.Count - 1; i >= 0; i--)
+        for (var i = arriving.Count - 1; i >= 0; i--)
         {
-            var (slot, actor, framesLeft) = packetSpawns[i];
-            if (framesLeft > 1)
+            var (slot, actor, frames) = arriving[i];
+            if (frames > 1)
             {
-                packetSpawns[i] = (slot, actor, framesLeft - 1);
+                arriving[i] = (slot, actor, frames - 1);
                 continue;
             }
+            arriving.RemoveAt(i);
             slots[slot] = actor;
-            packetSpawns.RemoveAt(i);
         }
-
         Player.Tick(deltaSeconds);
         foreach (var actor in slots) actor?.Tick(deltaSeconds);
     }
 
-    // BattleCharas.SpawnBattleNpc's per-Type split: the native path ignores config.HitboxRadius.
-    private static float SpawnHitboxRadius(EnemySpawnConfig config, ModelCharaRow modelChara, float scale)
-        => modelChara.Type switch
-        {
-            0 when config.Customize is not null => config.HitboxRadius > 0f ? config.HitboxRadius : DoppelHitboxRadius,
-            1 => config.HitboxRadius > 0f ? config.HitboxRadius : (modelChara.Radius > 0f ? modelChara.Radius : DefaultUnscaledRadius) * scale,
-            _ => NativeHitboxRadius(modelChara, scale),
-        };
-
-    // UNVERIFIED: assumes the engine's packet handler sizes the actor like SpawnBattleNpc's native path.
-    private static float PacketHitboxRadius(byte[] template)
-    {
-        var packet = MemoryMarshal.Read<SpawnNpcPacket>(template);
-        var bnpc = Natives.Data.BNpcBase(packet.Common.BaseId);
-        var modelChara = Natives.Data.ModelChara(packet.Common.ModelChara);
-        return bnpc == null || modelChara == null ? 0f : NativeHitboxRadius(modelChara, bnpc.Scale);
-    }
-
+    // UNVERIFIED: assumes the engine's packet handler sizes the actor the way
+    // ModelContainer.UpdateHitboxRadius does.
     // ModelContainer.UpdateHitboxRadius: Scale × CalculateUnscaledRadius, which prefers the
     // ModelChara row's radius over its skeleton's. Type 2 and the skeleton-less types are UNVERIFIED.
     private static float NativeHitboxRadius(ModelCharaRow modelChara, float scale)
@@ -181,8 +194,11 @@ internal sealed class FakeBattleCharas : IBattleCharas
 
     private int FindFreeSlot()
     {
-        for (var i = 0; i < slots.Length; i++)
+        for (var k = 0; k < slots.Length; k++)
+        {
+            var i = (SlotOffset + k) % slots.Length;
             if (slots[i] == null && !reserved.Contains(i)) return i;
+        }
         return -1;
     }
 }

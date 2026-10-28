@@ -18,7 +18,6 @@ public sealed class UmadP2ForsakenZP6SouthAdjustAiHelper
     private readonly Vector2?[] oddCoords;
     private readonly Vector2?[] evenCoords;
     private readonly Action<UmadP2ForsakenZP6SouthAdjustAiHelper, int, IList<PartyRole>> reorderActive;
-    private readonly UmadP2ForsakenPlaybook playbook;
 
     private UmadP2ForsakenState state = null!;
 
@@ -30,17 +29,12 @@ public sealed class UmadP2ForsakenZP6SouthAdjustAiHelper
     public UmadP2ForsakenZP6SouthAdjustAiHelper(
         Vector2?[] oddCoords,
         Vector2?[] evenCoords,
-        Action<UmadP2ForsakenZP6SouthAdjustAiHelper, int, IList<PartyRole>> reorderActive,
-        UmadP2ForsakenPlaybook playbook)
+        Action<UmadP2ForsakenZP6SouthAdjustAiHelper, int, IList<PartyRole>> reorderActive)
     {
         this.oddCoords = oddCoords;
         this.evenCoords = evenCoords;
         this.reorderActive = reorderActive;
-        this.playbook = playbook;
     }
-
-    // Bots take their spots halfway between going at once and arriving at the last moment.
-    private const float SettleFraction = 0.5f;
 
     public void Run(UmadP2ForsakenState s, SimWorld world)
     {
@@ -48,33 +42,47 @@ public sealed class UmadP2ForsakenZP6SouthAdjustAiHelper
         var ai = new AiManager(world);
         Init();
 
-        ai.Move(1f, InitialLineup, cue: playbook.Lineup);
-        ai.Move(10.16f, TowerPositions(0), jitter: .0f, arrivalTime: 22.16f, settleFraction: SettleFraction, cue: playbook.Towers(state, 0, alpha));
-        ai.Move(25.17f, TowerPositions(1), jitter: .0f, arrivalTime: 32.16f, settleFraction: SettleFraction, cue: playbook.Towers(state, 1, alpha));
-        ai.Move(33f, AllThingsEndsBait(0, 2), jitter: .0f, arrivalTime: 37f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 0));
-        ai.Move(39.21f, TowerPositions(2), jitter: .0f, arrivalTime: 43.21f, settleFraction: SettleFraction, cue: playbook.Towers(state, 2, alpha));
-        ai.Move(47.22f, TowerPositions(3), jitter: .0f, arrivalTime: 53.22f, settleFraction: SettleFraction, cue: playbook.Towers(state, 3, beta));
-        ai.Move(54f, AllThingsEndsBait(1, 4), jitter: .0f, arrivalTime: 57f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 1));
-        ai.Move(59.6f, TowerPositions(4), jitter: .0f, arrivalTime: 63.86f, settleFraction: SettleFraction, cue: playbook.Towers(state, 4, beta));
-        ai.Move(65.27f, TowerPositions(5), jitter: .0f, arrivalTime: 73.27f, settleFraction: SettleFraction, cue: playbook.Towers(state, 5, beta));
-        ai.Move(75f, AllThingsEndsBait(2, 6), jitter: .0f, arrivalTime: 78f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 2));
-        ai.Move(81.31f, TowerPositions(6), jitter: .0f, arrivalTime: 85.0f, settleFraction: SettleFraction, cue: playbook.Towers(state, 6, beta));
-        ai.Move(90.32f, TowerPositions(7), jitter: .0f, arrivalTime: 94.32f, settleFraction: SettleFraction, cue: playbook.Towers(state, 7, alpha));
+        ai.Move(1f, InitialLineup);
+        ai.Move(10.16f, TowerPositions(0), jitter: .0f, arrivalTime: 22.16f);
+        ai.Move(25.17f, TowerPositions(1), jitter: .0f, arrivalTime: 32.16f);
+        ai.Move(33.3f, AllThingsEndsBait(0, 2), arrivalTime: 37f);
+        ai.Move(39.21f, TowerPositions(2), jitter: .0f, arrivalTime: 43.21f);
+        ai.Move(47.22f, TowerPositions(3), jitter: .0f, arrivalTime: 53.22f);
+        ai.Move(54.35f, AllThingsEndsBait(1, 4), arrivalTime: 57f);
+        ai.Move(59.26f, TowerPositions(4), jitter: .0f, arrivalTime: 63.86f);
+        ai.Move(66.4f, TowerPositions(5), jitter: .0f, arrivalTime: 73.27f);
+        ai.Move(75.4f, AllThingsEndsBait(2, 6), arrivalTime: 78f);
+        ai.Move(81.31f, TowerPositions(6), jitter: .0f, arrivalTime: 85.8f);
+        ai.Move(90.32f, TowerPositions(7), jitter: .0f, arrivalTime: 94.32f);
         // Occurrence 3 has no upcoming tower to bisect against and nothing moves the party after
         // it, so it gets the real two-step: gather between the last towers, then relocate once the
         // castbar starts. The boss's facing locks at its Face() call, so moving during the cast is
         // what makes Future's End safe; Past's End's second move is a same-spot no-op.
-        ai.Move(95.83f, BetweenLastTowers(), jitter: .0f, arrivalTime: 98f, settleFraction: SettleFraction, cue: playbook.LastClonesGather(state));
-        ai.Move(101.16f, AllThingsEndsBait(3, 7), jitter: .0f, arrivalTime: 105f, settleFraction: SettleFraction, cue: playbook.EndBait(state, 3));
+        ai.Move(96.45f, BetweenLastTowers(), arrivalTime: 98f);
+        ai.Move(101.16f, AllThingsEndsBait(3, 7), arrivalTime: 105f);
     }
 
-    // On the NewNorthAt(2*i+2) bisector the next tower pair straddles (see UmadP2ForsakenEndBait).
+    // Future's End sits opposite the upcoming towers, Past's End between them, both on the
+    // NewNorthAt(2*i+2) bisector the tower pair straddles. Future's following tower transition
+    // is infeasible at any distance, so its spot is pushed out for range as well as angle (the
+    // cone tracks party.Player, who is in this stack); Past keeps the tighter margin to help its
+    // own tight transition. Both casters sit at the origin.
+    private const float PastMeleeFromCenter = 9.7f;
+    private const float FutureMeleeFromCenter = 11f;
+
     private Func<IAiMove> AllThingsEndsBait(int i, int northIndex)
-        => () => UmadP2ForsakenEndBait.Move(state.EndAttacks[i] == EndAttack.PastsEnd, state.NewNorthAt(northIndex));
+    {
+        var distance = state.EndAttacks[i] == EndAttack.PastsEnd ? -PastMeleeFromCenter : FutureMeleeFromCenter;
+        return () => AiMove.All(new(0, distance))
+                           .ApplyPositions(state.NewNorthAt(northIndex).Apply);
+    }
 
     // Occurrence 3's first leg: both variants start between the towers.
     private Func<IAiMove> BetweenLastTowers()
-        => () => UmadP2ForsakenEndBait.Move(betweenTowers: true, state.NewNorthAt(7));
+    {
+        return () => AiMove.All(new(0, -PastMeleeFromCenter))
+                           .ApplyPositions(state.NewNorthAt(7).Apply);
+    }
 
     private void Init()
     {

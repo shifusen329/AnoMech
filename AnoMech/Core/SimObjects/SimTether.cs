@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using AnoMech.Core.Game;
 
 namespace AnoMech.Core.SimObjects;
 
@@ -21,8 +22,8 @@ namespace AnoMech.Core.SimObjects;
 // slot in the same frame (e.g. P5 Delta prep → real at t=29s) without racing
 // our own ClearTether against the new SetTether.
 //
-// Distance / endpoint-death break logic lives in the owning scenario — SimTether
-// only renders the visual and ticks expiry.
+// It ends on its own when it expires, when an end dies, or when its BreaksWhen condition holds,
+// and raises TetherEnded for each; a scenario's own Despawn raises nothing.
 public sealed class SimTether : ISimObject
 {
     private const byte Slot = 0;
@@ -35,30 +36,29 @@ public sealed class SimTether : ISimObject
     private readonly float duration;
     private readonly ushort debuffStatusId;
     private float elapsed;
+    private float age;
     private bool active;
     private SimCharacter? currentSource;
     private SimCharacter? currentTarget;
     private ConditionalStatus? conditionalStatus;
     private bool autoFaceTarget;
+    private Predicate<SimTether>? breaksWhen;
+    private readonly SimEvents? events;
 
     public ushort TetherId { get; }
 
     public SimCharacter? A => currentSource;
     public SimCharacter? B => currentTarget;
-    // Set by the scenario when this tether has been resolved (broken or failed) to
-    // prevent duplicate processing if multiple triggers fire in the same frame.
-    public bool Resolved { get; set; }
     public bool IsActive => active;
 
-    public static bool IsAnyDead(SimTether t) =>
-        !t.A.IsAlive() || !t.B.IsAlive();
     public bool StretchGt(float distance) =>
         A is { } a && B is { } b && Vector3.DistanceSquared(a.Position, b.Position) > distance * distance;
     public bool StretchLt(float distance) =>
         A is { } a && B is { } b && Vector3.DistanceSquared(a.Position, b.Position) < distance * distance;
 
-    internal SimTether(ITetherEnd from, ITetherEnd to, TetherContext ctx, ushort debuffStatusId, float duration)
+    internal SimTether(ITetherEnd from, ITetherEnd to, TetherContext ctx, ushort debuffStatusId, float duration, SimEvents? events)
     {
+        this.events = events;
         this.from = from;
         this.to = to;
         this.ctx = ctx;
@@ -67,11 +67,17 @@ public sealed class SimTether : ISimObject
         this.duration = duration;
 
         // Seed both ends. At least one end is Fixed (enforced by the SimWorld.Tether
-        // overload set), so resolving the partner first hands the dynamic end a
-        // stable reference: anchor → dynamic source → settle the anchor again.
-        currentTarget = to.Resolve(null, null, ctx);
-        currentSource = from.Resolve(null, currentTarget, ctx);
-        currentTarget = to.Resolve(currentTarget, currentSource, ctx);
+        // overload set); seeding it first hands the dynamic end a stable reference.
+        if (from is FixedEnd)
+        {
+            currentSource = from.Resolve(null, null, ctx);
+            currentTarget = to.Resolve(null, currentSource, ctx);
+        }
+        else
+        {
+            currentTarget = to.Resolve(null, null, ctx);
+            currentSource = from.Resolve(null, currentTarget, ctx);
+        }
 
         CreateVfx();
         if (debuffStatusId != 0 && duration > 0f)
@@ -85,6 +91,7 @@ public sealed class SimTether : ISimObject
     public void Tick(float deltaSeconds)
     {
         if (!active) return;
+        age += deltaSeconds;
         if (duration > 0f)
         {
             elapsed += deltaSeconds;
@@ -97,6 +104,7 @@ public sealed class SimTether : ISimObject
                 }
                 ClearTetherVfxIfOwned();
                 active = false;
+                events?.Raise(new TetherEnded(this, TetherEndReason.Expired));
                 return;
             }
         }
@@ -104,10 +112,12 @@ public sealed class SimTether : ISimObject
         var nextTarget = to.Resolve(currentTarget, currentSource, ctx);
         if (nextTarget != currentTarget)
         {
-            ClearTetherVfxIfOwned();
+            // The source keeps the slot, so the new tether just overwrites it, as the server does.
+            if (nextTarget == null) ClearTetherVfxIfOwned();
             statusB?.Despawn();
             currentTarget = nextTarget;
             CreateVfx();
+            TargetTetheredPlayer();
             if (debuffStatusId != 0 && duration > 0f)
             {
                 statusB = currentTarget?.AddStatus(debuffStatusId, duration);
@@ -127,7 +137,18 @@ public sealed class SimTether : ISimObject
             }
         }
 
-        if (conditionalStatus != null)
+        if (currentSource is { } a && currentTarget is { } b && (!a.IsAlive() || !b.IsAlive()))
+        {
+            End(TetherEndReason.EndDied);
+            return;
+        }
+        if (breaksWhen?.Invoke(this) == true)
+        {
+            End(TetherEndReason.Stretched);
+            return;
+        }
+
+        if (conditionalStatus != null && age >= ConditionalStatusDelay)
         {
             if (conditionalStatus.Condition(this))
             {
@@ -167,10 +188,23 @@ public sealed class SimTether : ISimObject
         }
     }
 
+    private void End(TetherEndReason reason)
+    {
+        Despawn();
+        events?.Raise(new TetherEnded(this, reason));
+    }
+
+    // Checked every tick, e.g. t => t.StretchGt(maxLength) for a tether that snaps when pulled too far.
+    public SimTether BreaksWhen(Predicate<SimTether> condition)
+    {
+        breaksWhen = condition;
+        return this;
+    }
+
     private void CreateVfx()
     {
         if (currentSource != null && currentTarget != null)
-            currentSource.Proxy?.SetTether(Slot, TetherId, currentTarget.GameObjectId, 1);
+            currentSource.ActorControl.SetTether(TetherId, currentTarget.GameObjectId);
     }
 
     // Sentinel-checked clear: only wipe a slot we still own. A chained tether
@@ -178,8 +212,8 @@ public sealed class SimTether : ISimObject
     // overwritten Vfx.Tethers[slot].Id; we leave that alone.
     private void ClearTetherVfxIfOwned()
     {
-        if (currentSource?.Proxy is { } source && source.GetTetherId(Slot) == TetherId)
-            source.ClearTether(Slot);
+        if (currentSource is { Proxy: { } source } owner && source.GetTetherId(Slot) == TetherId)
+            owner.ActorControl.ClearTether();
     }
 
     public SimTether SetConditionalStatus(ushort statusId, Predicate<SimTether> predicate)
@@ -188,11 +222,22 @@ public sealed class SimTether : ISimObject
         return this;
     }
     
+    // The server first checks the condition about a second after the tether goes out.
+    private const float ConditionalStatusDelay = 1f;
+
     private record ConditionalStatus(ushort StatusId, Predicate<SimTether> Condition);
 
+    // A source enemy also targets whoever it is tethered to.
     public SimTether SetAutoFaceTarget(bool value)
     {
         autoFaceTarget = value;
+        TargetTetheredPlayer();
         return this;
+    }
+
+    private void TargetTetheredPlayer()
+    {
+        if (autoFaceTarget && currentSource is SimEnemy enemy && currentTarget != null)
+            enemy.SetTarget(currentTarget, follow: false);
     }
 }

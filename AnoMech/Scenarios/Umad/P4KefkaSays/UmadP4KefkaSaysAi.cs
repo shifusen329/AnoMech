@@ -49,23 +49,23 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
         var ai = new AiManager(world);
 
         // Gather near centre before the first Mystery Magic resolves (~16s).
-        ai.Move(2f, () => Stack(new Vector2(0f, 4f)), jitter: 2f, arrivalTime: 9f, cue: UmadP4KefkaSaysPlaybook.Gather);
-        ai.Move(11.6f, () => Stack(SafeSpot(state.Mystery[0])), jitter: 0.8f, arrivalTime: 15.4f, cue: UmadP4KefkaSaysPlaybook.MysteryMagic(state, 0));
-        ai.Move(26.4f, () => Stack(SafeSpot(state.Mystery[1])), jitter: 0.8f, arrivalTime: 30.3f, cue: UmadP4KefkaSaysPlaybook.MysteryMagic(state, 1));
-        ai.Move(41.5f, () => Stack(SafeSpot(state.Mystery[2])), jitter: 0.8f, arrivalTime: 45.4f, cue: UmadP4KefkaSaysPlaybook.MysteryMagic(state, 2));
+        ai.Move(2f, () => Stack(new Vector2(0f, 0f)), jitter: 2f, arrivalTime: 9f);
+        ai.Move(11.6f, () => Stack(SafeSpot(state.Mystery[0])), jitter: 0.8f, arrivalTime: 15.4f);
+        ai.Move(26.4f, () => Stack(SafeSpot(state.Mystery[1])), jitter: 0.8f, arrivalTime: 30.3f);
+        ai.Move(41.5f, () => Stack(SafeSpot(state.Mystery[2])), jitter: 0.8f, arrivalTime: 45.4f);
 
-        ai.Move(57.6f, () => FloodOfNaught(state), jitter: 2.5f, arrivalTime: 62.2f, cue: UmadP4KefkaSaysPlaybook.FloodOfNaught(state));
-        ai.Move(63, () => ResolveElements(state.ElemRoles[0], state.ElemTrue[0]), arrivalTime: 70.5f, cue: UmadP4KefkaSaysPlaybook.Elements(state, 0));
+        ai.Move(57.6f, () => FloodOfNaught(state), jitter: 2.5f, arrivalTime: 62.2f);
+        ai.Move(63, () => ResolveElements(state.ElemRoles[0], state.ElemTrue[0]), arrivalTime: 70.5f);
         ScheduleWave1Gaze(ai, state, world);
 
         // Stray Flames: bait the fire stacked in the middle (scenario locks each bait
         // at ~87.3s), then react to the resolved shape, which lands ~92.4s.
-        ai.Move(81f, () => Stack(new Vector2(0f, 0f)), jitter: 1f, arrivalTime: 86.5f, cue: UmadP4KefkaSaysPlaybook.FireBait);
-        ai.Move(88f, () => StrayFlames(state), jitter: 0.5f, arrivalTime: 92f, cue: UmadP4KefkaSaysPlaybook.StrayFlames(state));
+        ai.Move(81f, () => Stack(new Vector2(0f, 0f)), jitter: 1f, arrivalTime: 86.5f);
+        ai.Move(88f, () => StrayFlames(state.InfernoMystery), jitter: 0.5f, arrivalTime: 92f);
 
         // Elemental wave 2 (~96.5s) folded into Mystery[3]'s Blizzard-safe wedges (~97.4s);
         // arrival at 96.0 also clears the Acceleration Bomb check at 96.28.
-        ai.Move(92.5f, () => ResolveElementsUnderBlizzard(state.ElemRoles[1], state.ElemTrue[1], state.Mystery[3]), arrivalTime: 96.0f, cue: UmadP4KefkaSaysPlaybook.Elements(state, 1));
+        ai.Move(92.5f, () => ResolveElementsUnderBlizzard(state.ElemRoles[1], state.ElemTrue[1], state.Mystery[3]), arrivalTime: 96.0f);
 
         // Wave2 Death Shriek (~104.4s): a pure positioning+facing solve in the middle,
         // nothing else live. Position the pair, then nudge to set the gaze facing.
@@ -74,8 +74,8 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
         // Water bait (~109.98 lock) + last Mystery Magic (Mystery[4], ~115.6s): bait
         // Stray Spray stacked in the middle, then one final move that clears the water
         // (in for the real Donut / out for the fake Chariot) and solves Mystery[4].
-        ai.Move(106f, () => Stack(new Vector2(0f, 0f)), jitter: 0.8f, arrivalTime: 109.5f, cue: UmadP4KefkaSaysPlaybook.WaterBait);
-        ai.Move(111f, () => StraySprayAndMystery(state.TsunamiMystery, state.Mystery[4]), jitter: 0.3f, arrivalTime: 114.5f, cue: UmadP4KefkaSaysPlaybook.StraySprayAndManaRelease(state));
+        ai.Move(106f, () => Stack(new Vector2(0f, 0f)), jitter: 0.8f, arrivalTime: 109.5f);
+        ai.Move(111f, () => StraySprayAndMystery(state.TsunamiMystery, state.Mystery[4]), jitter: 0.3f, arrivalTime: 114.5f);
 
         ScheduleAccelerationBombDodge(state, world);
     }
@@ -110,9 +110,9 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
                 return;
             }
             DiagnosticLog.Info($"[AccelerationBombDodge] wiggle firing at t={resolveTime - 0.6f:F2} (resolve at {resolveTime:F2}) from ({member.Position.X:F1},{member.Position.Z:F1}).");
-            var wiggle = member.Position + new Vector3(0.3f, 0f, 0f);
-            world.Strat.Note(role, new Vector2(wiggle.X, wiggle.Z), UmadP4KefkaSaysPlaybook.AccelerationBombFake, deadline: null);
-            member.MoveTo(wiggle, speed: 0.4f);
+            var toDestination = (member.MoveDestination ?? member.Position) - member.Position;
+            var step = toDestination.Length() > 0.05f ? Vector3.Normalize(toDestination) : Vector3.UnitX;
+            member.MoveTo(member.Position + step * 0.3f, speed: 0.4f);
         });
     }
 
@@ -120,24 +120,24 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
     {
         if (gazeLayout == GazeLayout.SupportsNorthDpsSouth)
         {
-            ai.Move(72, () => SupportsNorthAlongThunderEdge(state.Wave1, state.Mystery[3], 0f), jitter: 0, arrivalTime: 76f, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 0, facing: false));
-            ai.Move(78.5f, () => SupportsNorthAlongThunderEdge(state.Wave1, state.Mystery[3], GazeFacingStep(state.Wave1True)), jitter: 0, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 0, facing: true));
+            ai.Move(72, () => SupportsNorthAlongThunderEdge(state.Wave1, state.Mystery[3], 0f), jitter: 0, arrivalTime: 76f);
+            ai.Move(78.5f, () => SupportsNorthAlongThunderEdge(state.Wave1, state.Mystery[3], GazeFacingStep(state.Wave1True)), jitter: 0);
             return;
         }
-        ai.Move(72, () => ResolveGaze(state.Wave1, state.Mystery[3]), jitter: 0, arrivalTime: 76f, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 0, facing: false));
-        ai.Move(78.5f, () => ResolveGazeLook(world, state.Mystery[3], state.Wave1True), jitter: 0, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 0, facing: true));
+        ai.Move(72, () => ResolveGaze(state.Wave1, state.Mystery[3]), jitter: 0, arrivalTime: 76f);
+        ai.Move(78.5f, () => ResolveGazeLook(world, state.Mystery[3], state.Wave1True), jitter: 0);
     }
 
     private void ScheduleWave2Gaze(AiManager ai, UmadP4KefkaSaysState state, SimWorld world)
     {
         if (gazeLayout == GazeLayout.SupportsNorthDpsSouth)
         {
-            ai.Move(98f, () => SupportsNorthAroundBoss(state.Wave2, 0f), jitter: 0, arrivalTime: 101.5f, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 1, facing: false));
-            ai.Move(102.5f, () => SupportsNorthAroundBoss(state.Wave2, GazeFacingStep(state.Wave2True)), jitter: 0, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 1, facing: true));
+            ai.Move(98f, () => SupportsNorthAroundBoss(state.Wave2, 0f), jitter: 0, arrivalTime: 101.5f);
+            ai.Move(102.5f, () => SupportsNorthAroundBoss(state.Wave2, GazeFacingStep(state.Wave2True)), jitter: 0);
             return;
         }
-        ai.Move(98f, () => ResolveGazeCentre(state.Wave2), jitter: 0, arrivalTime: 101.5f, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 1, facing: false));
-        ai.Move(102.5f, () => ResolveGazeCentreLook(world, state.Wave2True), jitter: 0, cue: UmadP4KefkaSaysPlaybook.Gaze(state, gazeLayout, 1, facing: true));
+        ai.Move(98f, () => ResolveGazeCentre(state.Wave2), jitter: 0, arrivalTime: 101.5f);
+        ai.Move(102.5f, () => ResolveGazeCentreLook(world, state.Wave2True), jitter: 0);
     }
 
     private const float ThunderEdgeInset = 1.25f;
@@ -329,8 +329,8 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
     // coords[0..2] = stack (3) N, coords[3] = solo W; coords[4..6] = stack (3) S, coords[7] = solo E.
     private static readonly Vector2?[] ElementCardinals =
     {
-        new(0f, -10f), new(0f, -10f), new(0f, -10f), new(-12f, 0f),
-        new(0f, 10f), new(0f, 10f), new(0f, 10f), new(12f, 0f),
+        new(0f, -12f), new(0f, -12f), new(0f, -12f), new(-12f, 0f),
+        new(0f, 12f), new(0f, 12f), new(0f, 12f), new(12f, 0f),
     };
 
     // Every slot to the same destination.
@@ -343,13 +343,23 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
     // player's position at ~87.3s, then resolves InfernoMystery.Solution ~5s later).
     // The whole party baits stacked in the arena centre so the AOEs land on top of
     // each other, and the resolved shape decides the safe spot:
-    //   real -> StrayFlames_Chariot (circle r=6 on the bait) -> everyone runs out to the next
-    //           round's stack/spread spot, already clear of r=6
+    //   real -> StrayFlames_Chariot (circle r=6 on the bait) -> everyone runs out
     //   lie  -> StrayFlames_Donut   (safe inside r=6)         -> everyone stays in
-    private IAiMove StrayFlames(UmadP4KefkaSaysState state) =>
-        state.InfernoMystery.SolutionIsChariot
-            ? ResolveElementsUnderBlizzard(state.ElemRoles[1], state.ElemTrue[1], state.Mystery[3])
-            : AiMove.All(new Vector2(0f, 0f));
+    private static IAiMove StrayFlames(ChaosMystery inferno)
+    {
+        if (!inferno.SolutionIsChariot) // Donut: the middle (inside r=6) is safe — stay stacked.
+            return AiMove.All(new Vector2(0f, 0f));
+
+        // Chariot: the circle covers the centre; fan straight out well past r=6.
+        const float radius = 11f;
+        var coords = new Vector2?[8];
+        for (var i = 0; i < 8; i++)
+        {
+            var th = i * MathF.PI / 4f;
+            coords[i] = new Vector2(MathF.Sin(th) * radius, MathF.Cos(th) * radius);
+        }
+        return AiMove.Create(coords).NaturalOrder();
+    }
 
     // --- Stray Spray bait (Tsunami "Mana Release") + last Mystery Magic -----------
     //
@@ -368,7 +378,7 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
     //
     // Mirrors the hazard geometry the scenario resolves against (see
     // UmadP4KefkaSaysScenario.Run_Kefka_400040E5_1 / Run_Kefka_400040E6_1 and the
-    // shapes in CharacterFind), so "safe here" matches "DamageSolver won't hit me".
+    // shapes in CharacterFind), so "safe here" matches "the hit won't land on me".
 
     // Blizzard: 4 cones, apex at arena centre, facing the 4 inter-cardinals, 45°
     // half-angle. The two with (i + BlizzardOffset) even are real.
@@ -500,16 +510,15 @@ public sealed class UmadP4KefkaSaysAi(UmadP4KefkaSaysAi.GazeLayout gazeLayout) :
     // side, off the centre line.
     //
     // Each side carries one resolved colour (White/Black, always opposite); a player's
-    // wound (White/Black) plus whether the cast is a lie (Wave4True) decides which
-    // colour is lethal. The antilight cleanses iff the player holds BeyondDeathState
-    // AND takes the *opposite* colour to their wound; a matching colour kills them.
-    // So the only players who *can* live in an antilight are the BeyondDeathState
-    // holders, and they must mismatch — everyone else takes the matching (lethal) one.
+    // wound (White/Black) plus whether Wave 3 is a lie (Wave3True) decides which
+    // colour is lethal. A lethal colour kills unless the player holds BeyondDeathStatus,
+    // which it then cleanses.
     //
     // Player debuffs come from Wave3 (scenario applies at 51.67s): position parity →
     // BeyondDeath (even) / AllaganField (odd); Wounds[i] → White / Black wound.
-    // BeyondDeathState = Wave4True ? BeyondDeath : AllaganField, so the "must-cleanse"
-    // parity flips with the lie — that's the "fake cast" dependency.
+    // BeyondDeathStatus = Wave3True ? BeyondDeath : AllaganField. A lie flips both the
+    // must-cleanse parity and the lethal colour, so they cancel and the side each slot
+    // takes doesn't depend on Wave3True.
     private const float AntilightLocalX = 8f; // off the Edge of Death, inside the side rect
     private static IAiMove FloodOfNaught(UmadP4KefkaSaysState state)
     {

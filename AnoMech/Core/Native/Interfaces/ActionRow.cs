@@ -6,7 +6,7 @@ public sealed record ActionRow(
     uint Id,
     string Name,
     float CastSeconds,
-    byte CastType,
+    CastType CastType,
     byte EffectRange,
     byte XAxisModifier,
     string? OmenPath,
@@ -14,4 +14,7 @@ public sealed record ActionRow(
     uint ActionCategory,
     bool CanTargetSelf,
     bool CanTargetParty,
-    float RecastSeconds = 0f);
+    sbyte AttackType,
+    // Aimed at a ground point: the server's ActionEffect then carries no animation target.
+    bool TargetArea,
+    bool IsPlayerAction);

@@ -1,12 +1,13 @@
+using System.Collections.Concurrent;
 using System.Globalization;
+using System.Text;
 using AnoMech.Core.Native.Interfaces;
-using Microsoft.VisualBasic.FileIO;
 
 namespace AnoMech.Tests;
 
 // Real sheet rows from the ffxiv-datamining CSVs that AnoMech.Tests.csproj downloads at build.
-// Mirrors GameData's mapping column for column; sheets are parsed once per test run.
-internal sealed class DataminingGameData : IGameData
+// Mirrors GameData's mapping column for column; sheets are loaded once per test run.
+internal sealed class DataminingGameData(FakeRsvFunctions rsv) : IGameData
 {
     private static readonly Lazy<Sheet> Actions = Load("Action");
     private static readonly Lazy<Sheet> BNpcBases = Load("BNpcBase");
@@ -17,15 +18,18 @@ internal sealed class DataminingGameData : IGameData
     private static readonly Lazy<Sheet> ModelSkeletons = Load("ModelSkeleton");
     private static readonly Lazy<Sheet> Omens = Load("Omen");
     private static readonly Lazy<Sheet> Statuses = Load("Status");
+    private static readonly Lazy<Sheet> TerritoryTypes = Load("TerritoryType");
+    private static readonly Lazy<Sheet> ContentFinderConditions = Load("ContentFinderCondition");
+    private static readonly Lazy<Sheet> Weathers = Load("Weather");
 
     public ActionRow? Action(uint actionId)
     {
         if (Actions.Value.Row(actionId) is not { } row) return null;
         return new ActionRow(
             actionId,
-            row.Text("Name"),
+            rsv.Resolve(row.Text("Name")),
             row.UInt("Cast100ms") / 10f,
-            row.Byte("CastType"),
+            (CastType)row.Byte("CastType"),
             row.Byte("EffectRange"),
             row.Byte("XAxisModifier"),
             OmenPath(row.UInt("Omen")),
@@ -33,12 +37,18 @@ internal sealed class DataminingGameData : IGameData
             row.UInt("ActionCategory"),
             row.Bool("CanTargetSelf"),
             row.Bool("CanTargetParty"),
-            row.UInt("Recast100ms") / 10f);
+            row.SByte("AttackType"),
+            row.Bool("TargetArea"),
+            row.Bool("IsPlayerAction"));
     }
+
+    // Every action a player presses outside PvP.
+    public static IEnumerable<uint> PlayerActionIds()
+        => Actions.Value.Ids.Where(id => Actions.Value.Row(id) is { } row && row.Bool("IsPlayerAction") && !row.Bool("IsPvP"));
 
     public KnockbackRow? Knockback(uint knockbackId)
         => Knockbacks.Value.Row(knockbackId) is { } row
-            ? new KnockbackRow(knockbackId, row.Byte("Distance"), row.Byte("Speed"))
+            ? new KnockbackRow(knockbackId, row.Byte("Distance"), row.Byte("Speed"), row.Byte("Direction"))
             : null;
 
     public ClassJobRow? ClassJob(uint classJobId)
@@ -61,14 +71,31 @@ internal sealed class DataminingGameData : IGameData
             ? new ModelSkeletonRow(skeletonId, row.Float("Radius"))
             : null;
 
-    public string? StatusName(ushort statusId) => NonEmpty(Statuses.Value.Row(statusId)?.Text("Name"));
+    public StatusRow? Status(ushort statusId)
+        => Statuses.Value.Row(statusId) is { } row
+            ? new StatusRow(statusId, Resolve(row.Text("Name")) ?? "", row.Bool("LockMovement"), row.Bool("LockActions"), row.Bool("LockControl"), row.Byte("MaxStacks"))
+            : null;
 
-    public string? BNpcName(uint nameId) => NonEmpty(BNpcNames.Value.Row(nameId)?.Text("Singular"));
+    public TerritoryTypeRow? TerritoryType(uint territoryId)
+        => TerritoryTypes.Value.Row(territoryId) is { } row
+            ? new TerritoryTypeRow(territoryId, row.UInt("ContentFinderCondition"))
+            : null;
+
+    public ContentFinderConditionRow? ContentFinderCondition(uint contentFinderConditionId)
+        => ContentFinderConditions.Value.Row(contentFinderConditionId) is { } row
+            ? new ContentFinderConditionRow(contentFinderConditionId, row.Byte("ClassJobLevelSync"))
+            : null;
+
+    public string? BNpcName(uint nameId) => NonEmpty(Resolve(BNpcNames.Value.Row(nameId)?.Text("Singular")));
+
+    public bool WeatherExists(byte weatherId) => Weathers.Value.Row(weatherId) is not null;
 
     public bool FileExists(string path) => true;
 
     private static string? OmenPath(uint omenId)
         => omenId != 0 && Omens.Value.Row(omenId) is { } omen ? omen.Text("Path") : null;
+
+    private string? Resolve(string? text) => text == null ? null : rsv.Resolve(text);
 
     private static string? NonEmpty(string? text) => string.IsNullOrEmpty(text) ? null : text;
 
@@ -78,22 +105,93 @@ internal sealed class DataminingGameData : IGameData
         if (!File.Exists(path))
             throw new FileNotFoundException($"{name}.csv was not downloaded; add {name} to the DataminingSheet items in AnoMech.Tests.csproj.", path);
 
-        using var parser = new TextFieldParser(path) { HasFieldsEnclosedInQuotes = true, TrimWhiteSpace = false };
-        parser.SetDelimiters(",");
-        var header = parser.ReadFields()!;
+        var text = File.ReadAllText(path);
+        var pos = 0;
+        var header = ReadRecord(text, ref pos);
         var columns = new Dictionary<string, int>();
         for (var i = 0; i < header.Length; i++)
             columns.TryAdd(header[i], i);
 
-        var rows = new Dictionary<uint, string[]>();
-        while (parser.ReadFields() is { } fields)
-            rows[uint.Parse(fields[0], CultureInfo.InvariantCulture)] = fields;
-        return new Sheet(name, columns, rows);
+        // Splitting every row up front costs seconds on Action.csv while a run reads a few hundred
+        // rows, so only row offsets are indexed here.
+        var rows = new Dictionary<uint, int>();
+        while (pos < text.Length)
+        {
+            if (text[pos] is '\r' or '\n')
+            {
+                pos++;
+                continue;
+            }
+            var start = pos;
+            rows[uint.Parse(text.AsSpan(start, text.IndexOf(',', start) - start), CultureInfo.InvariantCulture)] = start;
+            SkipRecord(text, ref pos);
+        }
+        return new Sheet(name, text, columns, rows);
     });
 
-    private sealed class Sheet(string name, Dictionary<string, int> columns, Dictionary<uint, string[]> rows)
+    private static void SkipRecord(string text, ref int pos)
     {
-        public SheetRow? Row(uint id) => rows.TryGetValue(id, out var fields) ? new SheetRow(this, fields) : null;
+        var quoted = false;
+        for (; pos < text.Length; pos++)
+        {
+            if (text[pos] == '"') quoted = !quoted;
+            else if (text[pos] == '\n' && !quoted) break;
+        }
+        pos++;
+    }
+
+    private static string[] ReadRecord(string text, ref int pos)
+    {
+        var fields = new List<string>();
+        while (true)
+        {
+            if (pos < text.Length && text[pos] == '"')
+            {
+                var field = new StringBuilder();
+                for (pos++; pos < text.Length; pos++)
+                {
+                    if (text[pos] != '"')
+                        field.Append(text[pos]);
+                    else if (pos + 1 < text.Length && text[pos + 1] == '"')
+                        field.Append(text[++pos]);
+                    else
+                        break;
+                }
+                pos++;
+                fields.Add(field.ToString());
+            }
+            else
+            {
+                var start = pos;
+                while (pos < text.Length && text[pos] is not (',' or '\r' or '\n')) pos++;
+                fields.Add(text[start..pos]);
+            }
+
+            if (pos < text.Length && text[pos] == ',')
+            {
+                pos++;
+                continue;
+            }
+            if (pos < text.Length && text[pos] == '\r') pos++;
+            if (pos < text.Length && text[pos] == '\n') pos++;
+            return fields.ToArray();
+        }
+    }
+
+    private sealed class Sheet(string name, string text, Dictionary<string, int> columns, Dictionary<uint, int> rows)
+    {
+        private readonly ConcurrentDictionary<uint, string[]> parsed = new();
+
+        public SheetRow? Row(uint id)
+            => rows.TryGetValue(id, out var start)
+                ? new SheetRow(this, parsed.GetOrAdd(id, _ =>
+                {
+                    var pos = start;
+                    return ReadRecord(text, ref pos);
+                }))
+                : null;
+
+        public IEnumerable<uint> Ids => rows.Keys;
 
         public int Column(string column)
             => columns.TryGetValue(column, out var index) ? index : throw new KeyNotFoundException($"{name}.csv has no column '{column}'.");
@@ -104,6 +202,7 @@ internal sealed class DataminingGameData : IGameData
         public string Text(string column) => fields[sheet.Column(column)];
         public uint UInt(string column) => uint.Parse(Text(column), CultureInfo.InvariantCulture);
         public byte Byte(string column) => byte.Parse(Text(column), CultureInfo.InvariantCulture);
+        public sbyte SByte(string column) => sbyte.Parse(Text(column), CultureInfo.InvariantCulture);
         public ushort UShort(string column) => ushort.Parse(Text(column), CultureInfo.InvariantCulture);
         public float Float(string column) => float.Parse(Text(column), CultureInfo.InvariantCulture);
         public bool Bool(string column) => bool.Parse(Text(column));

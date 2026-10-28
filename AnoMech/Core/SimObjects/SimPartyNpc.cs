@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 using AnoMech.Core.Game;
+using AnoMech.Core.Game.Geometry;
+using AnoMech.Core.Game.Motion;
 using AnoMech.Core.Game.Party;
 using AnoMech.Core.Native.Interfaces;
 using AnoMech.Core.UserActions;
@@ -12,70 +13,53 @@ namespace AnoMech.Core.SimObjects;
 public sealed class SimPartyNpc : SimNpc, ISimPartyMember
 {
     public PartyRole Role { get; set; }
-    public bool Dead { get; private set; }
     public byte ClassJob { get; }
     public string DisplayName { get; }
 
-    internal SimPartyNpc(IBattleCharaProxy proxy, Coordinates coordinates, PartyRole role, byte classJob, string name) : base(proxy, coordinates)
+    internal SimPartyNpc(IBattleCharaProxy proxy, Coordinates coordinates, PartyRole role, byte classJob, string name, ObstacleField obstacles)
+        : base(proxy, coordinates,
+            self => new SimulatedMotion(() => self.Proxy, coordinates, self.ActorControl, obstacles, turnSpeed: null, npc: false))
     {
         Role = role;
         ClassJob = classJob;
         DisplayName = name;
     }
 
-    // A bot's button press: the animation, then what a player's press does, statuses it spends
-    // first. `target` is who a single-target action is aimed at (the boss, for Feint); else itself.
-    public void UseAction(uint actionId, SimCharacter? target = null)
+    // A bot's button press: the animation, then the same JobActions effects a player's press applies.
+    // Bots press only party-wide mitigation, never their own, and only while mitigation is required.
+    private bool UseAction(uint actionId)
     {
+        if (!Mitigation.Required) return false;
         PlayAction(actionId);
-        JobActions.ClearStatuses(this, actionId);
-        JobActions.ApplyEffects(this, actionId, (ulong)(target ?? this).GameObjectId, Random.Shared);
+        JobActions.ApplyEffects(this, actionId, (ulong)GameObjectId, Random.Shared);
+        return true;
     }
 
-    // level 1-3. False if KO'd or the job has no limit break at that level.
-    internal bool UseLimitBreak(int level)
+    // level 1-3. The action id used; 0 if KO'd, mitigation is not required, or the job has no limit
+    // break at that level.
+    internal uint UseLimitBreak(int level)
     {
-        if (!this.IsAlive()) return false;
+        if (!this.IsAlive() || ActionsLocked) return 0;
         var actionId = LimitBreakHandler.ActionId(ClassJob, level);
-        if (actionId == 0) return false;
-        DiagnosticLog.Info($"[SimPartyNpc] {Role} (job {ClassJob}) uses LB{level} {ActionLookup.Name(actionId)}.");
-        UseAction(actionId);
-        return true;
+        if (actionId == 0 || !UseAction(actionId)) return 0;
+        DiagnosticLog.Info($"[SimPartyNpc] {Role} (job {ClassJob}) uses LB{level} {Natives.Data.ActionName(actionId)}.");
+        return actionId;
     }
 
-    private static readonly Dictionary<byte, uint> InvulnActionIdByJob = new()
+    public void UseSprint(float duration)
     {
-        [19] = 30,    // Paladin: Hallowed Ground
-        [21] = 43,    // Warrior: Holmgang
-        [32] = 3638,  // Dark Knight: Living Dead
-        [37] = 16152, // Gunbreaker: Superbolide
-    };
-
-    // False for a non-tank job.
-    public bool UseInvuln()
-    {
-        if (!InvulnActionIdByJob.TryGetValue(ClassJob, out var actionId)) return false;
-        UseAction(actionId);
-        return true;
+        if (!ActionsLocked) SprintHandler.Apply(this, duration);
     }
-
-    public void Knockback(Vector3 source, float distance, float speed) => Movement.Knockback(source, distance, speed);
-
-    public void PushInDirection(float heading, float distance, float speed) => Movement.PushInDirection(heading, distance, speed);
-
-    public void PushInDirectionEased(float heading, float distance, float durationSeconds) => Movement.PushInDirectionEased(heading, distance, durationSeconds);
 
     public override void Despawn()
     {
         base.Despawn();
     }
 
-    public void OnKilled()
+    protected override void OnPacketSpawned(IBattleCharaProxy chara) => ActorControl.ZoneIn();
+
+    public void OnKilled(bool byEnvironment)
     {
-        Dead = true;
-        StopMoving();
-        if (Proxy is not { Exists: true } chara) return;
-        chara.ApplyDeadState();
-        this.PlayKoActionTimeline();
+        GoDown(byEnvironment);
     }
 }

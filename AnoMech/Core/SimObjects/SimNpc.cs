@@ -1,135 +1,111 @@
+using System;
 using AnoMech.Core.Game;
+using AnoMech.Core.Game.Motion;
 using AnoMech.Core.Native.Interfaces;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace AnoMech.Core.SimObjects;
 
 // SimCharacter backed by a BattleChara we allocated in a CharacterManager slot. Overlay state
-// (VFX, statuses) lives on the base; this layer adds movement and the "free the slot on
-// Despawn" lifecycle.
+// (statuses, played actions) lives on the base; this layer adds the packet spawn and the "free the
+// slot on Despawn" lifecycle.
 public class SimNpc : SimCharacter
 {
     private IBattleCharaProxy? proxy;
-    private bool pendingDraw;
-    private int pendingDrawFrames;
 
     internal override IBattleCharaProxy? Proxy => proxy;
 
     // Forget the slot without touching what it holds: a packet spawn whose slot ended up with
     // somebody else's actor.
-    protected void DetachSlot()
+    protected void DetachSlot() => proxy = null;
+
+    // The engine creates a packet-spawned actor a few frames after the spawn packet, so the
+    // wrapper polls its reserved slot each tick. Failed = nothing arrived within
+    // PacketSpawnTimeoutFrames, or the slot holds somebody else's actor.
+    public bool PacketSpawnPending { get; private set; }
+    public bool PacketSpawnFailed { get; private set; }
+    private const int PacketSpawnTimeoutFrames = 20;
+    protected int PacketSpawnFrames { get; private set; }
+    private uint packetEntityId;
+    private Placement packetSpawnPlacement;
+
+    // Pending counts as alive, or SimWorld's reaper would drop the wrapper before its actor
+    // exists; every consumer of IsActive null-checks the native pointer.
+    public override bool IsActive => PacketSpawnPending || base.IsActive;
+
+    internal void BeginPacketSpawn(uint entityId, Placement placement)
     {
-        proxy = null;
-        pendingDraw = false;
+        packetEntityId = entityId;
+        packetSpawnPlacement = placement;
+        PacketSpawnPending = true;
+        Motion.Seed(placement);
+        ProbePacketSpawn();
     }
 
-    // Re-arm the deferred EnableDraw for an actor created without one (see
-    // EnemySpawnConfig.PacketSpawnEnableDraw).
-    protected void RequestDraw()
+    // The sim-side settings a spawn packet doesn't carry go on here.
+    protected virtual void OnPacketSpawned(IBattleCharaProxy chara) { }
+
+    private void ProbePacketSpawn()
     {
-        pendingDraw = proxy != null;
-        pendingDrawFrames = 0;
+        if (!PacketSpawnPending || proxy is not { } chara) return;
+        if (!chara.Exists)
+        {
+            if (PacketSpawnFrames < PacketSpawnTimeoutFrames) return;
+            PacketSpawnPending = false;
+            PacketSpawnFailed = true;
+            Natives.BattleCharas.ReleaseSlot(chara.Slot);
+            DiagnosticLog.Warn($"[SimNpc.PacketSpawn] 0x{packetEntityId:X}: nothing arrived at slot {chara.Slot} within {PacketSpawnFrames} frames -- the engine dropped the spawn.");
+            return;
+        }
+        PacketSpawnPending = false;
+        Natives.BattleCharas.ReleaseSlot(chara.Slot);
+        if (chara.EntityId != packetEntityId)
+        {
+            PacketSpawnFailed = true;
+            DiagnosticLog.Warn($"[SimNpc.PacketSpawn] slot {chara.Slot} holds entity 0x{chara.EntityId:X}, not the packet's 0x{packetEntityId:X} -- not ours; treating the spawn as failed.");
+            DetachSlot();
+            return;
+        }
+        if (Position != packetSpawnPlacement.Position || Rotation != packetSpawnPlacement.Rotation) Motion.ResendTransform();
+        OnPacketSpawned(chara);
     }
 
-    private protected override Movement Movement => field ??= new Movement(this);
-
-    // pendingDraw=false for an actor the engine's own spawn handler created: it enables the
-    // draw itself, as for a real server spawn.
-    protected SimNpc(IBattleCharaProxy proxy, Coordinates coordinates, bool pendingDraw = true) : base(coordinates)
+    private protected SimNpc(IBattleCharaProxy proxy, Coordinates coordinates, Func<SimCharacter, CharacterMotion> createMotion)
+        : base(coordinates, createMotion)
     {
         this.proxy = proxy;
-        this.pendingDraw = pendingDraw;
     }
 
-    public void SetModelState(byte value) => proxy?.SetModelState(value);
+    public void SetModelState(byte value) => ActorControl.SetModelState(value);
 
-    // Sampled for peers.
-    public byte ModelState => proxy?.ModelState ?? 0;
+    // Which sub-meshes show, e.g. Omega-M's shield.
+    public void SetModeAttributeFlags(byte value) => ActorControl.SetModeAttributeFlags(value);
 
-    // ModelContainer.ModeAttributeFlags (e.g. Omega-M's shield: 0x00 = shield, 0x10 = none)
-    // is an INPUT the engine reads only while building the monster model
-    // (CharacterSetup.SetupBNpc / Monster::SetupFromData). A bare field write has no visible
-    // effect, and nothing lighter re-applies it — writing the per-frame mask
-    // (Model.EnabledAttributeIndexMask), replaying the ActorControl 0x31 packet, a
-    // SetModelState rebuild, and CharacterBase::SetupSlotModel were all confirmed inert on
-    // our doppels. The only thing that works is a full model rebuild, so we write the field
-    // and force a redraw. The redraw is visibility-aware (see ReloadModel), so setting flags
-    // during an invisible warp window — as the real fight does — doesn't pop the boss into
-    // view early.
-    public void SetModeAttributeFlags(byte value)
-    {
-        if (proxy is not { Exists: true } chara) return;
-        chara.SetModeAttributeFlags(value);
-        ReloadModel();
-    }
-
-    // Forces a model rebuild via DisableDraw -> EnableDraw so the engine re-reads
-    // ModeAttributeFlags and rebuilds the sub-meshes. The re-enable is deferred through the
-    // pendingDraw path (the rebuild is async, gated on IsReadyToDraw). Only cycles draw when
-    // the model is currently drawn: a hidden NPC keeps the written flags and applies them on
-    // its next EnableDraw from the visibility system, so we never force it visible.
-    protected void ReloadModel()
-    {
-        if (proxy is not { HasDrawObject: true } chara) return;
-        chara.DisableDraw();
-        pendingDraw = true;
-    }
-
-    // Plays an action's own animation and VFX on this doppel through the same synthetic
-    // ActionEffect a boss cast fires -- what lets a bot tank visibly pop its LB3 in Umad P3
+    // Plays an action's own animation and VFX on this character through the same synthetic
+    // ActionEffect a boss cast fires, with itself as the target -- a bot tank's LB3 in Umad P3
     // Limit Cut. Effects (statuses, damage) stay the caller's job, exactly as for an enemy Cast.
-    //
-    // Here rather than on SimPartyNpc because the same seat is a SimNetworkPuppet on every peer,
-    // which has to play it too; SimEnemy inherits it but drives its own richer cast instead.
-    private SimCast? actionCast;
-
-    // Sampled for peers, same edge trigger as SimCast.LastInstantCastSeq.
-    public uint PlayedActionId { get; private set; }
-    public float PlayedActionAnimationLock { get; private set; }
-    public int PlayedActionSeq { get; private set; }
-
+    // Not for the local player: an effect the client sees itself cast ends its cast bar mid-cast
+    // and leaves the Casting condition set.
     public void PlayAction(uint actionId, float animationLock = 0.6f)
     {
-        PlayedActionId = actionId;
-        PlayedActionAnimationLock = animationLock;
-        PlayedActionSeq++;
-        actionCast ??= new SimCast(this, Coordinates);
-        actionCast.NativeActionEffect(actionId, animationLock, (ushort)actionId, 0, ActionType.Action, 0,
-            animationTargetId: GameObjectId, actionTargetId: GameObjectId);
+        Casting.NativeActionEffect(actionId, animationLock, (ushort)actionId, 0, ActionType.Action, 0,
+            animationTargetId: GameObjectId, targets: [new ActionEffectTarget(GameObjectId)]);
     }
 
     public override void Tick(float deltaSeconds)
     {
         base.Tick(deltaSeconds);
-
-        if (pendingDraw)
-        {
-            if (proxy is not { Exists: true } chara)
-            {
-                pendingDraw = false;
-            }
-            else if (chara.IsReadyToDraw)
-            {
-                chara.EnableDraw();
-                pendingDraw = false;
-                DiagnosticLog.Info($"[SimNpc] EnableDraw fired for goid {chara.GameObjectId} at pos {Position}.");
-            }
-            else
-            {
-                pendingDrawFrames++;
-                // Once, well past a normal model load, for an IsReadyToDraw stuck false.
-                if (pendingDrawFrames == 300)
-                    DiagnosticLog.Warn($"[SimNpc] still pendingDraw after {pendingDrawFrames} ticks, goid {chara.GameObjectId} -- IsReadyToDraw() never returned true.");
-            }
-        }
+        PacketSpawnFrames++;
+        ProbePacketSpawn();
     }
 
     public override void Despawn()
     {
         if (proxy == null) return;
+        PacketSpawnPending = false;
+        Casting.Despawn();
         base.Despawn();
         proxy.Despawn();
         proxy = null;
-        pendingDraw = false;
     }
 }

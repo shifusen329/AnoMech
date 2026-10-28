@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
 using AnoMech.Core.SimObjects;
 
@@ -6,7 +7,7 @@ namespace AnoMech.Scenarios;
 
 // The mechanic timeline for one encounter fragment. Shared identity lives on the owning
 // IZone (via Phase.Zone) and IPhase; a scenario declares only what is its own.
-public interface IScenario
+public interface IScenario : IWorldEventListener
 {
     string Name { get; }
 
@@ -19,17 +20,11 @@ public interface IScenario
     // (IMultiplayerReplayable).
     bool SupportsMultiplayer => false;
 
-    // Has a mitigation plan and calls world.MitPractice from Run.
-    bool SupportsMitigationPractice => false;
-
     // Selectable strats. Run's selectedAi indexes this (null = solo); region buttons derive
     // from each strat's IScenarioAi.Group.
     IReadOnlyList<IScenarioAi> AiStrats { get; }
 
-    // The track playing when this scenario starts, when it isn't the phase's (0 = the phase's).
-    ushort Bgm => 0;
-
-    // How far into that track the real fight is when this scenario starts.
+    // How far into the phase's track the real fight is when this scenario starts.
     float BgmSecondsAtStart => 0f;
 
     void Run(SimWorld world, int? selectedAi);
@@ -57,18 +52,19 @@ public interface IScenario
     IReadOnlyList<string> SettingsConflicts => [];
 
     // Deterministic instance-progress replay (native DirectorUpdate/AddEffect calls) with no
-    // host-only dependency, so Game.RunScenarioInternal schedules it for a peer too.
+    // host-only dependency, so ScenarioSession.Start schedules it for a peer too.
     void RunInstanceEvents(SimWorld world) { }
+}
 
-    // How far the run has got, told to the player with their death; null when the scenario
-    // doesn't count it.
-    string? RunProgress => null;
+public static class ScenarioExtensions
+{
+    // Menu label, e.g. "P5 Delta".
+    public static string DisplayName(this IScenario scenario)
+    {
+        var phase = scenario.Phase;
+        return string.IsNullOrEmpty(phase.Name) ? scenario.Name : $"{phase.Name} {scenario.Name}";
+    }
 
-    // Whether the scenario has reached its own natural end, for Game's mechanic-streak
-    // tracking. Default covers scenarios whose whole timeline lives on world.Events (the
-    // common case: nothing to override). A scenario that schedules its mechanic on a private
-    // EventScheduler instead (e.g. one kept immune to EventTimeScale for real-time precision)
-    // must override this to check that queue instead, since world.Events would otherwise
-    // look permanently empty from the first tick.
-    bool IsFinished(SimWorld world) => world.Events.IsEmpty;
+    public static string FullName(this IScenario scenario)
+        => $"{scenario.Phase.Zone.Name} — {scenario.DisplayName()}";
 }

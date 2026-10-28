@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
@@ -21,56 +22,30 @@ public interface IBattleCharaProxy
 
     // ── Transform ────────────────────────────────────────────────────────────
 
+    // Where the model is, which trails SetPos/Move by however long the client takes to apply them.
     Vector3 Position { get; }
+    float Rotation { get; }
 
-    // The setter is a bare field write; SetRotation also turns the model.
-    float Rotation { get; set; }
+    // The server's ActorSetPos: an instant teleport. Drops the actor's queued Moves.
+    void SetPos(Vector3 position, float rotation);
 
-    void SetPosition(Vector3 position);
-    void SetRotation(float rotation);
+    // The server's ActorMove: a step the client interpolates to. `speed` (y/s) is what the actor
+    // moves at, as other players report it. The client ignores it for the local player.
+    void Move(Vector3 position, float rotation, ActorMoveFlags flags, float speed);
+
+    // The server's move of an NPC a knockback pushed: the client slides it there over
+    // `durationSeconds`. Players and bots never get one.
+    void NpcKnockback(Vector3 position, float rotation, float durationSeconds);
+
     float HitboxRadius { get; }
 
     // ── Model ────────────────────────────────────────────────────────────────
 
-    bool IsReadyToDraw { get; }
-    void EnableDraw();
-    void DisableDraw();
-
-    // DrawObject.IsVisible: false, and the setter a no-op, while there is no DrawObject.
+    // DrawObject.Visibility: SpawnVisibility.HiddenUntilShown while there is no DrawObject.
     bool HasDrawObject { get; }
-    bool IsDrawObjectVisible { get; set; }
-
-    // RenderFlags Model|Nameplate.
-    void SetModelHidden(bool hidden);
+    bool IsDrawObjectVisible { get; }
 
     byte ModelState { get; }
-    void SetModelState(byte value);
-
-    // Read only while the model is built: takes effect on the next DisableDraw/EnableDraw.
-    void SetModeAttributeFlags(byte value);
-
-    // Null without a DrawObject.
-    bool? HasUnloadedModelSlot { get; }
-
-    // ── Animation ────────────────────────────────────────────────────────────
-
-    // baseOverride null leaves TimelineContainer.BaseOverride as it is.
-    void PlayActionTimeline(ushort timelineId, ushort loopId = 0, ushort? baseOverride = 0);
-
-    // Slot 0 only; QuiesceActionTimeline clears all 14 sequencer slots (despawn needs that).
-    void ResetActionTimeline();
-    void QuiesceActionTimeline();
-
-    void SetBaseOverride(ushort timelineId);
-    ushort GetSlotTimeline(uint slot);
-    void SetSlotTimeline(uint slot, ushort timelineId);
-    void PlayTimelineDirect(ushort timelineId);
-
-    // 0 when slot 0 has no scheduler timeline.
-    ulong LoadBaseTimelineResources();
-
-    void SetAnimationState(int arg2, int arg3);
-    void SetMode(CharacterModes mode, byte param = 0);
 
     // ── Casting ──────────────────────────────────────────────────────────────
 
@@ -81,49 +56,49 @@ public interface IBattleCharaProxy
     float CurrentCastTime { get; }
     float TotalCastTime { get; }
 
-    void ClearCast();
     void ReceiveActorCast(ActorCastData cast);
-    void ReceiveActionEffect(ActionEffectData effect);
+
+    // Returns the packet's global sequence, which the targets' EffectResults name.
+    uint ReceiveActionEffect(ActionEffectData effect);
+
+    // The server's EffectResultBasic on this character: confirms its entry in that ActionEffect,
+    // which the client then applies (damage flytext), and sets its HP.
+    void ReceiveEffectResult(uint globalSequence, byte targetIndex, uint health);
 
     // The server's ActorControl packet for this actor, through the client's own dispatcher.
     void ActorControl(uint category, uint arg1 = 0, uint arg2 = 0, uint arg3 = 0, uint arg4 = 0, uint arg5 = 0, uint arg6 = 0, uint arg7 = 0, uint arg8 = 0);
 
+    // ActorControlTarget: an ActorControl that also names a target actor.
+    void ActorControlTarget(uint category, GameObjectId target, uint arg1 = 0, uint arg2 = 0, uint arg3 = 0, uint arg4 = 0);
+
+    // The server's forced move (Confused): the client walks its own player to the target.
+    // Self-only; null ends it.
+    void ForcedFollow(uint? targetEntityId);
+
+    // Ends the forced move and halts the player where they stand. Self-only.
+    void StopForcedMove();
+
     // ── Combat state ─────────────────────────────────────────────────────────
 
-    uint Health { get; set; }
-    uint MaxHealth { get; set; }
+    uint Health { get; }
+    uint MaxHealth { get; }
+    uint Mana { get; }
+    uint MaxMana { get; }
 
-    // Health, Mana and Mode written directly: the KO pose without the engine's death handling.
-    void ApplyDeadState();
-
-    void ClearShield();
-    void SetTarget(GameObjectId target);
     byte TargetableStatus { get; }
-    void SetTargetable(bool targetable);
 
     // ── Statuses ─────────────────────────────────────────────────────────────
 
-    // Through the engine's gain path, which applies the status loop VFX and param-driven looks.
-    void AddStatusInit(ushort statusId, ushort param, GameObjectId source = default);
-
-    // Writes the slot; the caller re-stamps it every tick.
-    void ApplyStatus(ushort statusId, float remainingTime, ushort param, GameObjectId source = default);
-    void RemoveStatus(ushort statusId, GameObjectId source = default);
+    // The server's status-list packet: statuses[i] lands in StatusManager slot i, slots past the
+    // list are cleared. The client plays the lose/gain effects (loop VFX, param-driven looks) on
+    // every slot whose id or source changes, and counts the remaining times down itself. Job,
+    // level and maxima go out as the character has them. shield (0-100, % of max HP) is the gold
+    // overlay on the HP bar, target bar and nameplate.
+    void ReceiveStatusList(IReadOnlyList<StatusSlot> statuses, uint health, uint mana, byte shield);
 
     // ── Effects ──────────────────────────────────────────────────────────────
 
-    // Check the path with IGameData.FileExists first: a bad path crashes on the file thread.
-    // Null when the spawn failed.
-    IActorVfxProxy? AttachVfx(string path);
-
-    void SetTether(byte slot, ushort tetherId, GameObjectId target, byte progress);
     ushort GetTetherId(byte slot);
-    void ClearTether(byte slot);
-
-    void ShowFlyText(uint amount, string label);
-
-    // The server's forced carry, which the client animates itself.
-    void CarryTo(Vector3 destination, float rotation, bool selfTarget);
 
     // Frees the slot; the local player's proxy ignores it.
     void Despawn();

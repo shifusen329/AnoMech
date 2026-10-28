@@ -1,8 +1,8 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using AnoMech.Core.Game;
 using AnoMech.Core.Game.Ai;
-using AnoMech.Core.Game.Party;
 using AnoMech.Core.SimObjects;
 
 namespace AnoMech.Scenarios.Umad.P5Flood;
@@ -14,7 +14,7 @@ public sealed class UmadP5FloodAi : IScenarioAi<UmadP5FloodState>
 {
     public string Name => "Rotate";
 
-    private const float ConvergeAt = 0.8f;   // well before the first telegraph
+    private const float ArriveBeforeFirstWave = 0.5f;
     private const float MoveSpeed = 8.3f;
     private const float QuadrantRadius = 4.0f;
     private const float ClumpRadius = 1.2f;    // spread within the quadrant so bots don't overlap
@@ -34,8 +34,9 @@ public sealed class UmadP5FloodAi : IScenarioAi<UmadP5FloodState>
 
     public void Run(UmadP5FloodState state, SimWorld world)
     {
-        var start = QuadrantAt(state, 0);
-        state.Timeline.Add(ConvergeAt, () => MoveToQuadrant(world, start, UmadP5FloodPlaybook.Start(start)));
+        var firstWave = UmadP5FloodScenario.FirstTelegraphAt + UmadP5FloodScenario.ResolveDelayAfterTelegraph;
+        new AiManager(world).Move(UmadP5FloodScenario.FirstTelegraphAt, () => ClumpAt(QuadrantAt(state, 0)), jitter: 0f,
+            arrivalTime: firstWave - ArriveBeforeFirstWave);
 
         for (var tick = 1; tick < UmadP5FloodScenario.TickCount; tick++)
         {
@@ -45,8 +46,7 @@ public sealed class UmadP5FloodAi : IScenarioAi<UmadP5FloodState>
             var previousResolve = UmadP5FloodScenario.FirstTelegraphAt
                 + (tick - 1) * UmadP5FloodScenario.TelegraphStagger
                 + UmadP5FloodScenario.ResolveDelayAfterTelegraph;
-            var cue = UmadP5FloodPlaybook.Rotate(state, quadrant, tick);
-            state.Timeline.Add(previousResolve + DepartAfterResolve, () => MoveToQuadrant(world, quadrant, cue));
+            world.Events.Add(previousResolve + DepartAfterResolve, () => MoveToQuadrant(world, quadrant));
         }
     }
 
@@ -59,19 +59,25 @@ public sealed class UmadP5FloodAi : IScenarioAi<UmadP5FloodState>
         return ((state.StartQuadrant + step) % 4 + 4) % 4;
     }
 
-    private static void MoveToQuadrant(SimWorld world, int quadrant, StratCue cue)
+    private static void MoveToQuadrant(SimWorld world, int quadrant)
     {
-        var centre = Quadrants[quadrant];
         for (var slot = 0; slot < 8; slot++)
         {
             var bot = world.Party.Get(slot);
             if (bot is null || !bot.IsAlive()) continue;
-
-            var angle = slot * MathF.PI / 4f;
-            var offset = new Vector3(MathF.Sin(angle) * ClumpRadius, 0f, MathF.Cos(angle) * ClumpRadius);
-            var spot = centre + offset;
-            world.Strat.Note((PartyRole)slot, new Vector2(spot.X, spot.Z), cue);
-            bot.MoveTo(spot, MoveSpeed);
+            bot.MoveTo(ClumpSpot(quadrant, slot), MoveSpeed);
         }
+    }
+
+    private static IAiMove ClumpAt(int quadrant)
+        => AiMove.Create(Enumerable.Range(0, 8)
+            .Select(slot => ClumpSpot(quadrant, slot))
+            .Select(spot => (Vector2?)new Vector2(spot.X, spot.Z))
+            .ToArray()).NaturalOrder();
+
+    private static Vector3 ClumpSpot(int quadrant, int slot)
+    {
+        var angle = slot * MathF.PI / 4f;
+        return Quadrants[quadrant] + new Vector3(MathF.Sin(angle) * ClumpRadius, 0f, MathF.Cos(angle) * ClumpRadius);
     }
 }
