@@ -30,8 +30,7 @@ public sealed class UmadP1GravenImage1SettingsWindow
             ImGui.SameLine();
             if (ImGui.RadioButton("Wave Cannon##gi1extraswave", Overrides.ExtrasAtWaveCannon)) Overrides.ExtrasAtWaveCannon = true;
 #if DEBUG
-            UmadP1SettingsRows.PropKnobs("gi1", Overrides.PropsBindDirector, v => Overrides.PropsBindDirector = v,
-                Overrides.PropsForceActive, v => Overrides.PropsForceActive = v, Overrides.PropsBeatMode, v => Overrides.PropsBeatMode = v);
+            UmadP1SettingsRows.PropKnobs("gi1", Overrides.PropsBindDirector, v => Overrides.PropsBindDirector = v);
 #endif
             SettingsGrid.End();
         }
@@ -50,7 +49,5 @@ public sealed class UmadP1GravenImage1SettingsWindow
         Overrides.ThunderFlipped = null;
         Overrides.ThunderIsLie = null;
         Overrides.PropsBindDirector = true;
-        Overrides.PropsForceActive = false;
-        Overrides.PropsBeatMode = PropBeatMode.ActorControl;
     }
 }

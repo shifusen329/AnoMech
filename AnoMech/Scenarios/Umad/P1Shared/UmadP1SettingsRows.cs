@@ -39,19 +39,10 @@ internal static class UmadP1SettingsRows
     }
 
 #if DEBUG
-    private static readonly string[] BeatModeLabels = ["ActorControl 413", "PlayAnimation", "SetSharedTimelineState"];
-
-    public static void PropKnobs(string id, bool bind, Action<bool> setBind, bool force, Action<bool> setForce,
-        PropBeatMode mode, Action<PropBeatMode> setMode)
+    public static void PropKnobs(string id, bool bind, Action<bool> setBind)
     {
         SettingsGrid.Row("Statue props (debug):");
         if (ImGui.Checkbox($"Bind to director##{id}bind", ref bind)) setBind(bind);
-        ImGui.SameLine();
-        if (ImGui.Checkbox($"Force SG active##{id}force", ref force)) setForce(force);
-        ImGui.SameLine();
-        var modeIdx = (int)mode;
-        SettingsGrid.ItemWidth(170);
-        if (ImGui.Combo($"##{id}beatmode", ref modeIdx, BeatModeLabels, BeatModeLabels.Length)) setMode((PropBeatMode)modeIdx);
     }
 #endif
 }

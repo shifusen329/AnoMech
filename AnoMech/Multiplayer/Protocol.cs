@@ -5,9 +5,12 @@ using AnoMech.Core.Game.Party;
 using AnoMech.Core.Native.Interfaces;
 using AnoMech.Core.SimObjects;
 using AnoMech.Scenarios.Top;
+using AnoMech.Scenarios.Umad.P1GravenImage1;
+using AnoMech.Scenarios.Umad.P1GravenImage2;
 using AnoMech.Scenarios.Umad.P1TeleTrouncing;
 using AnoMech.Scenarios.Umad.P2Forsaken;
 using AnoMech.Scenarios.Umad.P3BlackHole;
+using AnoMech.Scenarios.Umad.P3BowelsOfAgony;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace AnoMech.Multiplayer;
@@ -54,7 +57,10 @@ namespace AnoMech.Multiplayer;
 [JsonDerivedType(typeof(UltimatePredationAiReplayStateMessage), "ultimatePredationAiReplayState")]
 [JsonDerivedType(typeof(TopP5DeltaAiReplayStateMessage), "topP5DeltaAiReplayState")]
 [JsonDerivedType(typeof(UmadP3LimitCutAiReplayStateMessage), "umadP3LimitCutAiReplayState")]
+[JsonDerivedType(typeof(UmadP1GravenImage1AiReplayStateMessage), "umadP1GravenImage1AiReplayState")]
+[JsonDerivedType(typeof(UmadP1GravenImage2AiReplayStateMessage), "umadP1GravenImage2AiReplayState")]
 [JsonDerivedType(typeof(UmadP2TrinesAiReplayStateMessage), "umadP2TrinesAiReplayState")]
+[JsonDerivedType(typeof(UmadP3BowelsOfAgonyAiReplayStateMessage), "umadP3BowelsOfAgonyAiReplayState")]
 [JsonDerivedType(typeof(UmadP1TeleTrouncingAiReplayStateMessage), "umadP1TeleTrouncingAiReplayState")]
 [JsonDerivedType(typeof(UmadP5FloodAiReplayStateMessage), "umadP5FloodAiReplayState")]
 [JsonDerivedType(typeof(UcobP5ExaflaresAiReplayStateMessage), "ucobP5ExaflaresAiReplayState")]
@@ -265,10 +271,28 @@ public sealed record P4AiReplayStateMessage(
 // LeftOrder/RightOrder is the whole meaningful state; Timeline/SpreadTick are rebuilt locally.
 public sealed record P5AiReplayStateMessage(int[] LeftOrder, int[] RightOrder) : MpMessage, IScenarioReplayStateMessage;
 
+// The whole UmadP1GravenImage1State roll; the rolls' records travel as their fields.
+public sealed record UmadP1GravenImage1AiReplayStateMessage(
+    bool TetherDps, int Ice1RealOffset, bool Ice1IsLie,
+    bool FireIsStack, bool FireIsLie, PartyRole FireStackSupport, PartyRole FireStackDps,
+    PartyRole[] WaveTargets, PartyRole TrapSupport, PartyRole TrapDps, int TrapJumpSupport, int TrapJumpDps,
+    int Ice2RealOffset, bool Ice2IsLie, int ThunderRealOffset, bool ThunderFlipped, bool ThunderIsLie) : MpMessage, IScenarioReplayStateMessage;
+
+// The whole UmadP1GravenImage2State roll; PurpleDps and CleaveWest hold one entry per tether set.
+public sealed record UmadP1GravenImage2AiReplayStateMessage(
+    bool[] PurpleDps, int IceRealOffset, bool IceIsLie, bool[] CleaveWest,
+    PartyRole TrapSupport, PartyRole TrapDps) : MpMessage, IScenarioReplayStateMessage;
+
 // The whole UmadP2TrinesState roll: the first set of triangles, the lone second one, which way the
 // centre points and which half the first Wings of Destruction takes.
 public sealed record UmadP2TrinesAiReplayStateMessage(
     int[] FirstSet, int SecondSet, bool CentrePointsEast, bool WingsRight) : MpMessage, IScenarioReplayStateMessage;
+
+// The whole UmadP3BowelsOfAgonyState roll: the crystals' corners, the short element, who carries
+// each element and Headwind, the Implosion and the host's Thunder III plan.
+public sealed record UmadP3BowelsOfAgonyAiReplayStateMessage(
+    int WindSpot, int WaterSpot, Element ShortElement, PartyRole[] WaterHolders, PartyRole[] FireHolders, PartyRole[] Headwinds,
+    bool Latitudinal, ThunderIIIAssignment ThunderPlan) : MpMessage, IScenarioReplayStateMessage;
 
 // The whole UmadP3LimitCutState roll: first clone spot and walk direction, the eight numbers,
 // who carries Headwind, the intercardinal the bosses are held at, and the Umbra Smash bait.

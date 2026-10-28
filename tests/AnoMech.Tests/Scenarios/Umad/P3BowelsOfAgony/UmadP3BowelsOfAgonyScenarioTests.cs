@@ -1,8 +1,6 @@
 using System.Numerics;
 using AnoMech.Core;
-using AnoMech.Core.Game;
-using AnoMech.Core.SimObjects;
-using AnoMech.Core.UserActions;
+using AnoMech.Core.Native.Interfaces;
 using AnoMech.Scenarios.Umad.P3BlackHole;
 using AnoMech.Scenarios.Umad.P3BowelsOfAgony;
 using static AnoMech.Scenarios.Umad.UmadConstants;
@@ -15,9 +13,6 @@ public class UmadP3BowelsOfAgonyScenarioTests
 {
     private const int Lb3 = 0;
     private const int Sg3k = 1;
-
-    [TearDown]
-    public void ReleaseBots() => DebugBotControl.Enabled = false;
 
     private static IEnumerable<TestCaseData> Layouts()
     {
@@ -37,37 +32,27 @@ public class UmadP3BowelsOfAgonyScenarioTests
     [TestCaseSource(nameof(Layouts))]
     public void TheBotsClearIt(int strat, int wind, bool waterClockwise, Element shortElement, bool latitudinal, ThunderIIIAssignment plan, int seed)
     {
-        var fake = FakeGame.Install();
-        fake.BattleCharas.Player.ClassJob = (byte)JobId.Sage;
-        var game = new Game();
-        DalamudServices.Install(nameof(Plugin.GameInstance), game);
-        DalamudServices.Install(nameof(Plugin.Config), new Configuration { ShowDeathRecap = false, EnableMechanicResultMarks = false });
-        game.GodMode = true;
-        var world = game.World;
-        world.CreateParty((uint)JobId.Sage);
-        DebugBotControl.Enabled = true;
-        DiagnosticLog.Clear();
-        var scenario = new UmadP3BowelsOfAgonyScenario();
-        var overrides = (UmadP3BowelsOfAgonyStateOverrides)scenario.SettingsOverrides;
-        overrides.WindSpot = wind;
-        overrides.WaterClockwise = waterClockwise;
-        overrides.ShortElement = shortElement;
-        overrides.Latitudinal = latitudinal;
-        overrides.ThunderPlan = plan;
-        world.Reseed(seed);
-        scenario.Run(world, strat);
-
         var farthest = 0f;
-        for (var t = 0f; t < 84f; t += 0.05f)
+        var run = ScenarioRun.Execute(typeof(UmadP3BowelsOfAgonyScenario), strat, seed, new ScenarioRunOptions
         {
-            fake.Frame(0.05f, d => { world.Events.Tick(d); world.Tick(d); });
-            for (var i = 0; i < 8; i++)
-                if (world.Party.Get(i) is { } m) farthest = MathF.Max(farthest, new Vector2(m.Position.X, m.Position.Z).Length());
-        }
+            Overrides = o =>
+            {
+                var overrides = (UmadP3BowelsOfAgonyStateOverrides)o;
+                overrides.WindSpot = wind;
+                overrides.WaterClockwise = waterClockwise;
+                overrides.ShortElement = shortElement;
+                overrides.Latitudinal = latitudinal;
+                overrides.ThunderPlan = plan;
+            },
+            Probe = p =>
+            {
+                for (var i = 0; i < 8; i++)
+                    if (p.World.Party.Get(i) is { } m) farthest = MathF.Max(farthest, new Vector2(m.Position.X, m.Position.Z).Length());
+            },
+        });
         var log = DiagnosticLog.Snapshot();
-        world.Despawn();
 
-        Assert.That(log.Where(l => l.Contains("[Game] Kill:") && l.Contains(" died ")), Is.Empty);
+        Assert.That(run.Passed, run.ToString);
         Assert.That(farthest, Is.LessThan(19.6f));
         Assert.That(Hits(log, ActionId.Shockwave), Is.EqualTo(new[] { 0, 0, 0, 0 }), "Shockwave");
         Assert.That(Hits(log, ActionId.StraySpray_P3), Is.EqualTo(new[] { 0, 0 }), "Stray Spray");
@@ -88,7 +73,7 @@ public class UmadP3BowelsOfAgonyScenarioTests
 
     private static List<int> Hits(IReadOnlyList<string> log, uint actionId)
     {
-        var marker = $"Resolve: {ActionLookup.Name(actionId)} from";
+        var marker = $"Resolve: {Natives.Data.ActionName(actionId)} at";
         return log.Where(l => l.Contains(marker))
             .Select(l => int.Parse(l[(l.LastIndexOf("-- ") + 3)..].Split(' ')[0]))
             .ToList();

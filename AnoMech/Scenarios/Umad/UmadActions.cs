@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using AnoMech.Core;
 using AnoMech.Core.EnemyActions;
 using AnoMech.Core.SimObjects;
+using AnoMech.Scenarios.Umad.P1Shared;
 using static AnoMech.Core.EnemyActions.Distribution;
 using static AnoMech.Core.EnemyActions.EnemyActionEffects;
 using static AnoMech.Core.EnemyActions.Severity;
@@ -96,6 +98,82 @@ public static class UmadActions
         Timing = new() { DamageDelay = 0.62f },
     };
 
+    // -- P1 Graven Image --
+
+    // No damage to wait on: the bots fly with the ActionEffect, as the client pushes its own player.
+    public static readonly EnemyAction PulseWave = new(UmadP1GravenConstants.ActionId.PulseWave)
+    {
+        Cast = new() { AnimationLock = 1.1f, FaceTarget = false },
+        Effects = [Knockback(UmadP1GravenConstants.KnockbackId.PulseWave, knockbackDelay: 0f)],
+    };
+
+    // Each line's 3.96s Magic Vulnerability Up makes a second line on anyone lethal.
+    public static readonly EnemyAction WaveCannon = new(UmadP1GravenConstants.ActionId.WaveCannon)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Effects = [Damage(MagicVulns), ApplyStatus(UmadConstants.StatusId.MagicVulnerabilityUp, 3.96f)],
+    };
+
+    public static readonly EnemyAction Explosion = new(UmadP1GravenConstants.ActionId.Explosion)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Effects = [Damage(MagicVulns)],
+    };
+
+    public static readonly EnemyAction LightOfJudgmentP1 = new(UmadP1GravenConstants.ActionId.LightOfJudgment)
+    {
+        Cast = new() { AnimationLock = 3.1f },
+        Effects = [Damage()],
+    };
+
+    public static readonly EnemyAction Hyperdrive = new(UmadP1GravenConstants.ActionId.Hyperdrive)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Effects = [Damage(TankBuster)],
+    };
+
+    // The width is the strategy diagrams'; UNVERIFIED (no log has anyone between 45 and 90 degrees).
+    public static readonly EnemyAction RevoltingRuinIII = RevoltingRuin(UmadP1GravenConstants.ActionId.RevoltingRuinIII);
+    public static readonly EnemyAction RevoltingRuinIIIFollowUp = RevoltingRuin(UmadP1GravenConstants.ActionId.RevoltingRuinIIIFollowUp);
+
+    private static EnemyAction RevoltingRuin(uint actionId) => new(actionId)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Area = new() { Size = MathF.PI / 3f },
+        Effects = [Damage(TankBuster)],
+    };
+
+    public static readonly EnemyAction Gravitas = new(UmadP1GravenConstants.ActionId.Gravitas)
+    {
+        Cast = new() { AnimationLock = 1.1f, FaceTarget = false },
+        Effects = [Damage()],
+    };
+
+    // Push distance UNVERIFIED: nobody was clipped in the logs.
+    public static readonly EnemyAction Vitrophyre = new(UmadP1GravenConstants.ActionId.Vitrophyre)
+    {
+        Cast = new() { AnimationLock = 1.1f, FaceTarget = false },
+        Effects = [Damage(), OnOthers(PushFromTarget((_, _) => 20f, 20f))],
+    };
+
+    // UNVERIFIED that fewer than 3 kills.
+    public static readonly EnemyAction GravityIII = new(UmadP1GravenConstants.ActionId.GravityIII)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Effects = [Damage(split: Stack(3))],
+    };
+
+    // Cone type 13, range 100, no XAxisModifier: the half of the room the statue faces.
+    public static readonly EnemyAction GravitationalWave = HalfRoomCleave(UmadP1GravenConstants.ActionId.GravitationalWave);
+    public static readonly EnemyAction IntemperateWill = HalfRoomCleave(UmadP1GravenConstants.ActionId.IntemperateWill);
+
+    private static EnemyAction HalfRoomCleave(uint actionId) => new(actionId)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Area = new() { Size = MathF.PI / 2f },
+        Effects = [Damage(Lethal)],
+    };
+
     // -- P2 Forsaken --
 
     public static readonly EnemyAction Forsaken = new(UmadConstants.ActionId.Forsaken)
@@ -180,6 +258,58 @@ public static class UmadActions
     {
         Cast = new() { AnimationLock = 3.1f },
         Effects = [Damage(TankBuster.MinMit(0.30f), split: Stack(2, understacked: TankBuster.MinMit(0.80f)))],
+    };
+
+    // -- P3 Bowels of Agony --
+
+    public static readonly EnemyAction BowelsOfAgony = new(UmadConstants.ActionId.BowelsOfAgony)
+    {
+        Cast = new() { AnimationLock = 3.1f },
+        Effects = [Damage()],
+    };
+
+    private static readonly IEnemyActionEffect ElementMagicVulnerabilityUp =
+        ApplyStatus(UmadConstants.StatusId.MagicVulnerabilityUp, 3.96f);
+
+    public static readonly EnemyAction StrayFlamesP3 = new(UmadConstants.ActionId.StrayFlames_P3)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Effects = [Damage(MagicVulns), ElementMagicVulnerabilityUp],
+    };
+
+    // The hole is somewhere from 3.2y (unhit) to 4.4y (hit). UNVERIFIED in between.
+    public static readonly EnemyAction StraySprayP3 = new(UmadConstants.ActionId.StraySpray_P3)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Area = new() { Size = 4f },
+        Effects = [Damage(MagicVulns), ElementMagicVulnerabilityUp],
+    };
+
+    // A crystal's shot at one of the two players nearest it; anyone else caught is pushed off that
+    // player by the winds' rule. UNVERIFIED: no log caught these pushes, and no logged Inferno hit
+    // anyone, so its hole is a guess.
+    public static readonly EnemyAction TsunamiP3 = CrystalShot(UmadConstants.ActionId.Tsunami_P3, holeRadius: null);
+    public static readonly EnemyAction InfernoP3 = CrystalShot(UmadConstants.ActionId.Inferno_P3, holeRadius: 4f);
+
+    private static EnemyAction CrystalShot(uint actionId, float? holeRadius) => new(actionId)
+    {
+        Cast = new() { AnimationLock = 1.1f, FaceTarget = false },
+        Area = new() { Size = holeRadius },
+        Effects =
+        [
+            Damage(MagicVulns),
+            ElementMagicVulnerabilityUp,
+            OnOthers(PushFromTarget((ctx, target) => WindPush(target, ctx.Target?.Position ?? ctx.Origin.Position), 40f)),
+            OnOthers(RemoveStatus(UmadConstants.StatusId.Headwind, atImpact: true)),
+            OnOthers(RemoveStatus(UmadConstants.StatusId.Tailwind, atImpact: true)),
+        ],
+    };
+
+    // UNVERIFIED: nobody stood inside it in a log.
+    public static readonly EnemyAction ThunderIIIAoe = new(UmadConstants.ActionId.ThunderIII_Aoe)
+    {
+        Cast = new() { AnimationLock = 3.1f },
+        Effects = [Damage(Lethal)],
     };
 
     // -- P3 Black Hole --
@@ -331,12 +461,15 @@ public static class UmadActions
         Timing = new() { DamageDelay = 1.14f },
     };
 
-    private static float? VacuumWavePush(EnemyActionContext ctx, SimCharacter target)
+    private static float? VacuumWavePush(EnemyActionContext ctx, SimCharacter target) => WindPush(target, ctx.Caster.Position);
+
+    // Headwind faces away from the push and Tailwind into it for the short push that takes the wind;
+    // the wrong facing throws its holder off the platform.
+    private static float? WindPush(SimCharacter target, Vector3 from)
     {
         var headwind = target.HasStatus(UmadConstants.StatusId.Headwind);
         if (!headwind && !target.HasStatus(UmadConstants.StatusId.Tailwind)) return 20f;
         var facing = target.Placement();
-        var from = ctx.Caster.Position;
         return (headwind ? facing.IsLookingAwayFrom(from) : facing.IsLookingAt(from)) ? 10f : 40f;
     }
 

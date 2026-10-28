@@ -120,11 +120,14 @@ public static class UmadP1GravenConstants
         public const ushort SpawnState = 0x0004;
     }
 
-    public static class VfxPath
+    // Gravitas' puddle, an EObj spawned where each Gravitas lands, played ready to soak and then
+    // popped. Its spawn state and Arg2 serials are UNVERIFIED.
+    public static class Puddle
     {
-        // A stand-in: the real Gravitas puddle's visual is unknown.
-        public const string PuddleOmen = "general_1bf";
-        public const string DoubleTroubleTrapStackHit = "vfx/monster/gimmick6/eff/z3oy_b0_g02c0c.avfx";
+        public const uint EObjId = 0x1EC022U;
+        public const uint Arg2Serial = 0x50;
+        public static readonly (uint State, uint Bitmask) SoakReady = (0x0010, 0x0020);
+        public static readonly (uint State, uint Bitmask) Explode = (0x0004, 0x0008);
     }
 
     // Director 0x80000001 switches the music: 20289 at 10.47s into the pull, 20290 at 59.97s,

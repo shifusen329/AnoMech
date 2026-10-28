@@ -38,12 +38,12 @@ public sealed class UmadP1GravenImage1Ai : IScenarioAi<UmadP1GravenImage1State>
         var ai = new AiManager(world);
         ai.Move(0.3f, Uptime, cue: UmadP1GravenImage1Playbook.Uptime);
         ai.Move(8.25f, () => KnockbackPrepositions(state), arrivalTime: 10.7f, cue: UmadP1GravenImage1Playbook.KnockbackTether(state));
-        ai.Move(8.25f, () => UntetheredQuadrantSpots(state), arrivalTime: 13.0f, settleFraction: 0.5f, cue: UmadP1GravenImage1Playbook.MysteryMagic1(state));
-        ai.Move(11.5f, () => TetheredQuadrantSpots(state), jitter: 0.2f, arrivalTime: 13.0f, cue: UmadP1GravenImage1Playbook.MysteryMagic1(state));
+        ai.Move(8.25f, () => UntetheredQuadrantSpots(state), arrivalTime: 12.6f, settleFraction: 0.5f, cue: UmadP1GravenImage1Playbook.MysteryMagic1(state));
+        ai.Move(11.5f, () => TetheredQuadrantSpots(state), jitter: 0.2f, arrivalTime: 12.6f, cue: UmadP1GravenImage1Playbook.MysteryMagic1(state));
         ai.Move(14.1f, WaveCannonLineup, jitter: 0.2f, arrivalTime: 17.9f, settleFraction: 0.5f, cue: UmadP1GravenImage1Playbook.WaveCannonLineup);
         ai.Move(18.87f, () => TowerSoaks(state, world), jitter: 0.2f, arrivalTime: 21.5f, settleFraction: 0.5f, cue: UmadP1GravenImage1Playbook.Towers(state));
         ai.Move(21.95f, () => TrapStacks(state), jitter: 0.1f, arrivalTime: 25.2f, settleFraction: 0.5f, cue: UmadP1GravenImage1Playbook.Confetti(state));
-        ai.Move(26.25f, () => MysteryMagic2Dodges(state, world), jitter: 0.2f, arrivalTime: 29.2f, cue: UmadP1GravenImage1Playbook.MysteryMagic2(state));
+        ai.Move(26.95f, () => MysteryMagic2Dodges(state, world), jitter: 0.2f, arrivalTime: 28.8f, cue: UmadP1GravenImage1Playbook.MysteryMagic2(state));
         ai.Move(29.6f, Uptime, arrivalTime: 33f, settleFraction: 0.5f, cue: UmadP1GravenImage1Playbook.LightOfJudgment);
     }
 
@@ -107,14 +107,10 @@ public sealed class UmadP1GravenImage1Ai : IScenarioAi<UmadP1GravenImage1State>
     private static IAiMove TowerSoaks(UmadP1GravenImage1State state, SimWorld world)
     {
         var positions = new Dictionary<PartyRole, Vector2>();
-        var vulnerable = new HashSet<PartyRole>();
         foreach (var role in UmadP1Roles.All)
-        {
-            if (world.Party.Get(role) is not { } member || !member.IsAlive()) continue;
-            positions[role] = XZ(member.Position);
-            if (member.HasStatus(UmadConstants.StatusId.MagicVulnerabilityUp)) vulnerable.Add(role);
-        }
-        return AiMove.Create(TowerSoakSpots(state.WaveTargets, positions, vulnerable)).NaturalOrder();
+            if (world.Party.Get(role) is { } member && member.IsAlive())
+                positions[role] = XZ(member.Position);
+        return AiMove.Create(TowerSoakSpots(state.WaveTargets, positions, state.WaveTargets.ToHashSet())).NaturalOrder();
     }
 
     internal static Vector2?[] TowerSoakSpots(IReadOnlyList<PartyRole> waveTargets, IReadOnlyDictionary<PartyRole, Vector2> positions, IReadOnlySet<PartyRole> vulnerable)

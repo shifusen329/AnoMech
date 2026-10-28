@@ -24,14 +24,14 @@ internal static class UmadP3BowelsOfAgonyMitigation
     // element and crystal hits land on few players and their logged damage varies widely.
     public static readonly IReadOnlyList<MitHitDef> Hits =
     [
-        new(BowelsOfAgony, "Bowels of Agony", 115000f, UmadMitigation.Chaos),
-        new(StrayFlames, "Stray Flames", 200000f, null),
-        new(StraySpray, "Stray Spray", 200000f, null),
-        new(Tsunami, "Tsunami", 250000f, null),
-        new(Inferno, "Inferno", 200000f, null),
-        new(ThunderIII, "Thunder III", 566000f, null, TankBuster: true),
-        new(Shockwave, "Shockwave", 220000f, null),
-        new(Cyclone, "Cyclone", 198000f, null),
+        new(BowelsOfAgony, "Bowels of Agony", 115000f, UmadMitigation.Chaos, ActionIds: [UmadConstants.ActionId.BowelsOfAgony]),
+        new(StrayFlames, "Stray Flames", 200000f, null, ActionIds: [UmadConstants.ActionId.StrayFlames_P3]),
+        new(StraySpray, "Stray Spray", 200000f, null, ActionIds: [UmadConstants.ActionId.StraySpray_P3]),
+        new(Tsunami, "Tsunami", 250000f, null, ActionIds: [UmadConstants.ActionId.Tsunami_P3]),
+        new(Inferno, "Inferno", 200000f, null, ActionIds: [UmadConstants.ActionId.Inferno_P3]),
+        new(ThunderIII, "Thunder III", 566000f, null, TankBuster: true, ActionIds: [UmadConstants.ActionId.ThunderIII_Resolve]),
+        new(Shockwave, "Shockwave", 220000f, null, ActionIds: [UmadConstants.ActionId.Shockwave]),
+        new(Cyclone, "Cyclone", 198000f, null, ActionIds: [UmadConstants.ActionId.Cyclone]),
     ];
 
     private const float Bowels = 29.98f;

@@ -18,6 +18,4 @@ public sealed class UmadP1GravenImage2StateOverrides
     public bool? CleaveWest2 { get; set; }
 
     public bool PropsBindDirector { get; set; } = true;
-    public bool PropsForceActive { get; set; } = false;
-    public PropBeatMode PropsBeatMode { get; set; } = PropBeatMode.ActorControl;
 }

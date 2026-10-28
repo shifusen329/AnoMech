@@ -62,6 +62,10 @@ public static class EnemyActionEffects
     public static IEnemyActionEffect Push(Func<EnemyActionContext, SimCharacter, float?> distance, float speed, float? pushDelay = null)
         => new KnockbackEffect((ctx, target) => distance(ctx, target) is { } d ? (d, speed) : null, pushDelay);
 
+    // As Push, but away from the cast's target: a shot from afar that throws the others off the one it hit.
+    public static IEnemyActionEffect PushFromTarget(Func<EnemyActionContext, SimCharacter, float?> distance, float speed, float? pushDelay = null)
+        => new KnockbackEffect((ctx, target) => distance(ctx, target) is { } d ? (d, speed) : null, pushDelay, awayFromTarget: true);
+
     // Kills by facing alone: with `lookAway`, whoever has the origin in their front 90° arc; without,
     // whoever has it in their back 90° arc.
     public static IEnemyActionEffect Gaze(bool lookAway) => new GazeEffect(lookAway);
@@ -198,7 +202,7 @@ internal sealed class GazeEffect(bool lookAway) : IEnemyActionEffect
     }
 }
 
-internal sealed class KnockbackEffect(Func<EnemyActionContext, SimCharacter, (float Distance, float Speed)?> push, float? knockbackDelay, uint? knockbackRow = null) : IEnemyActionEffect
+internal sealed class KnockbackEffect(Func<EnemyActionContext, SimCharacter, (float Distance, float Speed)?> push, float? knockbackDelay, uint? knockbackRow = null, bool awayFromTarget = false) : IEnemyActionEffect
 {
     public void Apply(EnemyActionContext ctx, IReadOnlyList<SimCharacter> hits)
     {
@@ -206,7 +210,7 @@ internal sealed class KnockbackEffect(Func<EnemyActionContext, SimCharacter, (fl
         {
             if (ctx.IsKilled(target) || !target.IsAlive()) continue;
             if (push(ctx, target) is { } p)
-                ctx.Knockback(target, p.Distance, p.Speed, knockbackDelay, knockbackRow);
+                ctx.Knockback(target, p.Distance, p.Speed, knockbackDelay, knockbackRow, awayFromTarget);
         }
     }
 }

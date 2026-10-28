@@ -70,6 +70,8 @@ public static class UmadConstants
         public const uint GazeStatueNormal   = 2015166; // NE, IndolentWill
         public const uint GazeStatueInverted = 2015167; // NW, AveMaria
         public const uint TelePortent        = 2015267;
+        public const uint FireCrystal        = 2015290;
+        public const uint WaterCrystal       = 2015291;
         public const uint WindCrystal        = 2015292;
         public const uint TriangleEast       = 2015154;
         public const uint TriangleWest       = 2015155;

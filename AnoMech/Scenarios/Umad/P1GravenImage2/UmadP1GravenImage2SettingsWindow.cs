@@ -21,8 +21,7 @@ public sealed class UmadP1GravenImage2SettingsWindow
             UmadP1SettingsRows.TriState("Cleave 1:", "gi2cleave1", "West", "East", Overrides.CleaveWest1, v => Overrides.CleaveWest1 = v);
             UmadP1SettingsRows.TriState("Cleave 2:", "gi2cleave2", "West", "East", Overrides.CleaveWest2, v => Overrides.CleaveWest2 = v);
 #if DEBUG
-            UmadP1SettingsRows.PropKnobs("gi2", Overrides.PropsBindDirector, v => Overrides.PropsBindDirector = v,
-                Overrides.PropsForceActive, v => Overrides.PropsForceActive = v, Overrides.PropsBeatMode, v => Overrides.PropsBeatMode = v);
+            UmadP1SettingsRows.PropKnobs("gi2", Overrides.PropsBindDirector, v => Overrides.PropsBindDirector = v);
 #endif
             SettingsGrid.End();
         }
@@ -37,7 +36,5 @@ public sealed class UmadP1GravenImage2SettingsWindow
         Overrides.CleaveWest1 = null;
         Overrides.CleaveWest2 = null;
         Overrides.PropsBindDirector = true;
-        Overrides.PropsForceActive = false;
-        Overrides.PropsBeatMode = PropBeatMode.ActorControl;
     }
 }

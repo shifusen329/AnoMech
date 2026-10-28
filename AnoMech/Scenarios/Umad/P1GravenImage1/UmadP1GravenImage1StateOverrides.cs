@@ -26,6 +26,4 @@ public sealed class UmadP1GravenImage1StateOverrides
 
     // Statue prop knobs, as Tele-trouncing's (debug builds only).
     public bool PropsBindDirector { get; set; } = true;
-    public bool PropsForceActive { get; set; } = false;
-    public PropBeatMode PropsBeatMode { get; set; } = PropBeatMode.ActorControl;
 }

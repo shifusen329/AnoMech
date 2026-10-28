@@ -32,7 +32,6 @@ public sealed class UmadP3BowelsOfAgonyAi(UmadP3BowelsOfAgonyAi.Strat strat) : I
         else RunSg3k(ai);
         world.Events.Add(50.5f, () => ThunderTanksHeadIn(windPairsToo: false));
         world.Events.Add(54.1f, () => ThunderTanksHeadIn(windPairsToo: true));
-        world.Events.Add(57.6f, InvulnPlannedTank);
         ai.Move(58.6f, SwapThunderTanks, arrivalTime: 61.1f, cue: UmadP3BowelsOfAgonyPlaybook.ThunderSwap(state));
         ScheduleThunderClearance(54.4f, 58.6f, 62.0f);
     }
@@ -52,7 +51,7 @@ public sealed class UmadP3BowelsOfAgonyAi(UmadP3BowelsOfAgonyAi.Strat strat) : I
     private void RunSg3k(AiManager ai)
     {
         ai.Move(30.6f, Sg3kParkBossesAndTakeShortSpots, arrivalTime: 40.0f, settleFraction: 0.5f, cue: UmadP3BowelsOfAgonyPlaybook.Sg3kSetup(state));
-        ai.Move(42.3f, () => Sg3kResolveSpots(state.ShortElement), arrivalTime: 48.6f, cue: UmadP3BowelsOfAgonyPlaybook.Sg3kResolve(state, state.ShortElement));
+        ai.Move(42.3f, () => Sg3kResolveSpotsOutOfThunderIII(state.ShortElement), arrivalTime: 48.6f, cue: UmadP3BowelsOfAgonyPlaybook.Sg3kResolve(state, state.ShortElement));
         world.Events.Add(49.7f, () => FaceForCrystal(state.ShortElement));
         ai.Move(61.8f, Sg3kChaosToTheMiddleFacingNorth, arrivalTime: 64.6f, cue: UmadP3BowelsOfAgonyPlaybook.Sg3kPreImplosion(state));
         ai.Move(64.8f, Sg3kMainTankNorthOfChaos, arrivalTime: 65.8f, cue: UmadP3BowelsOfAgonyPlaybook.Sg3kPreImplosion(state));
@@ -264,6 +263,21 @@ public sealed class UmadP3BowelsOfAgonyAi(UmadP3BowelsOfAgonyAi.Strat strat) : I
 
     private IAiMove Sg3kResolveSpots(Element resolving) => AiMove.Create(Sg3kResolveCoords(resolving)).NaturalOrder();
 
+    private const float ThunderIIIAoeClearance = Geometry.ThunderAoeRadius + 0.6f;
+
+    private IAiMove Sg3kResolveSpotsOutOfThunderIII(Element resolving)
+    {
+        var coords = Sg3kResolveCoords(resolving);
+        if (state.Objects.Exdeath is { } exdeath)
+        {
+            var boss = Flat(exdeath.Position);
+            for (var i = 0; i < coords.Length; i++)
+                if (coords[i] is { } spot && Vector2.Distance(spot, boss) < ThunderIIIAoeClearance)
+                    coords[i] = InsideArena(boss + Vector2.Normalize(spot - boss) * ThunderIIIAoeClearance);
+        }
+        return AiMove.Create(coords).NaturalOrder();
+    }
+
     private Vector2?[] Sg3kResolveCoords(Element resolving)
     {
         var side = SideOf(resolving);
@@ -380,13 +394,6 @@ public sealed class UmadP3BowelsOfAgonyAi(UmadP3BowelsOfAgonyAi.Strat strat) : I
         var spot = Along(boss, u, SecondTankStandbyDistance);
         world.Strat.Note(role, spot, UmadP3BowelsOfAgonyPlaybook.ThunderClearance(firstRole, role), deadline: null);
         second.MoveTo(new Vector3(spot.X, 0f, spot.Y));
-    }
-
-    private void InvulnPlannedTank()
-    {
-        if (ThunderIIIPlanning.InvulnRole(state.ThunderPlan) is not { } role) return;
-        if (world.Party.Get(role) is ISimPartyMember tank && ((SimCharacter)tank).IsAlive())
-            tank.UseInvuln();
     }
 
     private IAiMove SwapThunderTanks()

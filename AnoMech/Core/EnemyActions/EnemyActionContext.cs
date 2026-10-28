@@ -67,11 +67,12 @@ public sealed class EnemyActionContext
     // Decided now; moves the character after `delay` (null = TimingSpec.DamageDelay), unless it died
     // meanwhile. knockbackRow goes into the ActionEffect; null for a push with no Knockback sheet
     // row. The first push wins.
-    public void Knockback(SimCharacter who, float distance, float speed, float? delay = null, uint? knockbackRow = null)
+    public void Knockback(SimCharacter who, float distance, float speed, float? delay = null, uint? knockbackRow = null, bool awayFromTarget = false)
     {
         var row = knockbackRow is { } id ? Natives.Data.Knockback(id) : null;
         var from = row switch
         {
+            _ when awayFromTarget && Target is not null => Target.Position,
             { AwayFromTarget: true } when Target is not null => Target.Position,
             // Pushed along the caster's facing: away from a point right behind the pushed one.
             { Direction: 3 } => who.Position - new System.Numerics.Vector3(System.MathF.Sin(Caster.Rotation), 0f, System.MathF.Cos(Caster.Rotation)),

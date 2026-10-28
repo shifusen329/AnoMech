@@ -175,7 +175,7 @@ internal sealed class EnemyActionHandler(SimCharacter caster, SimCast cast, SimW
             effect.Apply(ctx, hits);
         foreach (var (who, loss) in world.MitPractice.Resolved(action.ActionId, hits))
             if (!ctx.IsKilled(who)) ctx.OverrideDamage(who, loss);
-        world.SimEvents.Raise(new ActionResolved(action, caster, origin, hits, ctx.NpcHits, hits.Where(ctx.IsKilled).ToList(), releaseDelay));
+        world.SimEvents.Raise(new ActionResolved(action, caster, origin, hits, ctx.NpcHits, hits.Where(ctx.IsKilled).ToList(), releaseDelay, target));
 
         delivery.Outcomes = ctx.Outcomes;
         // Ahead of the deaths it shares a time with, so the killing hit lands on a living target.

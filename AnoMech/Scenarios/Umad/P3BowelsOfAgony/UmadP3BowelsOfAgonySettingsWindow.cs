@@ -129,7 +129,7 @@ public sealed class UmadP3BowelsOfAgonySettingsWindow
     public void DrawThunderIIIPlan()
     {
         ImGui.Separator();
-        var mpGuest = Plugin.MultiplayerInstance is { IsConnected: true, IsHost: false };
+        var mpGuest = Plugin.Multiplayer is { IsConnected: true, IsHost: false };
         ImGui.TextUnformatted("Thunder III plan (planning tank bots will follow):");
         ImGui.BeginDisabled(mpGuest);
         ImGui.TextUnformatted("After the short elements (~58.4s):");

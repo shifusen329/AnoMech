@@ -10,7 +10,7 @@ namespace AnoMech.Tests;
 // The sizes the Graven Image scenarios and their bots assume, against the real sheets.
 public class UmadP1GravenConstantsTests
 {
-    private readonly DataminingGameData data = new();
+    private readonly DataminingGameData data = new(new FakeRsvFunctions());
 
     [TestCase(ActionId.WaveCannon, 12, 100, 6)]
     [TestCase(ActionId.Explosion, 2, 4, 0)]
@@ -29,7 +29,7 @@ public class UmadP1GravenConstantsTests
     {
         var row = data.Action(actionId);
         Assert.That(row, Is.Not.Null);
-        Assert.That((row!.CastType, row.EffectRange, row.XAxisModifier), Is.EqualTo(((byte)castType, (byte)range, (byte)width)));
+        Assert.That(((int)row!.CastType, (int)row.EffectRange, (int)row.XAxisModifier), Is.EqualTo((castType, range, width)));
     }
 
     [TestCase(KnockbackId.PulseWave, 13)]

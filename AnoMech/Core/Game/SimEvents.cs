@@ -7,8 +7,8 @@ namespace AnoMech.Core.Game;
 
 // One resolve of an action, at its snapshot. Hits are the party members its area caught at their
 // center, nearest Origin first; NpcHits the NPCs it caught anywhere on their hitbox, its caster aside.
-// ReleaseDelay runs from the snapshot to the ActionEffect: CastSpec.ActionEffectOffset for a cast,
-// 0 for an instant action.
+// Target is the character the cast was aimed at, if any. ReleaseDelay runs from the snapshot to the
+// ActionEffect: CastSpec.ActionEffectOffset for a cast, 0 for an instant action.
 public sealed record ActionResolved(
     EnemyAction Action,
     SimCharacter Caster,
@@ -16,7 +16,8 @@ public sealed record ActionResolved(
     IReadOnlyList<SimCharacter> Hits,
     IReadOnlyList<SimEnemy> NpcHits,
     IReadOnlyList<SimCharacter> Killed,
-    float ReleaseDelay);
+    float ReleaseDelay,
+    SimCharacter? Target);
 
 // A status gained, stacked or refreshed. PreviousStacks is 0 for a new status and equals Stacks for
 // a refresh at its cap. Action and Caster are set when an action's effect applied it.

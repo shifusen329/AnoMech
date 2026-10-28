@@ -10,6 +10,10 @@ namespace AnoMech.Tests;
 
 public class UmadP3BowelsOfAgonyStateTests
 {
+    // A multiplayer test's host, left installed, would make the overrides read per seat instead of Mine.
+    [SetUp]
+    public void PlaySolo() => DalamudServices.Install(nameof(Plugin.Multiplayer), null!);
+
     private static (UmadP3BowelsOfAgonyState State, PartyRole Me) Roll(int seed, UmadP3BowelsOfAgonyStateOverrides? overrides = null)
     {
         var world = new SimWorld(new EventScheduler());
