@@ -2,6 +2,29 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.5.3.0] - 2026-10-30
+
+### Added
+
+- **Phase 3: Full phase.** One run from the bosses' arrival until they fall: Bowels of Agony, Limit Cut and Black Hole back to back, with one Kefka, Chaos and Exdeath throughout. What one mechanic leaves carries into the next:
+  - Bowels of Agony's wind crystal stays for Limit Cut, which holds the bosses on its corner.
+  - The winds you still hold go into Limit Cut's Vacuum Wave.
+  - The sides from the second Decisive Battle stay for Black Hole.
+  - Six bot strats: each Bowels of Agony strat with each Black Hole strat.
+  - Each mechanic's settings are in their own section. Limit Cut's corner and winds follow Bowels of Agony's.
+  - Mitigation practice follows one plan across the whole phase. A cooldown an earlier mechanic already used is pressed as soon as it's back.
+  - Works in multiplayer.
+- **Limit Cut:**
+  - Kefka casts Max.
+  - Exdeath's last Thunder III now lands, with two hits as Black Hole begins. Every logged pull shared it, the off-tank first; that's the default, and the Thunder III plan has a setting for it.
+- **Black Hole:**
+  - Big Bang now lands as two 6y circles on the bosses. Where it lands is a best guess.
+  - Both bosses then leave the fight, and Kefka says "Boring!".
+
+### Fixed
+
+- The death recap's "be there by" times are right for a mechanic that starts partway through a run.
+
 ## [0.5.2.0] - 2026-10-28
 
 AnoMech now runs on anomek's AnoMech 0.5.1.0, with this fork's Dancing Mad scenarios and features carried over onto it.
