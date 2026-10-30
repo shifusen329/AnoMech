@@ -21,4 +21,6 @@ internal sealed class FakeEventObject(int slot, uint entityId, Vector3 position,
         if (Exists) timeline.Add("despawn", entityId, name);
         Exists = false;
     }
+
+    public void LogLoadStateChange() { }
 }

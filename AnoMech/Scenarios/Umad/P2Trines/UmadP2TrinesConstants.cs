@@ -50,10 +50,14 @@ public static class UmadP2TrinesConstants
     // 136.6s into it, 2s after this scenario starts.
     public const float BgmSecondsAtStart = 134.60f;
 
-    // Each triangle spawns hidden in the state the explosion ends in, and the EObjAnimation beats
-    // (ActorControl 413) bring it up. The real spawns' Arg2 is 3 plus a serial in the high word.
+    // The real spawns' Arg2 is 3 plus a serial in the high word. Their spawn state is UNVERIFIED: the
+    // real triangles show with no beat at all, but spawned in this one, the state the explosion ends
+    // in, the effect stays off until TriangleAppears.
     public const ushort TriangleSpawnState = 0x4;
     public const uint TriangleArg2Serial = 0x41;
+    // The real triangles are never sent this. It turns the effect on, and the flies-down beat cuts
+    // its animation off.
+    public static readonly (uint State, uint Bitmask) TriangleAppears = (0x1, 0x2);
     public static readonly (uint State, uint Bitmask) TriangleFliesDown = (0x10, 0x20);
     public static readonly (uint State, uint Bitmask) TriangleLands = (0x40, 0x80);
     public static readonly (uint State, uint Bitmask) TriangleExplodes = (0x4, 0x8);

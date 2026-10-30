@@ -2,6 +2,16 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [0.5.3.1] - 2026-10-30
+
+### Fixed
+
+- **Trines: the triangles show.** They never appeared before, though their corners still hit. Each one now plays an appear animation just after it spawns. The real fight has no such animation, so the triangles may look slightly out of step as they come down.
+
+### Added
+
+- **The event log ("Enable event logging" in settings) records the props a scenario spawns,** such as crystals, statues and triangles: each spawn, every animation it's sent, and when its effects load. If a prop doesn't show, turn it on and send the log.
+
 ## [0.5.3.0] - 2026-10-30
 
 ### Added

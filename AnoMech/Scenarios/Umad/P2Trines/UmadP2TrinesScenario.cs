@@ -76,12 +76,15 @@ public sealed class UmadP2TrinesScenario : IMultiplayerReplayable
         world.Events.Add(15.21f, () => kefka.Kefka?.Cast(ActionId.Trine, animationLock: Constants.AnimationLock.BossCast));
 
         world.Events.Add(18.77f, () => SpawnTriangles(drop: 0));
+        world.Events.Add(19.07f, () => Animate(drop: 0, Constants.TriangleAppears));
         world.Events.Add(20.47f, () => Animate(drop: 0, Constants.TriangleFliesDown));
         world.Events.Add(20.78f, () => SpawnTriangles(drop: 1));
+        world.Events.Add(21.08f, () => Animate(drop: 1, Constants.TriangleAppears));
         world.Events.Add(21.36f, StartWings);
         world.Events.Add(21.99f, () => Animate(drop: 0, Constants.TriangleLands));
         world.Events.Add(22.48f, () => Animate(drop: 1, Constants.TriangleFliesDown));
         world.Events.Add(22.78f, () => SpawnTriangles(drop: 2));
+        world.Events.Add(23.08f, () => Animate(drop: 2, Constants.TriangleAppears));
         world.Events.Add(24.00f, () => Animate(drop: 1, Constants.TriangleLands));
         world.Events.Add(24.49f, () => Animate(drop: 2, Constants.TriangleFliesDown));
         world.Events.Add(26.00f, () => Animate(drop: 2, Constants.TriangleLands));
@@ -145,8 +148,7 @@ public sealed class UmadP2TrinesScenario : IMultiplayerReplayable
         Targetable: false, EnemyList: EnemyListMode.Never, Visibility: SpawnVisibility.InvisibleHelper,
         Placement: new Placement(Vector3.Zero, 0f)));
 
-    // Spawned like the real ones and like the P1 statues, which share their Invisibility=7 rows
-    // and do render.
+    // Spawned like the P1 statues, which share their Invisibility=7 rows and do render.
     private void SpawnTriangles(int drop)
     {
         foreach (var t in state.Set(drop))

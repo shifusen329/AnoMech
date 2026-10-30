@@ -86,7 +86,9 @@ public class SimEventObject : ISimObject, IPositioned
 
     public virtual void Tick(float deltaSeconds)
     {
-        if (obj == null || SpawnConfig.Lifetime <= 0) return;
+        if (obj == null) return;
+        obj.LogLoadStateChange();
+        if (SpawnConfig.Lifetime <= 0) return;
 
         lifetimeElapsed += deltaSeconds;
         if (lifetimeElapsed >= SpawnConfig.Lifetime) Despawn();

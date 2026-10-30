@@ -467,6 +467,8 @@ internal sealed class PacketRecorder
             recorder.RecordDespawn(inner.EntityId);
             inner.Despawn();
         }
+
+        public void LogLoadStateChange() => inner.LogLoadStateChange();
     }
 
     // Only what the client took: a call refused while the zone streams in is retried, and goes out

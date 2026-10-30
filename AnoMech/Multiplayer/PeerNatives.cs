@@ -150,6 +150,7 @@ internal sealed class PeerNatives
         public float Rotation => inner.Rotation;
         public void ActorControl(uint category, uint arg1 = 0, uint arg2 = 0, uint arg3 = 0, uint arg4 = 0, uint arg5 = 0, uint arg6 = 0, uint arg7 = 0, uint arg8 = 0) { }
         public void Despawn() { }
+        public void LogLoadStateChange() => inner.LogLoadStateChange();
     }
 
     // Taken as applied, so the caller's retry doesn't keep it.

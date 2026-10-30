@@ -37,6 +37,11 @@ internal sealed class LogManager : IDisposable
         writer?.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] MapEffect index=0x{index:X} state=0x{state:X} timeline=0x{timeline:X}");
     }
 
+    internal void LogEventObject(string message)
+    {
+        writer?.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] EObj {message}");
+    }
+
     internal void LogEnterInstance(uint territoryId, string territoryName)
     {
         writer?.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] EnterInstance territory={territoryId} name=\"{territoryName}\"");
