@@ -25,10 +25,14 @@ public sealed class AiManager
     private const float MoveDeadlineSafetyMargin = 0.25f;
 
     private readonly SimWorld world;
+    // A strat's times count from when its AI starts, which is later than the run's start when a
+    // scenario plays one slice after another.
+    private readonly float startedAt;
 
     public AiManager(SimWorld world)
     {
         this.world = world;
+        startedAt = world.Events.Elapsed;
     }
 
     /// <summary>Schedule bots movement</summary> 
@@ -48,7 +52,7 @@ public sealed class AiManager
                 if (move[i] is not { } local) continue;
                 var member = world.Party.Get(i);
                 if (member == null || !member.IsAlive()) continue;
-                world.Strat.Record(new StratTarget((PartyRole)i, new Vector3(local.X, 0f, local.Y), world.Events.Elapsed, arrivalTime,
+                world.Strat.Record(new StratTarget((PartyRole)i, new Vector3(local.X, 0f, local.Y), world.Events.Elapsed, startedAt + arrivalTime,
                     cue?.Mechanic, cue?.Why((PartyRole)i), cue?.Source));
                 var target = Jitter(new Vector3(local.X, 0f, local.Y), jitter);
                 var partyMember = member as ISimPartyMember;

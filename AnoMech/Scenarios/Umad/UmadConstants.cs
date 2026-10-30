@@ -178,6 +178,7 @@ public static class UmadConstants
         public const uint DefinitionOfInsanity         = 0xBAE2U; // single-target, cast 4.0s; Kefka as the bosses arrive
         public const uint UltimaBlaster                = 0xBAE3U; // each Limit Cut clone's appearance hit
         public const uint UltimaBlasterCharge          = 0xBAE4U; // rect 100x6 (len x width)
+        public const uint Max                          = 0xBAE5U; // single-target, cast 5.0s; Kefka grows before Black Hole
         public const uint SlapHappy_Left                    = 0xBAE6U; // single-target, cast 5.0s
         public const uint SlapHappy_Right               = 0xBAE7U; // single-target, cast 5.0s
         public const uint SlapHappy_Slap               = 0xBAE8U; // circle r=13, instant

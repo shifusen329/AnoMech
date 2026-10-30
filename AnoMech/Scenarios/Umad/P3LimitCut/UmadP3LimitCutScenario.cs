@@ -61,10 +61,17 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
     public void OnActionResolved(ActionResolved resolved) => QueueCyclonesForWinds(resolved);
 
     public void Run(SimWorld worldParam, int? selectedAi)
+        => Play(worldParam, selectedAi, new UmadP3LimitCutState(worldParam.Rng, worldParam.Party, settingsWindow.Overrides), new UmadP3Cast());
+
+    // After Bowels of Agony: its wind crystal's corner and its winds carry on.
+    internal UmadP3LimitCutState Roll(SimWorld worldParam, int windSpot, IReadOnlyDictionary<PartyRole, Wind> winds)
+        => new(worldParam.Rng, worldParam.Party, settingsWindow.Overrides, windSpot, winds);
+
+    internal void Play(SimWorld worldParam, int? selectedAi, UmadP3LimitCutState stateParam, UmadP3Cast cast)
     {
         world = worldParam;
         party = world.Party;
-        state = new UmadP3LimitCutState(world.Rng, party, settingsWindow.Overrides);
+        state = stateParam;
         LastState = state;
         DiagnosticLog.Info(
             $"[UmadP3LimitCut] Roll: clones start {SpotName(state.StartSpot)} going {(state.Clockwise ? "clockwise" : "counter-clockwise")}, "
@@ -75,13 +82,16 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         if (selectedAi is { } idx && idx < AiStrats.Count)
             ((IScenarioAi<UmadP3LimitCutState>)AiStrats[idx]).Run(state, world);
 
-        SpawnActors();
-        world.MitPractice.Begin(UmadP3LimitCutMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+        SpawnActors(cast);
+        if (!cast.Chained)
         {
-            [UmadMitigation.Chaos] = () => state.Objects.Chaos,
-            [UmadMitigation.Exdeath] = () => state.Objects.Exdeath,
-        });
-        ApplyStartingStatuses();
+            world.MitPractice.Begin(UmadP3LimitCutMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+            {
+                [UmadMitigation.Chaos] = () => state.Objects.Chaos,
+                [UmadMitigation.Exdeath] = () => state.Objects.Exdeath,
+            });
+            ApplyStartingStatuses();
+        }
 
         // Once the tanks are in the stack, so the bosses don't chase them in from the corner.
         world.Events.Add(3.0f, () =>
@@ -156,6 +166,10 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
             state.Objects.Exdeath?.Follow();
             state.Objects.Exdeath?.Cast(ActionId.ThunderIII_Cast, animationLock: 3.1f);
         });
+        world.Events.Add(52.70f, () => state.Objects.Kefka?.Cast(ActionId.Max, animationLock: 3.1f));
+        // These two land as Black Hole begins.
+        world.Events.Add(55.83f, ResolveThunder);
+        world.Events.Add(58.86f, ResolveThunder);
     }
 
     public void RunInstanceEvents(SimWorld instanceWorld)
@@ -168,16 +182,17 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         instanceWorld.Events.Add(52.629f, () => instanceWorld.Map.DirectorUpdate(0x80000027U, 0x1AU, 0x2U, 0x1BDBU, 0x4000EFB9U));
     }
 
-    public MpMessage? BuildReplayStateMessage()
-        => LastState is { } s
-            ? new UmadP3LimitCutAiReplayStateMessage(s.StartSpot, s.Clockwise, s.Numbers.ToArray(),
-                s.Winds.Where(kv => kv.Value == Wind.Headwind).Select(kv => kv.Key).ToArray(), s.BossSpot, s.BaitRole, s.ThunderPlan)
-            : null;
+    public MpMessage? BuildReplayStateMessage() => LastState is { } s ? ReplayMessage(s) : null;
+
+    internal static UmadP3LimitCutAiReplayStateMessage ReplayMessage(UmadP3LimitCutState s)
+        => new(s.StartSpot, s.Clockwise, s.Numbers.ToArray(), s.Winds.Where(kv => kv.Value == Wind.Headwind).Select(kv => kv.Key).ToArray(),
+            s.BossSpot, s.BaitRole, s.ThunderPlan, s.LastThunderPlan);
 
     public object? StartReplay(MpMessage message, int aiIndex, PartyRole myRole, SimWorld replayWorld)
     {
         if (message is not UmadP3LimitCutAiReplayStateMessage msg || aiIndex < 0 || aiIndex >= AiStrats.Count) return null;
-        if (UmadP3LimitCutState.FromNetworkReplay(msg.StartSpot, msg.Clockwise, msg.Numbers, msg.Headwinds, msg.BossSpot, msg.BaitRole, msg.ThunderPlan) is not { } shadowState) return null;
+        if (UmadP3LimitCutState.FromNetworkReplay(msg.StartSpot, msg.Clockwise, msg.Numbers, msg.Headwinds, msg.BossSpot, msg.BaitRole,
+                msg.ThunderPlan, msg.LastThunderPlan) is not { } shadowState) return null;
         ((IScenarioAi<UmadP3LimitCutState>)AiStrats[aiIndex]).Run(shadowState, replayWorld);
         return shadowState;
     }
@@ -201,7 +216,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
     // The bosses are held at the wind crystal, and the cyclone and thunder helpers sit on it.
     private Vector3 WindCrystalPos => OnCircle(SpotHeading(state.BossSpot), 14f);
 
-    private uint WindCrystalLayoutId => state.BossSpot switch
+    private static uint WindCrystalLayoutId(int spot) => spot switch
     {
         1 => EObjId.WindCrystalSeLayoutId,
         3 => EObjId.WindCrystalNeLayoutId,
@@ -209,21 +224,28 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         _ => EObjId.WindCrystalSwLayoutId,
     };
 
-    private void SpawnActors()
+    // Bowels of Agony spawns it at its own resolve and leaves it here for the Cyclones.
+    internal static SimEventObject? SpawnWindCrystal(SimWorld world, int spot) => world.SpawnEventObject(new EventObjectSpawnConfig
+    {
+        EObjId = EObjId.WindCrystal, LayoutId = WindCrystalLayoutId(spot), TargetableStatus = 5, Arg2 = EObjId.WindCrystalArg2,
+        Placement = new Placement(OnCircle(SpotHeading(spot), 14f), SpotHeading(spot) + MathF.PI),
+    });
+
+    private void SpawnActors(UmadP3Cast cast)
     {
         var objects = state.Objects;
         var hold = SpotHeading(state.BossSpot);
-        objects.Kefka = world.SpawnEnemy(new EnemySpawnConfig(
+        objects.Kefka = cast.Kefka ??= world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.KefkaP3, NameId: BNpcNameId.Kefka, Level: 100,
             Targetable: false, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible,
             LayoutId: BNpcLayoutId.KefkaP3,
             Placement: new Placement(new Vector3(0f, 0f, -10f), 0f)));
-        objects.Chaos = world.SpawnEnemy(new EnemySpawnConfig(
+        objects.Chaos = cast.Chaos ??= world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.ChaosP3, NameId: BNpcNameId.Chaos, Level: 100,
             Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible,
             LayoutId: BNpcLayoutId.ChaosP3,
             Placement: new Placement(OnCircle(hold, 10.1f), hold + MathF.PI)));
-        objects.Exdeath = world.SpawnEnemy(new EnemySpawnConfig(
+        objects.Exdeath = cast.Exdeath ??= world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100,
             Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible,
             LayoutId: BNpcLayoutId.Exdeath,
@@ -248,11 +270,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
             Targetable: false, EnemyList: EnemyListMode.Never, Visibility: SpawnVisibility.InvisibleHelper,
             Placement: new Placement(WindCrystalPos, 0f)));
         // The fire and water crystals faded when their elements resolved, before this window.
-        windCrystal = world.SpawnEventObject(new EventObjectSpawnConfig
-        {
-            EObjId = EObjId.WindCrystal, LayoutId = WindCrystalLayoutId, TargetableStatus = 5, Arg2 = EObjId.WindCrystalArg2,
-            Placement = new Placement(WindCrystalPos, hold + MathF.PI),
-        });
+        windCrystal = cast.WindCrystal ??= SpawnWindCrystal(world, state.BossSpot);
 
         // Set once the draw objects exist.
         world.Events.Add(0.5f, () =>

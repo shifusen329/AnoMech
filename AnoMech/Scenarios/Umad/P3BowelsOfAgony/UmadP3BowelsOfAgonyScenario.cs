@@ -56,11 +56,15 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
 
     public UmadP3BowelsOfAgonyState? LastState { get; private set; }
 
-    public void Run(SimWorld worldParam, int? selectedAi)
+    public void Run(SimWorld worldParam, int? selectedAi) => Play(worldParam, selectedAi, Roll(worldParam), new UmadP3Cast());
+
+    internal UmadP3BowelsOfAgonyState Roll(SimWorld worldParam) => new(worldParam.Rng, worldParam.Party, settingsWindow.Overrides);
+
+    internal void Play(SimWorld worldParam, int? selectedAi, UmadP3BowelsOfAgonyState stateParam, UmadP3Cast cast)
     {
         world = worldParam;
         party = world.Party;
-        state = new UmadP3BowelsOfAgonyState(world.Rng, party, settingsWindow.Overrides);
+        state = stateParam;
         LastState = state;
         windsTaken = 0;
         DiagnosticLog.Info(
@@ -73,12 +77,13 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
             ((IScenarioAi<UmadP3BowelsOfAgonyState>)AiStrats[idx]).Run(state, world);
 
         world.EnforceArenaBoundary(Geometry.ArenaRadius, "Fell off the arena");
-        SpawnActors();
-        world.MitPractice.Begin(UmadP3BowelsOfAgonyMitigation.Plan(state.ShortElement), new Dictionary<MitSource, Func<SimCharacter?>>
-        {
-            [UmadMitigation.Chaos] = () => state.Objects.Chaos,
-            [UmadMitigation.Exdeath] = () => state.Objects.Exdeath,
-        });
+        SpawnActors(cast);
+        if (!cast.Chained)
+            world.MitPractice.Begin(UmadP3BowelsOfAgonyMitigation.Plan(state.ShortElement), new Dictionary<MitSource, Func<SimCharacter?>>
+            {
+                [UmadMitigation.Chaos] = () => state.Objects.Chaos,
+                [UmadMitigation.Exdeath] = () => state.Objects.Exdeath,
+            });
 
         var objects = state.Objects;
         world.Events.Add(0.40f, () => objects.Kefka?.Cast(ActionId.DefinitionOfInsanity, animationLock: Constants.AnimationLock.BossCast));
@@ -115,7 +120,7 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
         world.Events.Add(25.00f, () => objects.Chaos?.Cast(UmadActions.BowelsOfAgony));
         world.Events.Add(29.98f, ApplyWindsAndElements);
         world.Events.Add(30.20f, () => objects.Chaos?.Follow(party.Get(PartyRole.MainTank)));
-        world.Events.Add(30.37f, SpawnCrystals);
+        world.Events.Add(30.37f, () => SpawnCrystals(cast));
 
         world.Events.Add(42.00f, () =>
         {
@@ -180,11 +185,11 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
             .Count(m => m != resolved.Target && (m.HasStatus(StatusId.Headwind) || m.HasStatus(StatusId.Tailwind)));
     }
 
-    public MpMessage? BuildReplayStateMessage()
-        => LastState is { } s
-            ? new UmadP3BowelsOfAgonyAiReplayStateMessage(s.WindSpot, s.WaterSpot, s.ShortElement, s.WaterHolders.ToArray(), s.FireHolders.ToArray(),
-                s.Winds.Where(kv => kv.Value == Wind.Headwind).Select(kv => kv.Key).ToArray(), s.Latitudinal, s.ThunderPlan)
-            : null;
+    public MpMessage? BuildReplayStateMessage() => LastState is { } s ? ReplayMessage(s) : null;
+
+    internal static UmadP3BowelsOfAgonyAiReplayStateMessage ReplayMessage(UmadP3BowelsOfAgonyState s)
+        => new(s.WindSpot, s.WaterSpot, s.ShortElement, s.WaterHolders.ToArray(), s.FireHolders.ToArray(),
+            s.Winds.Where(kv => kv.Value == Wind.Headwind).Select(kv => kv.Key).ToArray(), s.Latitudinal, s.ThunderPlan);
 
     public object? StartReplay(MpMessage message, int aiIndex, PartyRole myRole, SimWorld replayWorld)
     {
@@ -202,18 +207,18 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
         shadow.Objects.Exdeath ??= peerEnemies.Values.FirstOrDefault(e => e.BNpcBaseId == BNpcBaseId.Exdeath);
     }
 
-    private void SpawnActors()
+    private void SpawnActors(UmadP3Cast cast)
     {
         var objects = state.Objects;
-        objects.Kefka = world.SpawnEnemy(new EnemySpawnConfig(
+        objects.Kefka = cast.Kefka = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.KefkaP3, NameId: BNpcNameId.Kefka, Level: 100,
             Targetable: false, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible,
             LayoutId: BNpcLayoutId.KefkaP3, Placement: new Placement(Vector3.Zero, 0f)));
-        objects.Chaos = world.SpawnEnemy(new EnemySpawnConfig(
+        objects.Chaos = cast.Chaos = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.ChaosP3, NameId: BNpcNameId.Chaos, Level: 100,
             Targetable: false, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.HiddenUntilShown,
             LayoutId: BNpcLayoutId.ChaosP3, Placement: new Placement(Geometry.ChaosArrival, 0f)));
-        objects.Exdeath = world.SpawnEnemy(new EnemySpawnConfig(
+        objects.Exdeath = cast.Exdeath = world.SpawnEnemy(new EnemySpawnConfig(
             BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100,
             Targetable: false, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.HiddenUntilShown,
             LayoutId: BNpcLayoutId.Exdeath, Placement: new Placement(Geometry.ExdeathArrival, 0f)));
@@ -242,12 +247,13 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
         Targetable: false, EnemyList: EnemyListMode.Never, Visibility: SpawnVisibility.InvisibleHelper,
         Placement: new Placement(Vector3.Zero, 0f)));
 
-    // The wind crystal stays until Limit Cut fires its Cyclones from it.
-    private void SpawnCrystals()
+    // The wind crystal stays until Limit Cut fires its Cyclones from it, so it is spawned as
+    // Limit Cut's own.
+    private void SpawnCrystals(UmadP3Cast cast)
     {
         waterCrystal = SpawnCrystal(EObjId.WaterCrystal, state.WaterSpot);
         fireCrystal = SpawnCrystal(EObjId.FireCrystal, state.FireSpot);
-        SpawnCrystal(EObjId.WindCrystal, state.WindSpot);
+        cast.WindCrystal = UmadP3LimitCutScenario.SpawnWindCrystal(world, state.WindSpot);
     }
 
     private SimEventObject? SpawnCrystal(uint eobjId, int spot) => world.SpawnEventObject(new EventObjectSpawnConfig

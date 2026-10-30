@@ -94,11 +94,24 @@ internal static class UmadP3LimitCutPlaybook
         },
         Thunder);
 
-    public static StratCue ThunderTank(UmadP3LimitCutState state) => UmadP3BlackHolePlaybook.ThunderTank(state.ThunderPlan, Thunder);
+    public static StratCue ClearForLastThunder(UmadP3LimitCutState state) => new(
+        "Thunder III: clear Exdeath",
+        role =>
+        {
+            var (first, second) = ThunderIIIPlanning.Roles(state.LastThunderPlan);
+            var plan = $"Exdeath's last Thunder III hits whoever is closest to him twice, 3s apart, and {UmadP3BlackHolePlaybook.ThunderPlan(state.LastThunderPlan)}";
+            if (role == first) return $"{plan}: walk onto him.";
+            if (role == second) return $"{plan}: wait 10y out to his side, clear of the first hit, until you swap in.";
+            if (role.IsTank()) return $"{plan}: you're not on it, so wait 10y out to his side.";
+            return $"{plan}: group up 4y from the middle, across from him, so the hit on the tank can't reach you.";
+        },
+        Thunder);
+
+    public static StratCue ThunderTank(ThunderIIIAssignment plan) => UmadP3BlackHolePlaybook.ThunderTank(plan, Thunder);
 
     public static StratCue ThunderClearance(PartyRole holder, PartyRole? waiting) => UmadP3BlackHolePlaybook.ThunderClearance(holder, waiting, Thunder);
 
-    public static StratCue ThunderSwap(UmadP3LimitCutState state) => UmadP3BlackHolePlaybook.ThunderSwap(state.ThunderPlan, Thunder);
+    public static StratCue ThunderSwap(ThunderIIIAssignment plan) => UmadP3BlackHolePlaybook.ThunderSwap(plan, Thunder);
 
     public static StratCue DecisiveBattleSplit => new(
         "The Decisive Battle (second)",

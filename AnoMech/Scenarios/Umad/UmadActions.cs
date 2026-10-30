@@ -440,6 +440,12 @@ public static class UmadActions
         Timing = new() { DamageDelay = 0.5f },
     };
 
+    public static readonly EnemyAction BigBang = new(UmadConstants.ActionId.BigBang)
+    {
+        Cast = new() { AnimationLock = 1.1f },
+        Effects = [Damage()],
+    };
+
     // -- P3 Limit Cut --
 
     public static readonly EnemyAction UmbraSmash = new(UmadConstants.ActionId.UmbraSmash)

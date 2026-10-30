@@ -22,6 +22,7 @@ using AnoMech.Scenarios.Umad.P2Forsaken;
 using AnoMech.Scenarios.Umad.P2Trines;
 using AnoMech.Scenarios.Umad.P3BlackHole;
 using AnoMech.Scenarios.Umad.P3BowelsOfAgony;
+using AnoMech.Scenarios.Umad.P3Full;
 using AnoMech.Scenarios.Umad.P3LimitCut;
 using AnoMech.Scenarios.Umad.P4KefkaSays;
 using AnoMech.Scenarios.Umad.P5Celestriad;
@@ -83,6 +84,7 @@ public sealed class ScenarioCatalog
         new UmadP3BowelsOfAgonyScenario(),
         new UmadP3LimitCutScenario(),
         new UmadP3BlackHoleScenario(),
+        new UmadP3FullScenario(),
         new UmadP4KefkaSaysScenario(),
         new UmadP5FloodScenario(),
         new UmadP5CelestriadScenario(),

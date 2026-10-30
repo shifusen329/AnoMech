@@ -35,6 +35,7 @@ public sealed class UmadP3LimitCutState
     public int BossSpot { get; }
     public PartyRole BaitRole { get; }
     public ThunderIIIAssignment ThunderPlan { get; }
+    public ThunderIIIAssignment LastThunderPlan { get; }
 
     // Placement walks the spot index by this each clone; the charges walk it by the opposite.
     // Clockwise as seen on the map (S -> SW -> W -> NW -> N) is a decreasing heading.
@@ -65,16 +66,24 @@ public sealed class UmadP3LimitCutState
     public T PickRandom<T>(T[] values) => rng.NextObj(values);
 
     public UmadP3LimitCutState(Rng rng, SimParty party, UmadP3LimitCutStateOverrides overrides)
+        : this(rng, party, overrides, null, null)
+    {
+    }
+
+    // After Bowels of Agony, whose wind crystal already stands on the boss corner and whose winds
+    // are already handed out.
+    public UmadP3LimitCutState(Rng rng, SimParty party, UmadP3LimitCutStateOverrides overrides, int? windSpot, IReadOnlyDictionary<PartyRole, Wind>? winds)
     {
         this.rng = rng;
         StartSpot = overrides.StartSpot ?? rng.NextInt(8);
         Clockwise = overrides.Clockwise ?? rng.NextBool();
-        BossSpot = overrides.BossSpot ?? rng.NextObj(1, 3, 5, 7);
+        BossSpot = windSpot ?? overrides.BossSpot ?? rng.NextObj(1, 3, 5, 7);
         BaitRole = overrides.BaitRole ?? PartyRole.PhysRangedDps;
         ThunderPlan = overrides.ThunderPlan;
+        LastThunderPlan = overrides.LastThunderPlan;
 
         Numbers = BuildNumbers(party.PlayerRole, overrides);
-        Winds = BuildWinds(party.PlayerRole, overrides);
+        Winds = winds ?? BuildWinds(party.PlayerRole, overrides);
     }
 
     // A forced number takes its slot outright; a second seat asking for the same one keeps the
@@ -121,7 +130,8 @@ public sealed class UmadP3LimitCutState
     }
 
     // A peer's shadow of the host's roll: nothing rolled.
-    private UmadP3LimitCutState(int startSpot, bool clockwise, IReadOnlyList<PartyRole> numbers, IReadOnlyDictionary<PartyRole, Wind> winds, int bossSpot, PartyRole baitRole, ThunderIIIAssignment thunderPlan)
+    private UmadP3LimitCutState(int startSpot, bool clockwise, IReadOnlyList<PartyRole> numbers, IReadOnlyDictionary<PartyRole, Wind> winds, int bossSpot, PartyRole baitRole,
+        ThunderIIIAssignment thunderPlan, ThunderIIIAssignment lastThunderPlan)
     {
         StartSpot = startSpot;
         Clockwise = clockwise;
@@ -130,15 +140,18 @@ public sealed class UmadP3LimitCutState
         BossSpot = bossSpot;
         BaitRole = baitRole;
         ThunderPlan = thunderPlan;
+        LastThunderPlan = lastThunderPlan;
     }
 
-    public static UmadP3LimitCutState? FromNetworkReplay(int startSpot, bool clockwise, IReadOnlyList<PartyRole> numbers, IReadOnlyList<PartyRole> headwinds, int bossSpot, PartyRole baitRole, ThunderIIIAssignment thunderPlan)
+    public static UmadP3LimitCutState? FromNetworkReplay(int startSpot, bool clockwise, IReadOnlyList<PartyRole> numbers, IReadOnlyList<PartyRole> headwinds, int bossSpot, PartyRole baitRole,
+        ThunderIIIAssignment thunderPlan, ThunderIIIAssignment lastThunderPlan)
     {
         if (startSpot is < 0 or > 7 || bossSpot is < 0 or > 7) return null;
         if (numbers.Count != 8 || numbers.Distinct().Count() != 8 || numbers.Any(r => !AllRoles.Contains(r))) return null;
         if (headwinds.Any(r => !AllRoles.Contains(r)) || !AllRoles.Contains(baitRole)) return null;
-        if (!Enum.IsDefined(thunderPlan)) return null;
-        return new(startSpot, clockwise, numbers, AllRoles.ToDictionary(r => r, r => headwinds.Contains(r) ? Wind.Headwind : Wind.Tailwind), bossSpot, baitRole, thunderPlan);
+        if (!Enum.IsDefined(thunderPlan) || !Enum.IsDefined(lastThunderPlan)) return null;
+        return new(startSpot, clockwise, numbers, AllRoles.ToDictionary(r => r, r => headwinds.Contains(r) ? Wind.Headwind : Wind.Tailwind), bossSpot, baitRole,
+            thunderPlan, lastThunderPlan);
     }
 
     private static int Mod8(int v) => ((v % 8) + 8) % 8;

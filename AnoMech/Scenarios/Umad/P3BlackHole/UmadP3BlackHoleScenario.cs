@@ -55,6 +55,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     // still carrying the first one's vuln.
     private const float EarthResistanceDownDuration = 1.960f;
 
+    private UmadP3Cast cast = new();
     private int PrimodialCrustsToResolve;
     // Events dispatch after the tick, so two shots landing together on one player (Modified DSA's
     // double tether) both read the crust as spent; each player has only the one.
@@ -65,31 +66,37 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     // For the multiplayer replay-state broadcast.
     public UmadP3BlackHoleState? LastState { get; private set; }
 
-    public void Run(SimWorld worldParam, int? selectedAi)
+    public void Run(SimWorld worldParam, int? selectedAi) => Play(worldParam, selectedAi, Roll(worldParam), new UmadP3Cast());
+
+    internal UmadP3BlackHoleState Roll(SimWorld worldParam) => new(worldParam, settingsWindow.Overrides);
+
+    internal void Play(SimWorld worldParam, int? selectedAi, UmadP3BlackHoleState stateParam, UmadP3Cast cast)
     {
-        AnoMech.Core.DiagnosticLog.Clear();
         world = worldParam;
         party = worldParam.Party;
-        state = new UmadP3BlackHoleState(world, settingsWindow.Overrides);
+        state = stateParam;
         LastState = state;
+        this.cast = cast;
         if (selectedAi is { } idx && idx < AiStrats.Count)
             ((IScenarioAi<UmadP3BlackHoleState>)AiStrats[idx]).Run(state, world);
 
         PrimodialCrustsToResolve = 0;
         spentCrusts.Clear();
-        world.MitPractice.Begin(UmadP3BlackHoleMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
-        {
-            [UmadMitigation.Chaos] = () => state.ScenarioObjects.Chaos,
-            [UmadMitigation.Exdeath] = () => state.ScenarioObjects.Exdeath,
-        });
+        if (!cast.Chained)
+            world.MitPractice.Begin(UmadP3BlackHoleMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+            {
+                [UmadMitigation.Chaos] = () => state.ScenarioObjects.Chaos,
+                [UmadMitigation.Exdeath] = () => state.ScenarioObjects.Exdeath,
+            });
 
-       
+
         BlackHolePositions = Enumerable.Range(0, 4).Select(GenerateBlackHolePositions).ToArray();
-        
+
         Run_Chaos_4000414D();
         Run_Exdeath_4000414C();
         Run_Chaos_400040E9_1();
         Run_Kefka_40004141();
+        RunPhaseEnd();
         Run_EventObj_1EC03D_40004163();
         Run_Kefka_400040E5_1();
         Run_Kefka_400040E6_1();
@@ -122,6 +129,8 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         world.Events.Add(145.43f, () => world.Map.DirectorUpdate(0x80000027U, 0x1EU, 0x2U, 0x1BDBU, 0x40004141U));
         // [156.68s] 257|800375D2|00020001|22|||b09b1b24cd776e35
         world.Events.Add(156.68f, () => world.Map.AddEffect(packetFlags: 0x00020001U, index: (byte)0x22));
+        // Kefka's "Boring!" as the phase ends.
+        world.Events.Add(PhaseEndsAt + 2.3f, () => world.Map.DirectorUpdate(0x80000027U, 0x2EU, 0x2U, 0x1BDBU, 0x40004141U));
     }
 
     private void Run_OtherDebuffs()
@@ -148,6 +157,8 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
             state.Roles.Get(7)?.AddStatus(StatusId.PrimordialCrust, 106);
             state.Roles.Get(7)?.AddStatus(StatusId.Accretion, 14.000f);
         });
+        // Limit Cut's second Decisive Battle hands these out.
+        if (cast.Chained) return;
         party.Get(PartyRole.MainTank)?.AddStatus(StatusId.EpicHero);
         party.Get(PartyRole.RegenHealer)?.AddStatus(StatusId.EpicHero);
         party.Get(PartyRole.MeleeDpsA)?.AddStatus(StatusId.EpicHero);
@@ -156,6 +167,36 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         party.Get(PartyRole.ShieldHealer)?.AddStatus(StatusId.FatedHero);
         party.Get(PartyRole.PhysRangedDps)?.AddStatus(StatusId.FatedHero);
         party.Get(PartyRole.CasterDps)?.AddStatus(StatusId.FatedHero);
+    }
+
+    // Both bosses, held at 1 HP, leave the fight about 3s after Big Bang.
+    internal const float PhaseEndsAt = 165.3f;
+
+    // Big Bang lands as two 6y circles, one on each boss. Where is UNVERIFIED: the logged ones sat
+    // near the middle, where both bosses stand by then.
+    private void RunPhaseEnd()
+    {
+        var bigBang = new SimEnemy?[2];
+        world.Events.Add(0f, () =>
+        {
+            for (var i = 0; i < bigBang.Length; i++)
+                bigBang[i] = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.KefkaHelper, NameId: BNpcNameId.Chaos, Level: 1, Targetable: false, EnemyList: EnemyListMode.Never, Visibility: SpawnVisibility.InvisibleHelper, Placement: new Placement(Vector3.Zero, 0f)));
+        });
+        world.Events.Add(162.30f, () =>
+        {
+            SimEnemy?[] bosses = [state.ScenarioObjects.Chaos, state.ScenarioObjects.Exdeath];
+            for (var i = 0; i < bigBang.Length; i++)
+            {
+                if (bosses[i] is not { } boss) continue;
+                bigBang[i]?.SetPosition(new Placement(boss.Position, 0f));
+                bigBang[i]?.Cast(UmadActions.BigBang);
+            }
+        });
+        world.Events.Add(PhaseEndsAt, () =>
+        {
+            state.ScenarioObjects.Chaos?.SetTargetable(false);
+            state.ScenarioObjects.Exdeath?.SetTargetable(false);
+        });
     }
 
     private void Run_PlayerLockons()
@@ -229,9 +270,9 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     
     private void Run_Chaos_4000414D()
     {
-        SimEnemy? chaos_4000414D = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.ChaosP3, NameId: BNpcNameId.Chaos, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible, LayoutId: BNpcLayoutId.ChaosP3, Placement: new Placement(new Vector3(-8.000f, 0.000f, 0.000f), 0.000f)));
+        SimEnemy? chaos_4000414D = cast.Chaos ??= world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.ChaosP3, NameId: BNpcNameId.Chaos, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible, LayoutId: BNpcLayoutId.ChaosP3, Placement: new Placement(new Vector3(-8.000f, 0.000f, 0.000f), 0.000f)));
         state.ScenarioObjects.Chaos = chaos_4000414D;
-        world.Events.Add(0.1f, () => chaos_4000414D?.AddStatus(StatusId.EpicVillain));
+        if (!cast.Chained) world.Events.Add(0.1f, () => chaos_4000414D?.AddStatus(StatusId.EpicVillain));
         world.Events.Add(0.98f, () => chaos_4000414D?.Cast(ActionId.Earthquake, animationLock: 3.1f));
         world.Events.Add(1f, () => chaos_4000414D?.Follow(party.Get(PartyRole.MainTank)));
         world.Events.Add(12.07f, () => chaos_4000414D?.Cast(UmadActions.AutoAttack, party.Get(PartyRole.MainTank)));
@@ -300,10 +341,12 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     private void Run_Exdeath_4000414C()
     {
         SimEnemy? thunderHelper = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.KefkaHelper, NameId: BNpcNameId.Exdeath, Level: 1, Targetable: false, EnemyList: EnemyListMode.Never, Visibility: SpawnVisibility.InvisibleHelper, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), -2.190f)));
-        SimEnemy? exdeath_4000414C = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible, LayoutId: BNpcLayoutId.Exdeath, Placement: new Placement(new Vector3(-11.540f, 0.000f, 4.880f), 0.000f)));
+        SimEnemy? exdeath_4000414C = cast.Exdeath ??= world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.Exdeath, NameId: BNpcNameId.Exdeath, Level: 100, Targetable: true, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.Visible, LayoutId: BNpcLayoutId.Exdeath, Placement: new Placement(new Vector3(-11.540f, 0.000f, 4.880f), 0.000f)));
         state.ScenarioObjects.Exdeath = exdeath_4000414C;
-        world.Events.Add(0.1f, () => exdeath_4000414C?.AddStatus(StatusId.FatedVillain));
-        world.Events.Add(1f, () => exdeath_4000414C?.Follow(party.Get(PartyRole.OffTank)));
+        if (!cast.Chained) world.Events.Add(0.1f, () => exdeath_4000414C?.AddStatus(StatusId.FatedVillain));
+        // Chained, Limit Cut's last Thunder III lands on whoever is closest to him at 1.0 and 4.0,
+        // so he stays put until it has.
+        world.Events.Add(cast.Chained ? 4.5f : 1f, () => exdeath_4000414C?.Follow(party.Get(PartyRole.OffTank)));
         world.Events.Add(12.07f, () => exdeath_4000414C?.Cast(UmadActions.ExdeathAutoAttack, party.Get(PartyRole.OffTank)));
         world.Events.Add(15.09f, () => exdeath_4000414C?.Cast(UmadActions.ExdeathAutoAttack, party.Get(PartyRole.OffTank)));
         world.Events.Add(18.13f, () => exdeath_4000414C?.Cast(UmadActions.ExdeathAutoAttack, party.Get(PartyRole.OffTank)));
@@ -356,8 +399,9 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
     private void Run_Kefka_40004141()
     {
         var kefkaPos = new Placement(new Vector3(0.000f, 0.000f, 0.000f), 0); 
-        SimEnemy? kefka_40004141 = null;
-        world.Events.Add(0f, () => kefka_40004141 = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.KefkaP3, NameId: BNpcNameId.Kefka, Level: 100, Targetable: false, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.HiddenUntilShown, LayoutId: BNpcLayoutId.KefkaP3, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 0.000f))));
+        SimEnemy? kefka_40004141 = cast.Kefka;
+        if (kefka_40004141 == null)
+            world.Events.Add(0f, () => kefka_40004141 = cast.Kefka = world.SpawnEnemy(new EnemySpawnConfig(BNpcBaseId: BNpcBaseId.KefkaP3, NameId: BNpcNameId.Kefka, Level: 100, Targetable: false, EnemyList: EnemyListMode.Always, Visibility: SpawnVisibility.HiddenUntilShown, LayoutId: BNpcLayoutId.KefkaP3, Placement: new Placement(new Vector3(0.000f, 0.000f, 0.000f), 0.000f))));
         world.Events.Add(5.88f, () => kefka_40004141?.AddStatus(StatusId.Max, stacks: (ushort)506, overrideStacks: true));
         world.Events.Add(5.88f, () => kefka_40004141?.SetModelState((byte)0x05));
         world.Events.Add(5.88f, () => kefka_40004141?.SetPosition(kefkaPos));
@@ -668,16 +712,16 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         RunStomp(154.63f, 1);
     }
 
-    public MpMessage? BuildReplayStateMessage()
-        => LastState is { } s ? new AiReplayStateMessage(
-            s.Roles.List, s.StackTargets.List, s.SlapAttacks.ToArray(),
-            s.KefkaPosition.Select(d => d.RadiansFromNorth).ToArray(), s.ImplosionAttack,
-            s.ThunderSet1, s.ThunderSet2)
-        : null;
+    public MpMessage? BuildReplayStateMessage() => LastState is { } s ? ReplayMessage(s) : null;
+
+    internal static AiReplayStateMessage ReplayMessage(UmadP3BlackHoleState s) => new(
+        s.Roles.List, s.StackTargets.List, s.SlapAttacks.ToArray(),
+        s.KefkaPosition.Select(d => d.RadiansFromNorth).ToArray(), s.ImplosionAttack,
+        s.ThunderSet1, s.ThunderSet2);
 
     public object? StartReplay(MpMessage message, int aiIndex, PartyRole myRole, SimWorld replayWorld)
     {
-        if (message is not AiReplayStateMessage msg) return null;
+        if (message is not AiReplayStateMessage msg || aiIndex < 0 || aiIndex >= AiStrats.Count) return null;
         var shadowState = UmadP3BlackHoleState.FromNetworkReplay(
             replayWorld, msg.Roles, msg.StackTargets, msg.SlapAttacks, msg.KefkaPositionRadians, msg.ImplosionAttack,
             msg.ThunderSet1, msg.ThunderSet2);

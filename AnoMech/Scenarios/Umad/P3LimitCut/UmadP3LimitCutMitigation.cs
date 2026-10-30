@@ -43,6 +43,7 @@ internal static class UmadP3LimitCutMitigation
             new(31.62f, [UltimaBlasterCharge]), new(31.85f, [UltimaBlasterCharge]), new(32.07f, [UltimaBlasterCharge]),
             new(32.29f, [UltimaBlasterCharge]), new(32.52f, [UltimaBlasterCharge]),
             new(38.57f, [ThunderIII]), new(41.60f, [ThunderIII]),
+            new(55.83f, [ThunderIII]), new(58.86f, [ThunderIII]),
         ],
         Rows, UmadMitigation.Chaos);
 

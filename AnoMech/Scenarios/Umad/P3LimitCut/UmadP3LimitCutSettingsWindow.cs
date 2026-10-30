@@ -108,6 +108,7 @@ public sealed class UmadP3LimitCutSettingsWindow
         Overrides.BossSpot = null;
         Overrides.BaitRole = null;
         Overrides.ThunderPlan = ThunderIIIAssignment.MtInvulnsBoth;
+        Overrides.LastThunderPlan = ThunderIIIAssignment.ShareOtFirst;
     }
 
     private void ResetPerPlayer()
@@ -123,8 +124,9 @@ public sealed class UmadP3LimitCutSettingsWindow
         Overrides.Wind.Mine = null;
     }
 
-    // Black Hole's planner for the one Thunder III set here (the two hits at ~38.6s and ~41.6s):
-    // which tank stands on Exdeath, with an invuln or a swap. Only the host's pick is read.
+    // Black Hole's planner for the two Thunder III sets here (hits at ~38.6s and ~41.6s, then
+    // ~55.8s and ~58.9s): which tank stands on Exdeath, with an invuln or a swap. Only the host's
+    // pick is read.
     public void DrawThunderIIIPlan()
     {
         ImGui.Separator();
@@ -133,20 +135,28 @@ public sealed class UmadP3LimitCutSettingsWindow
         ImGui.BeginDisabled(mpGuest);
         ImGui.TextUnformatted("After the charges (~38.6s):");
         ImGui.SameLine();
-        DrawThunderIIIOption("MT invulns both##lcthunder", ThunderIIIAssignment.MtInvulnsBoth);
+        DrawThunderIIIOptions("lcthunder", Overrides.ThunderPlan, v => Overrides.ThunderPlan = v);
+        ImGui.TextUnformatted("After the Decisive Battle (~55.8s):");
         ImGui.SameLine();
-        DrawThunderIIIOption("OT invulns both##lcthunder", ThunderIIIAssignment.OtInvulnsBoth);
-        ImGui.SameLine();
-        DrawThunderIIIOption("Share, MT first##lcthunder", ThunderIIIAssignment.ShareMtFirst);
-        ImGui.SameLine();
-        DrawThunderIIIOption("Share, OT first##lcthunder", ThunderIIIAssignment.ShareOtFirst);
+        DrawThunderIIIOptions("lclastthunder", Overrides.LastThunderPlan, v => Overrides.LastThunderPlan = v);
         ImGui.EndDisabled();
         if (mpGuest && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             ImGui.SetTooltip("Only the host's plan is used in multiplayer.");
     }
 
-    private void DrawThunderIIIOption(string label, ThunderIIIAssignment option)
+    private static void DrawThunderIIIOptions(string id, ThunderIIIAssignment current, Action<ThunderIIIAssignment> set)
     {
-        if (ImGui.RadioButton(label, Overrides.ThunderPlan == option)) Overrides.ThunderPlan = option;
+        DrawThunderIIIOption($"MT invulns both##{id}", ThunderIIIAssignment.MtInvulnsBoth, current, set);
+        ImGui.SameLine();
+        DrawThunderIIIOption($"OT invulns both##{id}", ThunderIIIAssignment.OtInvulnsBoth, current, set);
+        ImGui.SameLine();
+        DrawThunderIIIOption($"Share, MT first##{id}", ThunderIIIAssignment.ShareMtFirst, current, set);
+        ImGui.SameLine();
+        DrawThunderIIIOption($"Share, OT first##{id}", ThunderIIIAssignment.ShareOtFirst, current, set);
+    }
+
+    private static void DrawThunderIIIOption(string label, ThunderIIIAssignment option, ThunderIIIAssignment current, Action<ThunderIIIAssignment> set)
+    {
+        if (ImGui.RadioButton(label, current == option)) set(option);
     }
 }

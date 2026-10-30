@@ -11,7 +11,8 @@ public class UmadP3LimitCutPlaybookTests
     {
         var numbers = Enumerable.Range(0, 8).Select(k => UmadP1Roles.All[(k + shift) % 8]).ToList();
         var headwinds = UmadP1Roles.All.Where((_, i) => (i + shift) % 3 == 0).ToList();
-        return UmadP3LimitCutState.FromNetworkReplay(startSpot, clockwise, numbers, headwinds, 1 + 2 * (shift % 4), PartyRole.PhysRangedDps, plan)!;
+        var lastPlan = (ThunderIIIAssignment)(((int)plan + 1) % Enum.GetValues<ThunderIIIAssignment>().Length);
+        return UmadP3LimitCutState.FromNetworkReplay(startSpot, clockwise, numbers, headwinds, 1 + 2 * (shift % 4), PartyRole.PhysRangedDps, plan, lastPlan)!;
     }
 
     private static IEnumerable<(UmadP3LimitCutState State, string Context)> States()
@@ -34,8 +35,10 @@ public class UmadP3LimitCutPlaybookTests
                 UmadP3LimitCutPlaybook.TanksIntoStack, UmadP3LimitCutPlaybook.BaitBack(state),
                 UmadP3LimitCutPlaybook.VacuumWave(state), UmadP3LimitCutPlaybook.Cyclones,
                 UmadP3LimitCutPlaybook.Charges(state), UmadP3LimitCutPlaybook.ClearForThunder(state),
-                UmadP3LimitCutPlaybook.ThunderTank(state), UmadP3LimitCutPlaybook.ThunderClearance(first, second),
-                UmadP3LimitCutPlaybook.ThunderClearance(second ?? first, null), UmadP3LimitCutPlaybook.ThunderSwap(state),
+                UmadP3LimitCutPlaybook.ThunderTank(state.ThunderPlan), UmadP3LimitCutPlaybook.ThunderClearance(first, second),
+                UmadP3LimitCutPlaybook.ThunderClearance(second ?? first, null), UmadP3LimitCutPlaybook.ThunderSwap(state.ThunderPlan),
+                UmadP3LimitCutPlaybook.ClearForLastThunder(state), UmadP3LimitCutPlaybook.ThunderTank(state.LastThunderPlan),
+                UmadP3LimitCutPlaybook.ThunderSwap(state.LastThunderPlan),
                 UmadP3LimitCutPlaybook.Uptime,
             })
                 PlaybookAssert.ExplainsEveryRole(cue, context);

@@ -11,6 +11,7 @@ using AnoMech.Scenarios.Umad.P1TeleTrouncing;
 using AnoMech.Scenarios.Umad.P2Forsaken;
 using AnoMech.Scenarios.Umad.P3BlackHole;
 using AnoMech.Scenarios.Umad.P3BowelsOfAgony;
+using AnoMech.Scenarios.Umad.P3Full;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace AnoMech.Multiplayer;
@@ -61,6 +62,7 @@ namespace AnoMech.Multiplayer;
 [JsonDerivedType(typeof(UmadP1GravenImage2AiReplayStateMessage), "umadP1GravenImage2AiReplayState")]
 [JsonDerivedType(typeof(UmadP2TrinesAiReplayStateMessage), "umadP2TrinesAiReplayState")]
 [JsonDerivedType(typeof(UmadP3BowelsOfAgonyAiReplayStateMessage), "umadP3BowelsOfAgonyAiReplayState")]
+[JsonDerivedType(typeof(UmadP3FullAiReplayStateMessage), "umadP3FullAiReplayState")]
 [JsonDerivedType(typeof(UmadP1TeleTrouncingAiReplayStateMessage), "umadP1TeleTrouncingAiReplayState")]
 [JsonDerivedType(typeof(UmadP5FloodAiReplayStateMessage), "umadP5FloodAiReplayState")]
 [JsonDerivedType(typeof(UcobP5ExaflaresAiReplayStateMessage), "ucobP5ExaflaresAiReplayState")]
@@ -298,7 +300,13 @@ public sealed record UmadP3BowelsOfAgonyAiReplayStateMessage(
 // who carries Headwind, the intercardinal the bosses are held at, and the Umbra Smash bait.
 public sealed record UmadP3LimitCutAiReplayStateMessage(
     int StartSpot, bool Clockwise, PartyRole[] Numbers, PartyRole[] Headwinds, int BossSpot, PartyRole BaitRole,
-    ThunderIIIAssignment ThunderPlan) : MpMessage, IScenarioReplayStateMessage;
+    ThunderIIIAssignment ThunderPlan, ThunderIIIAssignment LastThunderPlan) : MpMessage, IScenarioReplayStateMessage;
+
+// The full Phase 3 run's rolls, slice by slice; Limit Cut's corner and Headwinds are Bowels of
+// Agony's.
+public sealed record UmadP3FullAiReplayStateMessage(
+    UmadP3BowelsOfAgonyAiReplayStateMessage Bowels, UmadP3LimitCutAiReplayStateMessage LimitCut, AiReplayStateMessage BlackHole)
+    : MpMessage, IScenarioReplayStateMessage;
 
 // The whole UmadP1TeleTrouncingState roll, parallel arrays indexed by Roles. Spots derive from
 // Debuffs on receipt.

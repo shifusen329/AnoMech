@@ -23,6 +23,9 @@ public sealed class UmadP3LimitCutStateOverrides
     // ThunderIIIAssignment). The default is what the fight almost always does: the Chaos tank
     // steps onto Exdeath and invulns both.
     public ThunderIIIAssignment ThunderPlan { get; set; } = ThunderIIIAssignment.MtInvulnsBoth;
+    // The set Exdeath casts at the end, which lands as Black Hole begins. Every logged pull shared
+    // it, the off-tank first.
+    public ThunderIIIAssignment LastThunderPlan { get; set; } = ThunderIIIAssignment.ShareOtFirst;
 
     // --- Per player: everyone has their own ---------------------------------------------
     // 1..8. Two seats can't hold the same number; the later one is left random and logged.

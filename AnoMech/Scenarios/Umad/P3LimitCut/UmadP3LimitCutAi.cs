@@ -30,15 +30,19 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         ai.Move(17.5f, StackForCyclones, arrivalTime: 19.6f, cue: UmadP3LimitCutPlaybook.Cyclones);
         ai.Move(20.6f, ChargeSpots, arrivalTime: 30.2f, cue: UmadP3LimitCutPlaybook.Charges(state));
         ai.Move(32.7f, ClearForThunder, arrivalTime: 37.5f, cue: UmadP3LimitCutPlaybook.ClearForThunder(state));
-        world.Events.Add(33.6f, FirstTankOntoExdeath);
-        ai.Move(38.9f, SwapThunderTanks, arrivalTime: 41.2f, cue: UmadP3LimitCutPlaybook.ThunderSwap(state));
-        ScheduleThunderClearance(36.5f, 38.9f, 42.2f);
+        world.Events.Add(33.6f, () => FirstTankOntoExdeath(state.ThunderPlan));
+        ai.Move(38.9f, () => SwapThunderTanks(state.ThunderPlan), arrivalTime: 41.2f, cue: UmadP3LimitCutPlaybook.ThunderSwap(state.ThunderPlan));
+        ScheduleThunderClearance(state.ThunderPlan, 36.5f, 38.9f, 42.2f);
         ai.Move(43.6f, SplitForDecisiveBattle, arrivalTime: 46.3f, cue: UmadP3LimitCutPlaybook.DecisiveBattleSplit);
         ai.Move(47.0f, SplitForDecisiveBattle, cue: UmadP3LimitCutPlaybook.Uptime);
+        ai.Move(50.8f, ClearForLastThunder, arrivalTime: 54.8f, cue: UmadP3LimitCutPlaybook.ClearForLastThunder(state));
+        world.Events.Add(50.8f, () => FirstTankOntoExdeath(state.LastThunderPlan));
+        ai.Move(56.2f, () => SwapThunderTanks(state.LastThunderPlan), arrivalTime: 58.4f, cue: UmadP3LimitCutPlaybook.ThunderSwap(state.LastThunderPlan));
+        ScheduleThunderClearance(state.LastThunderPlan, 51.2f, 56.2f, 59.2f);
     }
 
-    private (PartyRole First, PartyRole? Second) ThunderRoles => ThunderIIIPlanning.Roles(state.ThunderPlan);
-    private PartyRole ThunderBystanderTank => ThunderRoles.First == PartyRole.MainTank ? PartyRole.OffTank : PartyRole.MainTank;
+    private static (PartyRole First, PartyRole? Second) ThunderRoles(ThunderIIIAssignment plan) => ThunderIIIPlanning.Roles(plan);
+    private PartyRole ThunderBystanderTank => ThunderRoles(state.ThunderPlan).First == PartyRole.MainTank ? PartyRole.OffTank : PartyRole.MainTank;
 
     private IAiMove ClearForThunder()
     {
@@ -49,19 +53,35 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
         return AiMove.Create(coords).NaturalOrder();
     }
 
-    private void FirstTankOntoExdeath()
+    private IAiMove ClearForLastThunder()
+    {
+        var exdeathHeading = state.Objects.Exdeath is { } exdeath && Flat(exdeath.Position).LengthSquared() > 1f
+            ? MathF.Atan2(exdeath.Position.X, exdeath.Position.Z)
+            : Hold;
+        var (first, second) = ThunderRoles(state.LastThunderPlan);
+        var waiting = second ?? (first == PartyRole.MainTank ? PartyRole.OffTank : PartyRole.MainTank);
+        var coords = new Vector2?[8];
+        coords[(int)waiting] = Flat(OnCircle(exdeathHeading + MathF.PI / 2f, 10.6f));
+        for (var slot = 2; slot < 8; slot++)
+            coords[slot] = Flat(OnCircle(exdeathHeading + MathF.PI, 4f) + OnCircle(exdeathHeading + MathF.PI / 2f, (slot % 3 - 1) * 1.5f)
+                + OnCircle(exdeathHeading + MathF.PI, slot / 3 * 1.5f));
+        return AiMove.Create(coords).NaturalOrder();
+    }
+
+    private void FirstTankOntoExdeath(ThunderIIIAssignment plan)
     {
         if (state.Objects.Exdeath is not { } exdeath) return;
-        if (world.Party.Get(ThunderRoles.First) is { } first && first.IsAlive())
+        var firstRole = ThunderRoles(plan).First;
+        if (world.Party.Get(firstRole) is { } first && first.IsAlive())
         {
-            world.Strat.Note(ThunderRoles.First, Flat(exdeath.Position), UmadP3LimitCutPlaybook.ThunderTank(state), deadline: null);
+            world.Strat.Note(firstRole, Flat(exdeath.Position), UmadP3LimitCutPlaybook.ThunderTank(plan), deadline: null);
             first.Follow(exdeath);
         }
     }
 
-    private IAiMove SwapThunderTanks()
+    private IAiMove SwapThunderTanks(ThunderIIIAssignment plan)
     {
-        var (first, second) = ThunderRoles;
+        var (first, second) = ThunderRoles(plan);
         if (second is not { } secondRole) return AiMove.Create().NaturalOrder();
         var a = world.Party.Get(first);
         var b = world.Party.Get(secondRole);
@@ -75,9 +95,9 @@ public sealed class UmadP3LimitCutAi : IScenarioAi<UmadP3LimitCutState>
     private const float ThunderClearDistance = 10f;
     private const float ThunderClearanceInterval = 0.4f;
 
-    private void ScheduleThunderClearance(float fromTime, float swapTime, float toTime)
+    private void ScheduleThunderClearance(ThunderIIIAssignment plan, float fromTime, float swapTime, float toTime)
     {
-        var (first, second) = ThunderRoles;
+        var (first, second) = ThunderRoles(plan);
         for (var t = fromTime; t < swapTime; t += ThunderClearanceInterval)
             world.Events.Add(t, () => EnforceThunderClearanceOnce(first, second));
         var postSwapExcluded = second ?? first;
