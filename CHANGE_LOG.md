@@ -2,7 +2,9 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
-## [Unreleased]
+## [0.5.4.0] - 2026-11-02 (testing)
+
+A testing build. To get it, turn on "Get plugin testing builds" in Dalamud's settings (Experimental), then opt AnoMech into testing builds in the plugin installer.
 
 ### Fixed
 
