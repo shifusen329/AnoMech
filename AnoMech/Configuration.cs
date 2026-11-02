@@ -23,6 +23,9 @@ public class Configuration : IPluginConfiguration
     public bool NaturalBotTiming { get; set; } = true;
     // See MitPractice.
     public bool MitigationPractice { get; set; } = false;
+    // See PartyHp.HumansDie. Off until UmadHpTests passes for every Dancing Mad scenario: P3 Black Hole
+    // and the P3 full phase still run healthy players out at Stomp-a-Mole and Cyclone.
+    public bool RunningOutOfHpKills { get; set; } = false;
     public string LastSelectedScenario { get; set; } = "";
 
     // The player's own multiplayer server (see AnoMech.Relay.Host/README.md), used instead of

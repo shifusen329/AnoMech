@@ -16,6 +16,13 @@ public interface IUserActions : IDisposable
 
     void Tick(float deltaSeconds);
 
+    // The server's answer to the player's own press, which only their client sees. Returns the
+    // global sequence each target's EffectResult names.
+    uint ReceiveOwnEffect(ActionEffectData effect);
+
+    // The player's ActorGauge payload: class job, a byte unused, then the gauge values.
+    void ReceiveGauge(byte[] payload);
+
     // Each step the server would show the rest of the party, whether the module is on or not:
     // the player's own client has already played it for them.
     event Action<PlayerAction>? Acted;

@@ -20,7 +20,7 @@ public interface IScenario : IWorldEventListener
     // (IMultiplayerReplayable).
     bool SupportsMultiplayer => false;
 
-    // Has a mitigation plan and calls world.MitPractice.Begin from Run.
+    // Has a damage model and mitigation plan, and calls world.Hp.Begin from Run.
     bool SupportsMitigationPractice => false;
 
     // Selectable strats. Run's selectedAi indexes this (null = solo); region buttons derive

@@ -124,7 +124,7 @@ public sealed class UmadP1TeleTrouncingScenario : IMultiplayerReplayable
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
-        world.MitPractice.Begin(UmadP1TeleTrouncingMitigation.Plan(),
+        world.Hp.Begin(UmadP1TeleTrouncingMitigation.Plan(),
             new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         party = world.Party;
         state = new UmadP1TeleTrouncingState(world.Rng, settingsWindow.Overrides);

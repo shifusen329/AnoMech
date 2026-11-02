@@ -53,6 +53,16 @@ internal unsafe ref struct JobGaugeEdit
         return PacketOf(live);
     }
 
+    // A whole payload: class job, a byte unused, then the values. Skipped for another job's gauge.
+    public static void Send(byte[] payload)
+    {
+        var live = JobGaugeManager.Instance();
+        if (live == null || live->CurrentGauge == null || live->ClassJobId != payload[0]) return;
+        var packet = new ActorGaugePacket { ClassJobId = payload[0] };
+        for (var i = 0; i < ActorGaugePacket.ValuesLength; i++) packet.Values[i] = payload[2 + i];
+        PacketDispatcherPointers.HandleActorGaugePacket(live, &packet);
+    }
+
     // Skipped once the player has changed job: the values would decode as another job's gauge.
     public static void Restore(ActorGaugePacket packet)
     {

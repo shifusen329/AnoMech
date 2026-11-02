@@ -438,7 +438,7 @@ internal sealed unsafe class DebugMenu
         ImGui.Separator();
         ImGui.TextWrapped("Press a mitigation cooldown in-game, then read its real id off " +
                            "these two lists -- use them to fill in the Mitigation and " +
-                           "JobActions tables for whichever ability you just pressed.");
+                           "RuleSim.Actions rules for whichever ability you just pressed.");
         var myStatuses = MyActiveStatuses();
         ImGui.TextUnformatted("My active statuses:");
         ImGui.SameLine();

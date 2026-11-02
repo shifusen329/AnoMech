@@ -58,7 +58,7 @@ public sealed class UmadP5CelestriadScenario : IMultiplayerReplayable
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
-        world.MitPractice.Begin(UmadP5CelestriadMitigation.Plan(),
+        world.Hp.Begin(UmadP5CelestriadMitigation.Plan(),
             new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         party = worldParam.Party;
         state = new UmadP5CelestriadState(world.Rng, party, settingsWindow.Overrides);

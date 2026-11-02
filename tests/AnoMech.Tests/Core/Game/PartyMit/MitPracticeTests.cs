@@ -20,11 +20,13 @@ public class MitPracticeTests
     {
         fake = FakeGame.Install();
         fake.BattleCharas.Player.ClassJob = (byte)JobId.Sage;
+        DebugBotControl.Enabled = false;
         var game = new Game();
         DalamudServices.Install(nameof(Plugin.Game), game);
         world = game.World;
         world.SeatParty(new LocalPartyProvider().Roster((uint)JobId.Sage));
         world.MitPractice.Enabled = true;
+        fake.UserActions.Enabled = true;
     }
 
     [TearDown]
@@ -35,8 +37,7 @@ public class MitPracticeTests
     }
 
     private static MitPlanData Data(params MitPlanEntry[] entries) => new(Profile,
-        [new("hit", "Big Hit", 100000f, Kefka), new("unknown", "Mystery", null, Kefka)],
-        [new(5f, ["hit"])], entries, Kefka);
+        [new("hit", "Big Hit", 100000f, Kefka)], [new(5f, ["hit"])], entries, Kefka);
 
     private void Step(float seconds)
     {
@@ -46,11 +47,6 @@ public class MitPracticeTests
 
     private SimCharacter Slot(PartyRole role) => world.Party.Get(role)!;
 
-    // One HP point of the character's own max: WriteHp rounds to whole HP.
-    private const float ShareTolerance = 1e-4f;
-
-    private float HpShare(PartyRole role) => (float)Slot(role).Proxy!.Health / Slot(role).Proxy!.MaxHealth;
-
     [Test]
     public void BotsPressThePlanWhenItSays()
     {
@@ -59,6 +55,15 @@ public class MitPracticeTests
         Assert.That(Slot(PartyRole.MeleeDpsA).HasStatus(1362), Is.False);
         Step(0.6f);
         Assert.That(Slot(PartyRole.MeleeDpsA).HasStatus(1362), "the bot PLD's Divine Veil reaches the party");
+    }
+
+    [Test]
+    public void BotsPressWithPracticeOff()
+    {
+        world.MitPractice.Enabled = false;
+        world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.OT, MitPlanEntry.PartyMit, 1f, "Big Hit", [5f])));
+        Step(1.1f);
+        Assert.That(Slot(PartyRole.MeleeDpsA).HasStatus(1362));
     }
 
     [Test]
@@ -82,6 +87,32 @@ public class MitPracticeTests
     }
 
     [Test]
+    public void PractisingThePlayerPressesTheirOwn()
+    {
+        world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.SGE, MitActionId.Holos, 1f, "Big Hit", [5f])));
+        Step(1.1f);
+        Assert.That(world.Party.Player!.HasStatus(3003), Is.False);
+    }
+
+    [Test]
+    public void WithPracticeOffThePlayersRowsArePressedForThem()
+    {
+        world.MitPractice.Enabled = false;
+        world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.SGE, MitActionId.Holos, 1f, "Big Hit", [5f])));
+        Step(1.1f);
+        Assert.That(world.Party.Player!.HasStatus(3003));
+    }
+
+    [Test]
+    public void WithoutResolvingTheirOwnActionsThePlayersRowsArePressedForThem()
+    {
+        fake.UserActions.Enabled = false;
+        world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.SGE, MitActionId.Holos, 1f, "Big Hit", [5f])));
+        Step(1.1f);
+        Assert.That(world.Party.Player!.HasStatus(3003));
+    }
+
+    [Test]
     public void ADebuffGoesOnTheBossItsRowNames()
     {
         var chaos = world.SpawnEnemy(new EnemySpawnConfig(UmadConstants.BNpcBaseId.ChaosP3))!;
@@ -97,74 +128,19 @@ public class MitPracticeTests
     }
 
     [Test]
-    public void BeginStartsEveryoneOnFullHp()
+    public void APlayersDebuffRowPressedForThemGoesOnTheBoss()
     {
-        world.MitPractice.Begin(Data());
-        Assert.That(HpShare(PartyRole.MainTank), Is.EqualTo(1f));
-        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo(1f));
-        Assert.That(HpShare(PartyRole.ShieldHealer), Is.EqualTo(1f), "the player's Sage");
-    }
-
-    // The bar shows each class's pool as a share of the character's own max HP.
-    [Test]
-    public void AHitTakesEachClassItsShare()
-    {
-        world.MitPractice.Begin(Data());
-        world.MitPractice.HitParty("hit");
-        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo((226600f - 100000f) / 226600f).Within(ShareTolerance));
-        Assert.That(HpShare(PartyRole.MainTank), Is.EqualTo((325200f - 61000f) / 325200f).Within(ShareTolerance));
-        Assert.That(HpShare(PartyRole.ShieldHealer), Is.EqualTo((205200f - 92000f) / 205200f).Within(ShareTolerance));
-    }
-
-    [Test]
-    public void ABarrierAbsorbsAndIsUsedUp()
-    {
-        world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.OT, MitPlanEntry.PartyMit, 1f, "Big Hit", [5f])));
-        Step(1.1f);
-        world.MitPractice.Hit(Slot(PartyRole.MeleeDpsA), "hit");
-        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo((226600f - (100000f - 22660f)) / 226600f).Within(ShareTolerance),
-            "Divine Veil is 10% of the target's max HP");
-        Assert.That(Slot(PartyRole.MeleeDpsA).HasStatus(1362), Is.False);
-    }
-
-    [Test]
-    public void HpRefillsOnceNothingHasHitForAWhile()
-    {
-        world.MitPractice.Begin(Data());
-        world.MitPractice.Hit(Slot(PartyRole.MeleeDpsA), "hit");
-        Step(2f);
-        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.LessThan(1f));
-        Step(1.5f);
-        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo(1f));
-    }
-
-    [Test]
-    public void AWouldBeKillLeavesASliverAndNobodyDies()
-    {
-        world.MitPractice.Begin(Data());
-        for (var i = 0; i < 3; i++) world.MitPractice.Hit(Slot(PartyRole.MeleeDpsA), "hit");
-        Assert.That(Slot(PartyRole.MeleeDpsA).Proxy!.Health, Is.EqualTo(1u));
-        Assert.That(Slot(PartyRole.MeleeDpsA).IsAlive());
-    }
-
-    [Test]
-    public void AHitWithNoKnownDamageMovesNoHp()
-    {
-        world.MitPractice.Begin(Data());
-        world.MitPractice.HitParty("unknown");
-        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo(1f));
-    }
-
-    [Test]
-    public void OffDoesNothing()
-    {
+        world.Despawn();
+        fake.BattleCharas.Player.ClassJob = (byte)JobId.Monk;
+        world.SeatParty(new LocalPartyProvider().Roster((uint)JobId.Monk));
         world.MitPractice.Enabled = false;
-        world.MitPractice.Begin(Data(new MitPlanEntry(SheetColumn.OT, MitPlanEntry.PartyMit, 1f, "Big Hit", [5f])));
+        var kefka = world.SpawnEnemy(new EnemySpawnConfig(UmadConstants.BNpcBaseId.ChaosP3))!;
+        var column = world.Party.Player!.Role == PartyRole.MeleeDpsA ? SheetColumn.D1 : SheetColumn.D2;
+        world.MitPractice.Begin(Data(new MitPlanEntry(column, MitActionId.Feint, 1f, "Big Hit", [5f])),
+            new Dictionary<MitSource, Func<SimCharacter?>> { [Kefka] = () => kefka });
         Step(1.1f);
-        world.MitPractice.HitParty("hit");
-        Assert.That(world.MitPractice.IsActive, Is.False);
-        Assert.That(Slot(PartyRole.MeleeDpsA).HasStatus(1362), Is.False);
-        Assert.That(HpShare(PartyRole.MeleeDpsA), Is.EqualTo(1f));
+        Assert.That(kefka.HasStatus(1195), "Feint goes on the boss");
+        Assert.That(world.Party.Player!.HasStatus(1195), Is.False);
     }
 
     [Test]
@@ -174,15 +150,5 @@ public class MitPracticeTests
         world.SeatParty(new LocalPartyProvider { Solo = true }.Roster((uint)JobId.Sage));
         world.MitPractice.Begin(Data());
         Assert.That(world.MitPractice.IsActive, Is.False);
-    }
-
-    [Test]
-    public void TheRunsEndPutsThePlayerBackOnFullHp()
-    {
-        world.MitPractice.Begin(Data());
-        world.MitPractice.Hit(world.Party.Player, "hit");
-        Assert.That(fake.BattleCharas.Player.Health, Is.LessThan(fake.BattleCharas.Player.MaxHealth));
-        world.Despawn();
-        Assert.That(fake.BattleCharas.Player.Health, Is.EqualTo(fake.BattleCharas.Player.MaxHealth));
     }
 }

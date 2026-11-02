@@ -59,7 +59,7 @@ public sealed class UmadP4KefkaSaysScenario : IMultiplayerReplayable
         state = new UmadP4KefkaSaysState(world.Rng, party, settingsWindow.Overrides);
         LastState = state;
         kefka = null;
-        world.MitPractice.Begin(UmadP4KefkaSaysMitigation.Plan(),
+        world.Hp.Begin(UmadP4KefkaSaysMitigation.Plan(),
             new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         if (selectedAi is { } idx && idx < AiStrats.Count)
             ((IScenarioAi<UmadP4KefkaSaysState>)AiStrats[idx]).Run(state, world);

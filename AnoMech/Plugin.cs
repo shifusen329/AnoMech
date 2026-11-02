@@ -83,6 +83,7 @@ public sealed class Plugin : IDalamudPlugin
             Practice = new PracticeLoop(Game);
             Game.World.NaturalBotTiming = Config.NaturalBotTiming;
             Game.World.MitPractice.Enabled = Config.MitigationPractice;
+            Game.World.Hp.HumansDie = Config.RunningOutOfHpKills;
             Multiplayer = new MultiplayerManager();
             Runs = new RunController(Game, Multiplayer);
             if (Config.EnableUserActions) Natives.UserActions.Enable();

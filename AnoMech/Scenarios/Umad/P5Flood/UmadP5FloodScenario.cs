@@ -115,7 +115,7 @@ public sealed class UmadP5FloodScenario : IMultiplayerReplayable
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
-        world.MitPractice.Begin(UmadP5FloodMitigation.Plan(),
+        world.Hp.Begin(UmadP5FloodMitigation.Plan(),
             new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         party = worldParam.Party;
         state = new UmadP5FloodState(world.Rng, settingsWindow.Overrides);

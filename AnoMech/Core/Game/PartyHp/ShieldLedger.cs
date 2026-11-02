@@ -1,10 +1,11 @@
 using AnoMech.Core.Native.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
+using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.SimObjects;
 using AnoMech.Core.UserActions;
 
-namespace AnoMech.Core.Game.PartyMit;
+namespace AnoMech.Core.Game.PartyHp;
 
 // What's left of each barrier on one member, in the order they went up. A barrier status is
 // sized the first time it's seen, so one a peer reported counts at its default size.

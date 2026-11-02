@@ -40,8 +40,17 @@ internal sealed class DataminingGameData(FakeRsvFunctions rsv) : IGameData
             row.SByte("AttackType"),
             row.Bool("TargetArea"),
             row.Bool("IsPlayerAction"),
-            row.UInt("Recast100ms") / 10f);
+            row.UInt("Recast100ms") / 10f,
+            row.UInt("ActionCombo"),
+            row.Bool("PreservesCombo"),
+            row.Byte("PrimaryCostType"),
+            row.UShort("PrimaryCostValue"));
     }
+
+    private static readonly Lazy<HashSet<uint>> ComboPrerequisites = new(()
+        => Actions.Value.Ids.Select(id => Actions.Value.Row(id) is { } row ? row.UInt("ActionCombo") : 0u).Where(id => id != 0).ToHashSet());
+
+    public bool IsComboPrerequisite(uint actionId) => ComboPrerequisites.Value.Contains(actionId);
 
     // Every action a player presses outside PvP.
     public static IEnumerable<uint> PlayerActionIds()

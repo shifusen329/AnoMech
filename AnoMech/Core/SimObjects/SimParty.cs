@@ -49,8 +49,10 @@ public sealed class SimParty : ISimObject
             DiagnosticLog.Info($"[SimParty] {role} limit break skipped: no bar is filled.");
             return false;
         }
-        var actionId = bot.UseLimitBreak(level);
-        if (actionId == 0) return false;
+        var actionId = bot.LimitBreakAction(level);
+        if (actionId == 0 || world is null) return false;
+        world.Server.Request(bot, actionId, (ulong)bot.GameObjectId);
+        DiagnosticLog.Info($"[SimParty] {role} (job {bot.ClassJob}) uses LB{level} {Natives.Data.ActionName(actionId)}.");
         LimitBreakHandler.Resolve(this, bot, actionId);
         return true;
     }
@@ -169,6 +171,9 @@ public sealed class SimParty : ISimObject
         for (int i = 0; i < slots.Length; i++)
             if (slots[i] is { } m) yield return m;
     }
+
+    // Every seat taken, as in any run that isn't solo.
+    internal bool IsFull => slots.All(s => s != null);
 
     public bool IsAlive
     {

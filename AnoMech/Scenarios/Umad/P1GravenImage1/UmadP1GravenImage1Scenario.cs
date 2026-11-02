@@ -59,7 +59,7 @@ public sealed class UmadP1GravenImage1Scenario : IMultiplayerReplayable
         LastState = state;
         var k = kit = new UmadP1Kit(world, "UmadP1GravenImage1", overrides.PropsBindDirector);
         world.EnforceArenaBoundary(UmadP1Kit.ArenaRadius, "Knocked off the arena");
-        world.MitPractice.Begin(UmadP1GravenImage1Mitigation.Plan(overrides.ExtrasAtWaveCannon),
+        world.Hp.Begin(UmadP1GravenImage1Mitigation.Plan(overrides.ExtrasAtWaveCannon),
             new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => k.Kefka });
         DiagnosticLog.Info($"[UmadP1GravenImage1] Roll: tethers={(state.TetherDps ? "DPS" : "Supports")} ice1={state.Ice1} fire={state.Fire} "
             + $"wave=[{string.Join(",", state.WaveTargets)}] trap={state.TrapSupport}/{state.TrapDps} ice2={state.Ice2} thunder={state.Thunder}.");

@@ -41,8 +41,14 @@ public sealed class SimWorld : ISimObject, IDisposable
     // Every strat spot handed out this run (the death recap's "where you should have been").
     public AnoMech.Core.Game.Ai.StratTrail Strat { get; }
 
-    // Optional party mitigation practice; a scenario that supports it calls Begin from Run.
+    // The plan's mitigation presses, and their grading when the player practises; PartyHp starts it.
     public AnoMech.Core.Game.PartyMit.MitPractice MitPractice { get; }
+
+    // The party's HP in a fight with a damage model; a scenario that has one calls Begin from Run.
+    public AnoMech.Core.Game.PartyHp.PartyHp Hp { get; }
+
+    // Answers actions as the game server would: the player's presses and the bots'.
+    public AnoMech.Core.Server.ActionServer Server { get; }
 
     // On, bots in the strats tuned for it take their next spot early and wait there, as players
     // do (AiManager.Move's settleFraction); off, every bot leaves at the last moment.
@@ -80,6 +86,8 @@ public sealed class SimWorld : ISimObject, IDisposable
         Events = events;
         Strat = new AnoMech.Core.Game.Ai.StratTrail(events);
         MitPractice = new AnoMech.Core.Game.PartyMit.MitPractice(this);
+        Hp = new AnoMech.Core.Game.PartyHp.PartyHp(this);
+        Server = new AnoMech.Core.Server.ActionServer(this);
         Coordinates = new Coordinates(() => ScenarioOrigin);
     }
 
@@ -222,6 +230,8 @@ public sealed class SimWorld : ISimObject, IDisposable
         Party.Tick(deltaSeconds);
         children.Update(deltaSeconds);
         MitPractice.Tick();
+        Hp.Tick();
+        Server.Tick(deltaSeconds);
         enemyList.Tick(children.OfType<SimEnemy>(), deltaSeconds);
         SimEvents.Dispatch();
     }
@@ -235,6 +245,8 @@ public sealed class SimWorld : ISimObject, IDisposable
         Obstacles.Clear();
         NpcKnockbackStopRadius = null;
         Strat.Clear();
+        Server.Clear();
+        Hp.Clear();
         MitPractice.Clear();
         Party.EndRun();
     }

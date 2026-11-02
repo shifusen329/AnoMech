@@ -27,7 +27,6 @@ internal sealed unsafe class AutoAttackHandler : IUserActionHandler
     // after the delay has run out swings at once.
     private float swingCooldown;
     private byte swingCount;
-    private readonly System.Random rng = new();
 
     // Each swing, by its action and the enemy it went at.
     public event System.Action<uint, ulong>? Swung;
@@ -59,7 +58,7 @@ internal sealed unsafe class AutoAttackHandler : IUserActionHandler
         swingCooldown = WeaponDelay();
         Swing(actionId, enemy);
         Swung?.Invoke(actionId, (ulong)enemy.GameObjectId);
-        JobActions.ApplyAutoAttack(game.Player, actionId, enemy.GameObjectId, rng);
+        game.World.Server.AutoAttack(game.Player);
     }
 
     // Shaped like the server's: no source sequence (it swings on its own timer), a 0.1s lock and

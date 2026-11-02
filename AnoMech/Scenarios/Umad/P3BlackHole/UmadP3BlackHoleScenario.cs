@@ -83,7 +83,7 @@ public sealed class UmadP3BlackHoleScenario : IMultiplayerReplayable
         PrimodialCrustsToResolve = 0;
         spentCrusts.Clear();
         if (!cast.Chained)
-            world.MitPractice.Begin(UmadP3BlackHoleMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+            world.Hp.Begin(UmadP3BlackHoleMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
             {
                 [UmadMitigation.Chaos] = () => state.ScenarioObjects.Chaos,
                 [UmadMitigation.Exdeath] = () => state.ScenarioObjects.Exdeath,

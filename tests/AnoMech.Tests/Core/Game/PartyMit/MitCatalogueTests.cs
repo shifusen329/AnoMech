@@ -1,3 +1,4 @@
+using RuleSim.Actions;
 using AnoMech.Core.Game.PartyMit;
 using AnoMech.Core.UserActions;
 
@@ -28,11 +29,11 @@ public class MitCatalogueTests
     {
         foreach (var def in MitCatalogue.All.Where(d => d.Kind != MitKind.None))
         {
-            var known = JobActions.GrantsOf(def.ActionId).Where(g => Mitigation.ByStatusId.ContainsKey(g.StatusId)).ToList();
+            var known = Rules.GrantsOf(def.ActionId).Where(g => Mitigation.ByStatusId.ContainsKey(g.StatusId)).ToList();
             Assert.That(known, Is.Not.Empty, $"{def.Name} grants no status the damage model reads");
             Assert.That(known.Select(g => g.Duration), Does.Contain(def.Duration), def.Name);
             foreach (var alias in def.Aliases ?? [])
-                Assert.That(JobActions.GrantsOf(alias), Is.EquivalentTo(JobActions.GrantsOf(def.ActionId)), $"{def.Name} alias {alias}");
+                Assert.That(Rules.GrantsOf(alias), Is.EquivalentTo(Rules.GrantsOf(def.ActionId)), $"{def.Name} alias {alias}");
         }
     }
 
@@ -42,8 +43,8 @@ public class MitCatalogueTests
         foreach (var def in MitCatalogue.All.Where(d => d.Requires != 0))
         {
             Assert.That(Data.Status(def.Requires), Is.Not.Null, def.Name);
-            Assert.That(MitCatalogue.All.Any(g => JobActions.GrantsOf(g.ActionId).Any(s => s.StatusId == def.Requires)), def.Name);
-            Assert.That(JobActions.StatusesSpentBy(def.ActionId), Does.Contain(def.Requires), def.Name);
+            Assert.That(MitCatalogue.All.Any(g => Rules.GrantsOf(g.ActionId).Any(s => s.StatusId == def.Requires)), def.Name);
+            Assert.That(Rules.StatusesSpentBy(def.ActionId), Does.Contain(def.Requires), def.Name);
         }
     }
 

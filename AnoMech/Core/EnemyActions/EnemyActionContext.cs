@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using AnoMech.Core.Game;
+using AnoMech.Core.Game.PartyHp;
 using AnoMech.Core.Native.Interfaces;
 using AnoMech.Core.SimObjects;
 
@@ -34,6 +35,7 @@ public sealed class EnemyActionContext
     public SimCharacter? Target { get; }
     public Placement Origin { get; }
     public SimParty Party { get; }
+    internal PartyHp? Hp { get; init; }
     // Everyone the area caught, nearest to Origin first.
     public IReadOnlyList<SimCharacter> Hits { get; internal set; } = [];
 
@@ -58,7 +60,7 @@ public sealed class EnemyActionContext
         if (outcome.Damage is not { } shown || amount > shown.Amount) outcome.Damage = (amount, kind);
     }
 
-    // Mitigation practice's own number for a hit it models, in place of the severity's stock one.
+    // PartyHp's own number for a hit it models, in place of the severity's stock one.
     internal void OverrideDamage(SimCharacter who, uint amount)
     {
         if (outcomes.TryGetValue(who, out var outcome) && outcome.Damage is { } shown) outcome.Damage = (amount, shown.Kind);

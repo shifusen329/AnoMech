@@ -85,7 +85,7 @@ public sealed class UmadP3LimitCutScenario : IMultiplayerReplayable
         SpawnActors(cast);
         if (!cast.Chained)
         {
-            world.MitPractice.Begin(UmadP3LimitCutMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+            world.Hp.Begin(UmadP3LimitCutMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
             {
                 [UmadMitigation.Chaos] = () => state.Objects.Chaos,
                 [UmadMitigation.Exdeath] = () => state.Objects.Exdeath,

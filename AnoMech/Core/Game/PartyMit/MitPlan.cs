@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AnoMech.Core.Game.Party;
 using AnoMech.Core.UserActions;
+using RuleSim.Actions;
 
 namespace AnoMech.Core.Game.PartyMit;
 
@@ -99,7 +100,7 @@ public static class MitPlan
         foreach (var p in plan.Where(p => p.Action.Requires != 0))
         {
             var granted = plan.Any(g => g.Slot == p.Slot && g.At <= p.At + Epsilon && !ReferenceEquals(g, p)
-                && JobActions.GrantsOf(g.Action.ActionId).Any(s => s.StatusId == p.Action.Requires && p.At <= g.At + s.Duration + Epsilon));
+                && Rules.GrantsOf(g.Action.ActionId).Any(s => s.StatusId == p.Action.Requires && p.At <= g.At + s.Duration + Epsilon));
             if (!granted)
                 problems.Add($"{p.Slot} {p.Action.Name} at {p.At:F2}s needs status {p.Action.Requires}, which nothing granted in time");
         }

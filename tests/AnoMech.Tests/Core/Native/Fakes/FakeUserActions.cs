@@ -17,5 +17,17 @@ internal sealed class FakeUserActions : IUserActions
     public void OnSessionEnd() { }
     public void Tick(float deltaSeconds) { }
 
+    public List<ActionEffectData> OwnEffects { get; } = [];
+    public List<byte[]> Gauges { get; } = [];
+    private uint sequence;
+
+    public uint ReceiveOwnEffect(ActionEffectData effect)
+    {
+        OwnEffects.Add(effect);
+        return ++sequence;
+    }
+
+    public void ReceiveGauge(byte[] payload) => Gauges.Add(payload);
+
     public void Dispose() { }
 }

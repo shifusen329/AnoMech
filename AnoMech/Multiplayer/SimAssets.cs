@@ -113,7 +113,7 @@ internal static class SimAssets
 
     // A cast or effect a peer plays: a scenario's own action, or one a party member presses.
     private static bool IsPlayable(uint actionId)
-        => IsKnown(SimAssetKind.Action, actionId) || JobActions.Knows(actionId) || LimitBreakHandler.IsLimitBreak(actionId)
+        => IsKnown(SimAssetKind.Action, actionId) || RuleSim.Actions.Rules.Knows(actionId) || LimitBreakHandler.IsLimitBreak(actionId)
            || Natives.Data.Action(actionId) is { IsPlayerAction: true };
 
     public static bool AllowAction(uint actionId, string context)

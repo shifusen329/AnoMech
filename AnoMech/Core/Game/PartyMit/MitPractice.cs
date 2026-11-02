@@ -7,15 +7,17 @@ using AnoMech.Core.Native.Interfaces;
 using AnoMech.Core.SimObjects;
 using AnoMech.Core.UserActions;
 using Dalamud.Game.Text;
+using RuleSim.Actions;
 
 namespace AnoMech.Core.Game.PartyMit;
 
 public enum MitRunEnd { Completed, Death, Reset }
 
-// The running mitigation practice. Bots press the plan resolved for the real comp; hits move
-// simulated HP, warning instead of killing; the local player's planned presses are graded when
-// the run ends. Host-only, since it starts from scenario.Run, which a peer never runs. Keeps its
-// own schedule rather than world.Events, so a scenario's end isn't held back by it.
+// A fight's mitigation plan, resolved for the real comp and pressed on time for every seat no one
+// presses for: the bots, and the humans unless they're practising. Practising (Enabled), a human
+// presses their own and is graded when the run ends. Host-only, since it starts from scenario.Run,
+// which a peer never runs. Keeps its own schedule rather than world.Events, so a scenario's end
+// isn't held back by it.
 public sealed class MitPractice
 {
     // A planned press counts as missing from a hit landing this close to one of its covers.
@@ -29,11 +31,7 @@ public sealed class MitPractice
     private readonly List<ResolvedPress> pending = [];
     private readonly Dictionary<(PartyRole Slot, uint Action), float> lastPress = [];
     private readonly List<MitPress> presses = [];
-    private readonly Dictionary<SimCharacter, MitHpPool> pools = [];
-    private readonly Dictionary<SimCharacter, ShieldLedger> ledgers = [];
-    private readonly Dictionary<SimCharacter, float> warnedAt = [];
-    private bool hpMode;
-    private bool grading;
+    private bool practising;
     private bool finished;
 
     internal MitPractice(SimWorld world)
@@ -44,41 +42,29 @@ public sealed class MitPractice
 
     public bool Enabled { get; set; }
     public bool IsActive => data != null && !finished;
-    // Hits move HP bars and show their own damage numbers.
-    public bool MovesHp => IsActive && hpMode;
 
-    // At the scenario's start. `sources` resolves each MitSource to its live actor (the boss the
-    // party's debuffs go on); `clock` is the scenario's, when it isn't world.Events.
+    // At the scenario's start, from PartyHp.Begin. `sources` resolves each MitSource to its live
+    // actor (the boss the party's debuffs go on); `clock` is the scenario's, when it isn't world.Events.
     public void Begin(MitPlanData planData, IReadOnlyDictionary<MitSource, Func<SimCharacter?>>? actors = null, Func<float>? scenarioClock = null)
     {
         Clear();
-        if (!Enabled || !world.Party.AllMembers().OfType<SimPartyNpc>().Any()) return;
+        if (!world.Party.IsFull) return;
         data = planData;
         sources = actors ?? new Dictionary<MitSource, Func<SimCharacter?>>();
         clock = scenarioClock ?? (() => world.Events.Elapsed);
+        practising = Enabled && Natives.UserActions.Enabled;
         var jobs = world.Party.AllMembers().OfType<ISimPartyMember>().ToDictionary(m => m.Role, m => (JobId)m.ClassJob);
         plan = MitPlan.Resolve(planData.Entries, jobs);
-        pending.AddRange(plan.Where(p => world.Party.Get(p.Slot) switch
-                             {
-                                 SimPartyNpc => planData.Entries[p.Entry].ActionId != MitPlanEntry.TankLb3,
-                                 SimPlayer => p.IsPreStart,
-                                 _ => false,
-                             })
+        pending.AddRange(plan.Where(p => planData.Entries[p.Entry].ActionId != MitPlanEntry.TankLb3
+                                         && world.Party.Get(p.Slot) is { } member && PressedForThem(member, p))
                              .OrderBy(p => p.At));
-        hpMode = planData.Hits.Any(h => h.Raw != null);
-        grading = Natives.UserActions.Enabled;
-        if (hpMode)
-            foreach (var member in world.Party.AllMembers())
-                if (member is ISimPartyMember slot)
-                {
-                    var pool = new MitHpPool(planData.Profile.MaxHp(MitProfile.ClassOf((JobId)slot.ClassJob)), planData.Profile.TopUpGap,
-                        planData.Profile.HealPerSecond);
-                    pools[member] = pool;
-                    Write(member, pool);
-                }
         DiagnosticLog.Info($"[MitPractice] Begin: {plan.Count} planned presses for [{string.Join(", ", jobs.OrderBy(j => j.Key).Select(j => $"{j.Key}={j.Value}"))}], "
-                           + $"{pending.Count} by bots, HP {(hpMode ? "on" : "off")}, grading {(grading ? "on" : "off")}.");
+                           + $"{pending.Count} pressed by the sim, practising {(practising ? "on" : "off")}.");
     }
+
+    // A press from before the scenario began had no chance to be made, so the sim makes it.
+    private bool PressedForThem(SimCharacter member, ResolvedPress p)
+        => p.IsPreStart || member is SimPartyNpc || world.Party.IsBotDriven(member) || !practising;
 
     internal void Tick()
     {
@@ -90,42 +76,26 @@ public sealed class MitPractice
             pending.RemoveAt(0);
             Press(press, now);
         }
-        if (!hpMode) return;
-        foreach (var (member, pool) in pools)
-        {
-            if (!member.IsAlive()) continue;
-            var ledger = Ledger(member);
-            ledger.Sync(member, pool.Max);
-            var shield = ledger.Remaining / pool.Max;
-            var shieldChanged = member.ShieldOverride != shield;
-            member.ShieldOverride = shield;
-            if (pool.TopUp(now) || shieldChanged) Write(member, pool);
-        }
     }
 
     private void Press(ResolvedPress p, float now)
     {
-        // The player's press from before the scenario began: there was no chance to make it.
-        if (world.Party.Get(p.Slot) is SimPlayer player && p.IsPreStart)
-        {
-            JobActions.ClearStatuses(player, p.Action.ActionId);
-            JobActions.ApplyEffects(player, p.Action.ActionId, (ulong)player.GameObjectId, Random.Shared);
-            presses.Add(new MitPress(p.Slot, p.Action.ActionId, p.At));
-            return;
-        }
-        if (world.Party.Get(p.Slot) is not SimPartyNpc bot || !bot.IsAlive()) return;
+        if (world.Party.Get(p.Slot) is not { } member || !member.IsAlive()) return;
         var key = (p.Slot, p.Action.ActionId);
         if (p.Action.Recast > 0f && lastPress.TryGetValue(key, out var last) && now - last < p.Action.Recast - 0.01f)
         {
             DiagnosticLog.Warn($"[MitPractice] {p.Slot} skips {p.Action.Name} at {now:F2}s: {now - last:F1}s into its {p.Action.Recast:F0}s recast ({p.Label}).");
             return;
         }
-        if (p.Action.Requires != 0 && !bot.HasStatus(p.Action.Requires))
+        if (p.Action.Requires != 0 && !member.HasStatus(p.Action.Requires))
         {
             DiagnosticLog.Warn($"[MitPractice] {p.Slot} skips {p.Action.Name} at {now:F2}s: needs {Natives.Data.StatusName(p.Action.Requires)} ({p.Label}).");
             return;
         }
-        bot.UseAction(p.Action.ActionId, p.Action.Kind == MitKind.Debuff ? DebuffTarget(p) : null);
+        var target = p.Action.Kind == MitKind.Debuff ? DebuffTarget(p) : null;
+        var targetId = (ulong)(target ?? member).GameObjectId;
+        if (member is SimPartyNpc) world.Server.Request(member, p.Action.ActionId, targetId);
+        else world.Server.Apply(member, p.Action.ActionId, targetId);
         var pressedAt = p.IsPreStart ? p.At : now;
         lastPress[key] = pressedAt;
         presses.Add(new MitPress(p.Slot, p.Action.ActionId, pressedAt));
@@ -138,55 +108,8 @@ public sealed class MitPractice
         presses.Add(new MitPress(slot, actionId, clock()));
     }
 
-    public void Hit(SimCharacter? victim, string key)
-    {
-        if (victim != null) Hit([victim], key);
-    }
-
-    public void HitParty(string key) => Hit(world.Party.AllMembers().ToList(), key);
-
-    public void Hit(IEnumerable<SimCharacter> victims, string key)
-    {
-        if (!IsActive || !hpMode || data!.Hits.FirstOrDefault(h => h.Key == key) is not { Raw: not null } hit) return;
-        var now = clock();
-        foreach (var victim in victims) Land(victim, hit, now);
-    }
-
-    // An EnemyAction's resolve, before its ActionEffect goes out: the plan's hit for that action lands
-    // on everyone it caught, and what each lost replaces the flytext's stock number.
-    internal IReadOnlyDictionary<SimCharacter, uint> Resolved(uint actionId, IReadOnlyList<SimCharacter> hits)
-    {
-        if (!IsActive || !hpMode || data!.Hits.FirstOrDefault(h => h.ActionIds?.Contains(actionId) == true) is not { Raw: not null } hit)
-            return new Dictionary<SimCharacter, uint>();
-        var now = clock();
-        var shown = new Dictionary<SimCharacter, uint>();
-        foreach (var victim in hits)
-            if (Land(victim, hit, now) is >= 1f and var loss) shown[victim] = (uint)MathF.Round(loss);
-        return shown;
-    }
-
-    // The HP the hit took, or null when it landed on no pool.
-    private float? Land(SimCharacter victim, MitHitDef hit, float now)
-    {
-        if (victim is not ISimPartyMember member || !victim.IsAlive() || !pools.TryGetValue(victim, out var pool)) return null;
-        var ledger = Ledger(victim);
-        ledger.Sync(victim, pool.Max);
-        var source = hit.Source is { } s ? Layers(Source(s)) : [];
-        var result = MitDamage.Apply(hit, MitProfile.ClassOf((JobId)member.ClassJob), data!.Profile, Layers(victim), source,
-            ledger.Shields, assumeTankCooldowns: world.Party.IsBotDriven(victim));
-        ledger.Commit(victim);
-        var hp = pool.Land(now, result.HpLoss, hit.Fresh);
-        victim.ShieldOverride = ledger.Remaining / pool.Max;
-        Write(victim, pool);
-        if (hp > 0f) return result.HpLoss;
-        if (warnedAt.TryGetValue(victim, out var warned) && now - warned <= data.Profile.TopUpGap) return result.HpLoss;
-        warnedAt[victim] = now;
-        world.Announce($"{hit.Name} would have killed {Who(member)}: {MitDamage.Explain(result, Missing(victim, now))}");
-        return result.HpLoss;
-    }
-
     // Planned presses meant for a hit around now that aren't in effect on the victim.
-    private IReadOnlyList<string> Missing(SimCharacter victim, float now)
+    internal IReadOnlyList<string> Missing(SimCharacter victim, float now)
     {
         var missing = new List<string>();
         foreach (var p in plan)
@@ -199,7 +122,7 @@ public sealed class MitPractice
 
     private bool InEffect(ResolvedPress p, SimCharacter victim, float now)
     {
-        var granted = JobActions.GrantsOf(p.Action.ActionId).Select(g => g.StatusId).Where(Mitigation.ByStatusId.ContainsKey).ToList();
+        var granted = Rules.GrantsOf(p.Action.ActionId).Select(g => g.StatusId).Where(Mitigation.ByStatusId.ContainsKey).ToList();
         return p.Action.Kind switch
         {
             MitKind.None => true,
@@ -210,20 +133,20 @@ public sealed class MitPractice
         };
     }
 
-    // When the run ends, the local player's grading in chat.
+    // When the run ends, the local player's grading in chat, if they were practising.
     internal void Finish(MitRunEnd end)
     {
         if (!IsActive) return;
         finished = true;
         DiagnosticLog.Info($"[MitPractice] Finish ({end}) at {clock():F2}s: {presses.Count} presses recorded.");
-        if (world.Party.Player is not { } player) return;
+        if (!Enabled || world.Party.Player is not { } player) return;
         foreach (var line in Summary(player, clock()))
             Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[AnoMech] {line}" });
     }
 
     private IReadOnlyList<string> Summary(SimPlayer player, float now)
     {
-        if (!grading) return ["Mitigation: your presses weren't graded. Turn on \"Resolve your own actions\" to grade them."];
+        if (!practising) return ["Mitigation: your presses weren't graded. Turn on \"Resolve your own actions\" to grade them."];
         if (!plan.Any(p => p.Slot == player.Role && !p.IsPreStart))
             return [$"Mitigation: no planned presses for your {JobName((JobId)player.ClassJob)} in {player.Role.ShortLabel()}."];
         return MitGrader.Summary(MitGrader.Grade(plan, player.Role, presses, now), now);
@@ -238,11 +161,7 @@ public sealed class MitPractice
         pending.Clear();
         lastPress.Clear();
         presses.Clear();
-        pools.Clear();
-        ledgers.Clear();
-        warnedAt.Clear();
-        hpMode = false;
-        grading = false;
+        practising = false;
         finished = false;
     }
 
@@ -251,24 +170,7 @@ public sealed class MitPractice
     private SimCharacter? DebuffTarget(ResolvedPress p)
         => (data!.Entries[p.Entry].On ?? data.DebuffTarget) is { } target ? Source(target) : sources.Values.FirstOrDefault()?.Invoke();
 
-    private ShieldLedger Ledger(SimCharacter member)
-    {
-        if (!ledgers.TryGetValue(member, out var ledger)) ledgers[member] = ledger = new ShieldLedger();
-        return ledger;
-    }
-
-    private static IReadOnlyList<MitLayer> Layers(SimCharacter? character)
-        => character?.ActiveStatuses
-                    .Where(s => Mitigation.ByStatusId.ContainsKey(s.StatusId))
-                    .Select(s => new MitLayer(s.StatusId, Natives.Data.StatusName(s.StatusId), Mitigation.ByStatusId[s.StatusId]))
-                    .ToList()
-           ?? [];
-
-    private static void Write(SimCharacter member, MitHpPool pool) => member.WriteHp(pool.Hp / pool.Max);
-
     private string Owner(PartyRole slot) => world.Party.Player is { } player && player.Role == slot ? "your" : $"{slot.ShortLabel()}'s";
-
-    private static string Who(ISimPartyMember member) => member is SimPlayer ? $"you ({member.Role.ShortLabel()})" : member.Role.ShortLabel();
 
     private static string JobName(JobId job) => Regex.Replace(job.ToString(), "(?<!^)([A-Z])", " $1");
 }

@@ -101,6 +101,7 @@ internal sealed class FakeBattleChara(FakeBattleCharas owner, int slot) : IBattl
                 ["targets"] = string.Join(" ", (effect.Targets ?? []).Select(t => Id(t.Id).ToString("X8"))),
             });
         owner.RecordEffect(sequence, EntityId, effect.ActionId);
+        owner.EffectsReceived.Add(effect);
         if (Actor is { } caster)
             foreach (var target in effect.Targets ?? [])
                 if (target.Id == owner.Player.GameObjectId)
@@ -132,6 +133,7 @@ internal sealed class FakeBattleChara(FakeBattleCharas owner, int slot) : IBattl
 
     public void ReceiveEffectResult(uint globalSequence, byte targetIndex, uint health)
     {
+        owner.EffectResults.Add((EntityId, globalSequence, targetIndex, health));
         if (EntityId >> 28 == 1 && owner.TakeEffect(globalSequence) is { } effect)
             owner.Timeline.Add("impact", effect.Caster, owner.Find(effect.Caster)?.Name ?? "", effect.ActionId.ToString(),
                 ActionName(effect.ActionId), EntityId, Name);

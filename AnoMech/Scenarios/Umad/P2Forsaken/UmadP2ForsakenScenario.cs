@@ -81,7 +81,7 @@ public sealed class UmadP2ForsakenScenario : IMultiplayerReplayable
         LastState = state;
         lastBroadcastLockonsKey = null;
         towersSoaked = 0;
-        world.MitPractice.Begin(UmadP2ForsakenMitigation.Plan(),
+        world.Hp.Begin(UmadP2ForsakenMitigation.Plan(),
             new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         if (selectedAi is { } idx && idx >= 0 && idx < AiStrats.Count)
             ((IScenarioAi<UmadP2ForsakenState>)AiStrats[idx]).Run(state, world);

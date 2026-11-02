@@ -4,44 +4,29 @@ using System.Linq;
 using AnoMech.Core.Native.Implementations;
 using AnoMech.Core.Native.Implementations.Pointers;
 using AnoMech.Core.Native.Interfaces;
-using AnoMech.Core.UserActions.Jobs;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 
 namespace AnoMech.Core.UserActions;
 
-// Optional, self-contained module: resolves the local player's own actions
-// client-side, filling in the server responses the sim firewall blocks. Handlers run only
-// while Enabled, unless they declare RunsWhenDisabled. Nothing in the engine depends on it.
+// Optional, self-contained module: hands the local player's own actions to the sim's server
+// (Core/Server), which the firewall keeps them from reaching, and delivers its answers to the
+// client. Handlers run only while Enabled, unless they declare RunsWhenDisabled.
 public sealed unsafe class UserActions : IUserActions
 {
     private readonly ILocalPlayerInput hooks;
 
     // OnAction is the action's RESOLUTION — immediately for an instant cast, on completion for a hard
     // cast, and not at all if the cast is interrupted (a spell resolves when its cast bar finishes, not
-    // when it starts). In order: ResetHandler first so every other handler's OnScenarioStart lands on
-    // the reset; CastTimeHandler before JobActionHandler, which clears the statuses it checks; and
-    // JobActionHandler and the state handlers before ComboHandler so their combo-gated logic reads the
-    // pre-advance combo state.
+    // when it starts). ResetHandler runs first so every other handler's OnScenarioStart lands on the
+    // reset.
     private readonly List<IUserActionHandler> handlers =
     [
         new ResetHandler(),
         new SprintHandler(),
-        new CastTimeHandler(),
-        new JobActionHandler(),
+        new ServerRequestHandler(),
         new MitPracticePressHandler(),
         new LimitBreakHandler(),
-        new SamuraiStateHandler(),
-        new BlackMageStateHandler(),
-        new SummonerStateHandler(),
-        new AstrologianStateHandler(),
-        new MonkStateHandler(),
-        new PictomancerStateHandler(),
-        new DancerStateHandler(),
-        new ViperStateHandler(),
-        new NinjaStateHandler(),
-        new ComboHandler(),
-        new TimedGaugeHandler(),
         new CastInterruptHandler(),
         new AutoAttackHandler(),
     ];
@@ -104,6 +89,11 @@ public sealed unsafe class UserActions : IUserActions
         if (am != null) processedSeq = am->LastUsedActionSequence;
         gaugeSnapshot = JobGaugeEdit.Capture();
     }
+
+    public uint ReceiveOwnEffect(ActionEffectData effect)
+        => BattleCharaProxy.LocalPlayer is { Exists: true } player ? player.ReceiveActionEffect(effect) : 0;
+
+    public void ReceiveGauge(byte[] payload) => JobGaugeEdit.Send(payload);
 
     // Called by Game when the player leaves the sim zone.
     public void OnSessionEnd()

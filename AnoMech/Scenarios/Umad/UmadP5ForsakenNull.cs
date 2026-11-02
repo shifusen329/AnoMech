@@ -40,7 +40,7 @@ public sealed class UmadP5ForsakenNull : IScenario
         world = worldParam;
         party = worldParam.Party;
         kefka = null;
-        world.MitPractice.Begin(UmadP5ForsakenNullMitigation.Plan(),
+        world.Hp.Begin(UmadP5ForsakenNullMitigation.Plan(),
             new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
 
         Run_Kefka_4001DE6B();
@@ -57,14 +57,14 @@ public sealed class UmadP5ForsakenNull : IScenario
     // The raidwides the scenario shows only as casts.
     private void Run_MitigationHits()
     {
-        world.Events.Add(13.21f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.Forsaken));
-        world.Events.Add(18.32f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
-        world.Events.Add(21.39f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenRepeat));
-        world.Events.Add(26.47f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
-        world.Events.Add(29.55f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenRepeat));
-        world.Events.Add(34.62f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
-        world.Events.Add(37.69f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenRepeat));
-        world.Events.Add(42.78f, () => world.MitPractice.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds));
+        world.Events.Add(13.21f, () => world.Hp.HitParty(UmadP5ForsakenNullMitigation.Forsaken, Constants.ActionId.Forsaken));
+        world.Events.Add(18.32f, () => world.Hp.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds, Constants.ActionId.ForsakenBonds));
+        world.Events.Add(21.39f, () => world.Hp.HitParty(UmadP5ForsakenNullMitigation.ForsakenRepeat, Constants.ActionId.Forsaken_BB36));
+        world.Events.Add(26.47f, () => world.Hp.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds, Constants.ActionId.ForsakenBonds));
+        world.Events.Add(29.55f, () => world.Hp.HitParty(UmadP5ForsakenNullMitigation.ForsakenRepeat, Constants.ActionId.Forsaken_BB36));
+        world.Events.Add(34.62f, () => world.Hp.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds, Constants.ActionId.ForsakenBonds));
+        world.Events.Add(37.69f, () => world.Hp.HitParty(UmadP5ForsakenNullMitigation.ForsakenRepeat, Constants.ActionId.Forsaken_BB36));
+        world.Events.Add(42.78f, () => world.Hp.HitParty(UmadP5ForsakenNullMitigation.ForsakenBonds, Constants.ActionId.ForsakenBonds));
     }
 
     private void Run_InstanceEvents()

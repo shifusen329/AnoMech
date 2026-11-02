@@ -2,6 +2,29 @@
 
 Notable changes to AnoMech. Versions match the plugin version shown in `/xlplugins`.
 
+## [Unreleased]
+
+### Fixed
+
+- **Dancer: Standard and Technical Finish now end the dance after your steps** (issue #1). Before, only a finish with no steps did, so the dance kept running and the finish buffs never came. Technical Finish's party buff now lands a moment after the finish, as in game.
+- **Samurai: each Kaeshi uses up its own Tsubame-gaeshi**, and Kaeshi no longer spends a Meikyo Shisui stack.
+- **Red Mage: Dualcast is now the status the game itself uses**, so the spell after a hard cast may now be instant. Not yet confirmed in game.
+- **Raid buffs reach the party around you,** not just you.
+- **Viper:** Serpent's Tail and Twinfang/Twinblood become the right follow-up, the first twin bite grants the other one's venom, and Ready to Reawaken makes Reawaken free.
+- **Black Mage:** Paradox grants Firestarter in Astral Fire.
+
+### Changed
+
+- **Your actions are answered the way the game server answers them** (with "Resolve your own actions" on). Every press now gets the server's whole reply: the statuses it uses up and grants, the action with who it hit, your job gauge, and each target's confirmation about half a second later. Before, only combo actions got a reply. Each job's rules are checked against what the server sent in real logs, at level 100.
+  - Most actions now lock you for 0.6s, the game's own lock. A few have their own: jumps, mudras and tank LB3. Not yet confirmed that weaving feels the same.
+  - Darkside, Dark Arts, Life of the Dragon, Repertoire and the Pictomancer portraits no longer show as status icons. The game keeps them on the job gauge.
+  - Level-synced fights still get level-100 rules.
+- **Bots' actions now hit their targets.** Feint and Reprisal play on the boss, and bots' buffs land on everyone they cover.
+- **HP now moves in every Dancing Mad run with a full party, mitigation practice on or off.** Each hit takes your class's share of its logged damage, cut by your mitigation and barriers. The bar drops with the damage number.
+  - The bots press the party mitigation sheet in every run. With Mitigation set to Off, your own planned presses are made for you too. With Practice, you make them yourself and they're graded as before.
+  - **New "Out of HP" setting.** Warn (the default) leaves you on 1 HP and names what was missing; Die kills you when a hit takes your last HP. Bots never die of it. Die isn't the default yet: in Black Hole and Phase 3 Full phase, players who follow the plan still run out at Stomp-a-Mole and Cyclone.
+- **Developer:** the action rules now live in RuleSim, a submodule. Clone with `--recurse-submodules`, or run `git submodule update --init` in an existing checkout.
+
 ## [0.5.3.3] - 2026-10-31
 
 ### Fixed

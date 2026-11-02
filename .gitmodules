@@ -1,0 +1,3 @@
+[submodule "RuleSim"]
+	path = RuleSim
+	url = https://github.com/shifusen329/RuleSim

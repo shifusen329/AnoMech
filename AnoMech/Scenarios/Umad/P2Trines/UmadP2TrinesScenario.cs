@@ -63,7 +63,7 @@ public sealed class UmadP2TrinesScenario : IMultiplayerReplayable
 
         world.EnforceArenaBoundary(Geometry.ArenaRadius, "Fell off the arena");
         SpawnActors();
-        world.MitPractice.Begin(UmadP2TrinesMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
+        world.Hp.Begin(UmadP2TrinesMitigation.Plan(), new Dictionary<MitSource, Func<SimCharacter?>>
         {
             [UmadMitigation.Kefka] = () => state.Objects.Kefka,
         });

@@ -189,20 +189,19 @@ public abstract class SimCharacter : ISimObject, IPositioned
 
     public void AttachLockonVfx(uint lockonId) => ActorControl.HeadMarker(lockonId);
 
-    // The last DamageSolver AoE this character stood in, set before it can kill them, so the
-    // death recap can outline what did it.
+    // The last AoE this character stood in, set before it can kill them, so the death recap can
+    // outline what did it.
     public AoeHit? LastAoe { get; internal set; }
 
-    // Mitigation practice's simulated HP on the real bar, as a share of the character's own max HP:
-    // the status list carries current HP, never a max.
-    internal void WriteHp(float fraction)
+    // PartyHp's HP on the real bar.
+    internal void ShowHp(uint health)
     {
         if (Proxy is not { Exists: true } chara) return;
-        SendStatusList((uint)Math.Clamp(MathF.Round(fraction * chara.MaxHealth), 1f, chara.MaxHealth), chara.Mana);
+        SendStatusList(health, chara.Mana);
     }
 
-    // What's left of this character's barriers as a share of max HP, when mitigation practice
-    // tracks a partly absorbed one; null shows the shield statuses at full size.
+    // What's left of this character's barriers as a share of max HP, when PartyHp tracks a partly
+    // absorbed one; null shows the shield statuses at full size.
     public float? ShieldOverride { get; internal set; }
 
     // FIXME: minor, keep track of tethers and slots attached to character

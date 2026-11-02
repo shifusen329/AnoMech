@@ -7,7 +7,7 @@ namespace AnoMech.Core.UserActions;
 
 // Sends the party the server's limit break ActorControls: one as the cast starts, one when it
 // resolves, which empties the gauge. A cast interrupted before the slidecast window never
-// resolves, so it costs nothing. What the limit break does is an ordinary JobActions row.
+// resolves, so it costs nothing. What the limit break does is an ordinary row in the shared rules (RuleSim.Actions.Rules).
 internal sealed class LimitBreakHandler : IUserActionHandler
 {
     private const uint LimitBreakCategory = 9;

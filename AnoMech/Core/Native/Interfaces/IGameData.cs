@@ -4,6 +4,10 @@ namespace AnoMech.Core.Native.Interfaces;
 public interface IGameData
 {
     ActionRow? Action(uint actionId);
+
+    // Some other action's ActionCombo names it.
+    bool IsComboPrerequisite(uint actionId);
+
     KnockbackRow? Knockback(uint knockbackId);
     ClassJobRow? ClassJob(uint classJobId);
     BNpcBaseRow? BNpcBase(uint bnpcBaseId);

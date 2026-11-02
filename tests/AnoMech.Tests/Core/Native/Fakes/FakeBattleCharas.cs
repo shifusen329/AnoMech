@@ -53,6 +53,15 @@ internal sealed class FakeBattleCharas : IBattleCharas
     // An ActionEffect's global sequence, until the first party EffectResult names it (its impact).
     internal void RecordEffect(uint sequence, uint caster, uint actionId) => effects[sequence] = (caster, actionId);
 
+    // Every ActionEffect any character received, in order, for reading its entries back.
+    public List<ActionEffectData> EffectsReceived { get; } = [];
+
+    // Every EffectResult, by who received it.
+    public List<(uint EntityId, uint Sequence, byte TargetIndex, uint Health)> EffectResults { get; } = [];
+
+    // A Damage entry's amount, Param3 carrying its high bits.
+    public static uint Amount(ActionEffectEntry entry) => (uint)entry.Param3 << 16 | entry.Value;
+
     internal (uint Caster, uint ActionId)? TakeEffect(uint sequence)
         => effects.Remove(sequence, out var effect) ? effect : null;
 

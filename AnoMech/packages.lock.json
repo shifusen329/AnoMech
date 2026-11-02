@@ -43,6 +43,9 @@
       },
       "anomech.relay": {
         "type": "Project"
+      },
+      "rulesim.actions": {
+        "type": "Project"
       }
     }
   }

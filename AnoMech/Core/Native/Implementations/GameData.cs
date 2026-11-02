@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using AnoMech.Core.Native.Interfaces;
 using LuminaAction = Lumina.Excel.Sheets.Action;
 using LuminaBNpcBase = Lumina.Excel.Sheets.BNpcBase;
@@ -33,8 +35,18 @@ internal sealed class GameData : IGameData
             (sbyte)row.AttackType.RowId,
             row.TargetArea,
             row.IsPlayerAction,
-            row.Recast100ms / 10f);
+            row.Recast100ms / 10f,
+            row.ActionCombo.RowId,
+            row.PreservesCombo,
+            row.PrimaryCostType,
+            row.PrimaryCostValue);
     }
+
+    private HashSet<uint>? comboPrerequisites;
+
+    public bool IsComboPrerequisite(uint actionId)
+        => (comboPrerequisites ??= Plugin.DataManager.GetExcelSheet<LuminaAction>()
+            .Select(row => row.ActionCombo.RowId).Where(id => id != 0).ToHashSet()).Contains(actionId);
 
     public KnockbackRow? Knockback(uint knockbackId)
         => Plugin.DataManager.GetExcelSheet<LuminaKnockback>().TryGetRow(knockbackId, out var row)

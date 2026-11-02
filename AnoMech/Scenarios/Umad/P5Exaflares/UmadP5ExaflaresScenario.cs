@@ -67,7 +67,7 @@ public sealed class UmadP5ExaflaresScenario : IMultiplayerReplayable
     public void Run(SimWorld worldParam, int? selectedAi)
     {
         world = worldParam;
-        world.MitPractice.Begin(UmadP5ExaflaresMitigation.Plan(),
+        world.Hp.Begin(UmadP5ExaflaresMitigation.Plan(),
             new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => kefka });
         party = worldParam.Party;
         state = new UmadP5ExaflaresState(world.Rng, settingsWindow.Overrides);

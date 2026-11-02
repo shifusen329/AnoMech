@@ -64,7 +64,7 @@ public sealed class UmadP3FullScenario : IMultiplayerReplayable
         rolled = (bowelsState, limitCutState, blackHoleState);
 
         var cast = new UmadP3Cast { Chained = true };
-        world.MitPractice.Begin(MitigationPlan(bowelsState.ShortElement),
+        world.Hp.Begin(MitigationPlan(bowelsState.ShortElement),
             new Dictionary<MitSource, Func<SimCharacter?>>
             {
                 [UmadMitigation.Chaos] = () => cast.Chaos,

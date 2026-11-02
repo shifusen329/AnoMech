@@ -79,7 +79,7 @@ public sealed class UmadP3BowelsOfAgonyScenario : IMultiplayerReplayable
         world.EnforceArenaBoundary(Geometry.ArenaRadius, "Fell off the arena");
         SpawnActors(cast);
         if (!cast.Chained)
-            world.MitPractice.Begin(UmadP3BowelsOfAgonyMitigation.Plan(state.ShortElement), new Dictionary<MitSource, Func<SimCharacter?>>
+            world.Hp.Begin(UmadP3BowelsOfAgonyMitigation.Plan(state.ShortElement), new Dictionary<MitSource, Func<SimCharacter?>>
             {
                 [UmadMitigation.Chaos] = () => state.Objects.Chaos,
                 [UmadMitigation.Exdeath] = () => state.Objects.Exdeath,

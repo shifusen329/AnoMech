@@ -18,4 +18,9 @@ public sealed record ActionRow(
     // Aimed at a ground point: the server's ActionEffect then carries no animation target.
     bool TargetArea,
     bool IsPlayerAction,
-    float RecastSeconds = 0f);
+    float RecastSeconds = 0f,
+    // The action this one continues in a linear combo; 0 when it starts or isn't in one.
+    uint ComboFrom = 0,
+    bool PreservesCombo = false,
+    byte PrimaryCostType = 0,
+    ushort PrimaryCostValue = 0);

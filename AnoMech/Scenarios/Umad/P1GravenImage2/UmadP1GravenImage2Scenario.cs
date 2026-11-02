@@ -81,7 +81,7 @@ public sealed class UmadP1GravenImage2Scenario : IMultiplayerReplayable
         puddlesSoakable = false;
         puzzleFailure = null;
         world.EnforceArenaBoundary(UmadP1Kit.ArenaRadius, "Knocked off the arena");
-        world.MitPractice.Begin(UmadP1GravenImage2Mitigation.Plan(),
+        world.Hp.Begin(UmadP1GravenImage2Mitigation.Plan(),
             new Dictionary<MitSource, Func<SimCharacter?>> { [UmadMitigation.Kefka] = () => k.Kefka });
         DiagnosticLog.Info($"[UmadP1GravenImage2] Roll: purpleDps=[{string.Join(",", state.PurpleDps)}] ice={state.Ice} "
             + $"cleaveWest=[{string.Join(",", state.CleaveWest)}] trap={state.TrapSupport}/{state.TrapDps}.");

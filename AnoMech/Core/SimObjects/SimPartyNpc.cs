@@ -25,26 +25,10 @@ public sealed class SimPartyNpc : SimNpc, ISimPartyMember
         DisplayName = name;
     }
 
-    // A bot's button press: the animation, then what a player's press does, statuses it spends
-    // first. `target` is who a single-target action is aimed at (the boss, for Feint); else itself.
-    public void UseAction(uint actionId, SimCharacter? target = null)
-    {
-        PlayAction(actionId);
-        JobActions.ClearStatuses(this, actionId);
-        JobActions.ApplyEffects(this, actionId, (ulong)(target ?? this).GameObjectId, Random.Shared);
-    }
-
-    // level 1-3. The action id used; 0 if KO'd, mitigation is not required, or the job has no limit
-    // break at that level. Bots press their own limit break only while mitigation is required.
-    internal uint UseLimitBreak(int level)
-    {
-        if (!this.IsAlive() || ActionsLocked || !Mitigation.Required) return 0;
-        var actionId = LimitBreakHandler.ActionId(ClassJob, level);
-        if (actionId == 0) return 0;
-        UseAction(actionId);
-        DiagnosticLog.Info($"[SimPartyNpc] {Role} (job {ClassJob}) uses LB{level} {Natives.Data.ActionName(actionId)}.");
-        return actionId;
-    }
+    // level 1-3. The limit break this bot would press; 0 if KO'd, mitigation is not required, or the
+    // job has none at that level. Bots press their own limit break only while mitigation is required.
+    internal uint LimitBreakAction(int level)
+        => this.IsAlive() && !ActionsLocked && Mitigation.Required ? LimitBreakHandler.ActionId(ClassJob, level) : 0;
 
     public void UseSprint(float duration)
     {

@@ -615,7 +615,11 @@ public unsafe class MainWindow : Window, IDisposable
                     DrawStratSelector(mpGuest);
                     DrawWaymarkSelector();
                     if (!mpGuest && !SoloSelected) DrawBotTimingSelector();
-                    if (!mpGuest && !SoloSelected && scenario.SupportsMitigationPractice) DrawMitigationSelector();
+                    if (!mpGuest && !SoloSelected && scenario.SupportsMitigationPractice)
+                    {
+                        DrawMitigationSelector();
+                        DrawOutOfHpSelector();
+                    }
                     SettingsGrid.End();
                 }
                 ImGui.TreePop();
@@ -976,9 +980,29 @@ public unsafe class MainWindow : Window, IDisposable
             Plugin.Game.World.MitPractice.Enabled = idx == 1;
         }
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Practice: bots press the party mitigation sheet for the comp you're in, and your own planned presses are graded in chat when the run ends.\n"
-                             + "Hits lower HP bars; a hit that would kill only warns and names what was missing.\n"
+            ImGui.SetTooltip("The party mitigation sheet for the comp you're in is always pressed on time.\n"
+                             + "Off: it's pressed for you too. Practice: you press your own, graded in chat when the run ends.\n"
                              + "Grading needs \"Resolve your own actions\" on. Takes effect from the next start.");
+    }
+
+    // Indexed by RunningOutOfHpKills.
+    private static readonly string[] OutOfHpLabels = ["Warn", "Die"];
+
+    private void DrawOutOfHpSelector()
+    {
+        var idx = Plugin.Config.RunningOutOfHpKills ? 1 : 0;
+        SettingsGrid.Row("Out of HP:");
+        ImGui.SetNextItemWidth(SetupDropdownWidth * ImGuiHelpers.GlobalScale);
+        if (ImGui.Combo("##out-of-hp", ref idx, OutOfHpLabels, OutOfHpLabels.Length))
+        {
+            Plugin.Config.RunningOutOfHpKills = idx == 1;
+            Plugin.Config.Save();
+            Plugin.Game.World.Hp.HumansDie = idx == 1;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Hits lower HP bars by what they deal after mitigation and barriers.\n"
+                             + "Die: you die when a hit takes your last HP. Warn: you're left on 1 HP and chat names what was missing.\n"
+                             + "Bots never die of it. Takes effect from the next start.");
     }
 
     private void DrawWaymarkSelector()

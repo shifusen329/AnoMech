@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using AnoMech.Core.Game;
+using AnoMech.Core.Game.PartyHp;
 using AnoMech.Core.Native.Interfaces;
 using AnoMech.Core.SimObjects;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -149,7 +150,7 @@ internal sealed class EnemyActionHandler(SimCharacter caster, SimCast cast, SimW
             ? caster.Placement().Face(target.Position)
             : target?.Placement()
               ?? (location is { } at ? new Placement(at, caster.Rotation) : caster.Placement());
-        var ctx = new EnemyActionContext(action, caster, target, origin, party, releaseDelay);
+        var ctx = new EnemyActionContext(action, caster, target, origin, party, releaseDelay) { Hp = world.Hp };
 
         // A party member's own action never hits them.
         var area = IsSingleTarget(action) ? (AoeQuery?)null : AreaQuery(action, origin, origin.Position == caster.Position ? caster.HitboxRadius : 0f);
@@ -173,8 +174,14 @@ internal sealed class EnemyActionHandler(SimCharacter caster, SimCast cast, SimW
 
         foreach (var effect in action.Effects)
             effect.Apply(ctx, hits);
-        foreach (var (who, loss) in world.MitPractice.Resolved(action.ActionId, hits))
-            if (!ctx.IsKilled(who)) ctx.OverrideDamage(who, loss);
+        // After every other kill rule, whose explanations come first.
+        var landings = world.Hp.Resolve(ctx, MathF.Max(action.Timing.DamageDelay, releaseDelay));
+        foreach (var landing in landings)
+        {
+            if (landing.Result.HpLoss >= 1f) ctx.OverrideDamage(landing.Target, (uint)MathF.Round(landing.Result.HpLoss));
+            if (landing.Kills) ctx.Kill(landing.Target, PartyHp.Explanation(landing));
+        }
+        delivery.Landings = landings;
         world.SimEvents.Raise(new ActionResolved(action, caster, origin, hits, ctx.NpcHits, hits.Where(ctx.IsKilled).ToList(), releaseDelay, target));
 
         delivery.Outcomes = ctx.Outcomes;
@@ -249,21 +256,25 @@ internal sealed class EnemyActionHandler(SimCharacter caster, SimCast cast, SimW
     private static string? Explain(string? action, string? hit)
         => action is null ? hit : hit is null ? action : $"{action}; {hit}";
 
-    // The EffectResult that makes the client apply a target's damage entry, flytext included. An
-    // impact due before the ActionEffect went out waits for it.
-    private static void ConfirmDamage(Delivery delivery)
+    // The EffectResult that makes the client apply a target's damage entry, flytext included, and
+    // the hits PartyHp reserved, so the bar drops with the number. An impact due before the
+    // ActionEffect went out waits for it.
+    private void ConfirmDamage(Delivery delivery)
     {
         delivery.ImpactDue = delivery.Sequence == 0;
         if (delivery.ImpactDue) return;
+        foreach (var landing in delivery.Landings) world.Hp.Land(landing);
+        delivery.Landings = [];
         foreach (var (who, index) in delivery.Confirmations)
             if (who.Proxy is { Exists: true } chara)
-                chara.ReceiveEffectResult(delivery.Sequence, index, chara.Health);
+                chara.ReceiveEffectResult(delivery.Sequence, index, world.Hp.ClientHealth(who) ?? chara.Health);
     }
 
     // Resolve's outcomes, for the ActionEffect; the ActionEffect's ids, for the EffectResults.
     private sealed class Delivery
     {
         public IReadOnlyCollection<EnemyActionContext.TargetOutcome> Outcomes = [];
+        public IReadOnlyList<HpLanding> Landings = [];
         public uint Sequence;
         public IReadOnlyList<(SimCharacter Target, byte Index)> Confirmations = [];
         public bool ImpactDue;

@@ -2,9 +2,8 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace AnoMech.Core.UserActions;
 
-// One feature of the UserActions module — resolves some player behaviour the sim
-// firewall would otherwise leave unhandled (combo, cast interruption, resource
-// generation, ...). Every hook is optional (default no-op); a handler implements only
+// One feature of the UserActions module — some player behaviour the sim firewall would
+// otherwise leave unhandled (the server's answer to a press, cast interruption, ...). Every hook is optional (default no-op); a handler implements only
 // what it needs. Handlers are stored and dispatched as a list by UserActions.
 internal interface IUserActionHandler
 {
